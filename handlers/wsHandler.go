@@ -44,13 +44,18 @@ func NewWsHandler(l logger.AppLogger, sendChannel chan Msg, options WsOptions) h
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		l.Debug().Msg("Client upgrading")
+		debug := l.HasDebug()
+		if debug {
+			l.Debug().Msg("Client upgrading")
+		}
 		ws, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			l.Error().Err(err).Msg("failed to upgrade to ws-connection")
 			return
 		}
-		l.Debug().Msg("Client subscribing")
+		if debug {
+			l.Debug().Msg("Client subscribing")
+		}
 
 		clients.Subscribe(&Client{
 			conn:       ws,
@@ -102,7 +107,9 @@ func (cl *ClientList) Writer(ch chan Msg) {
 			cl.RLock()
 			length := len(cl.clients)
 			if length == 0 {
-				cl.l.Debug().Msg("No clients are listening at the moment")
+				if cl.l.HasTrace() {
+					cl.l.Trace().Msg("No clients are listening at the moment")
+				}
 				cl.RUnlock()
 				continue
 			}
@@ -131,7 +138,9 @@ func (cl *ClientList) Writer(ch chan Msg) {
 			cl.RLock()
 			length := len(cl.clients)
 			if length == 0 {
-				cl.l.Debug().Msg("No clients are listening at the moment")
+				if cl.l.HasTrace() {
+					cl.l.Trace().Msg("No clients are listening at the moment")
+				}
 				cl.RUnlock()
 				continue
 			}

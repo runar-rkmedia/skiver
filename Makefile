@@ -7,10 +7,10 @@ watch:
 	# cd frontend && yarn watch &
 	echo "frontend not created yet!"
 	${MAKE} test-watch &
-	fd -e go  | entr -r  sh -c "go generate ./... & go run main.go"
+	fd -e go  | entr -r  sh -c "echo restarting...; go generate ./... & go run main.go"
 gen:
 	go generate ./...
-build:
+build-api:
 	go build -ldflags="${ldflags}" -o dist/skiver${SUFFIX} main.go
 clean:
 	rm -rf dist
@@ -27,8 +27,8 @@ build-web:
 build:
 	${MAKE} clean
 	${MAKE} build-web
-	@GOOS=linux   GOARCH=amd64    SUFFIX="-linux-amd64"  ${MAKE} build
-	@GOOS=darwin                  SUFFIX="-darwin"       ${MAKE} build
-	@GOOS=windows                 SUFFIX=".exe"         ${MAKE} build
+	@GOOS=linux   GOARCH=amd64    SUFFIX="-linux-amd64"  ${MAKE} build-api
+	@GOOS=darwin                  SUFFIX="-darwin"       ${MAKE} build-api
+	@GOOS=windows                 SUFFIX=".exe"         ${MAKE} build-api
 
 	ls -lah dist

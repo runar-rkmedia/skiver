@@ -27,9 +27,22 @@ type ReqContext struct {
 	Rw          http.ResponseWriter
 	ContentKind OutputKind
 	Accept      OutputKind
+	RemoteIP    string
 }
 
 func NewReqContext(context *Context, req *http.Request, rw http.ResponseWriter) ReqContext {
+	// TODO: parse this value into a ip. For now, we do not actually need it.
+	// (we only use the ip for reducing session-duplications if there are lots of logins.)
+	remoteIP := req.Header.Get("Forwarded")
+	if remoteIP == "" {
+		remoteIP = req.Header.Get("X-Forwarded-For")
+	}
+	if remoteIP == "" {
+		remoteIP = req.Header.Get("X-Originating-IP")
+	}
+	if remoteIP == "" {
+		remoteIP = req.RemoteAddr
+	}
 	return ReqContext{
 		Context:     context,
 		L:           logger.With(context.L.With().Str("method", req.Method).Str("path", req.URL.Path).Interface("headers", req.Header).Logger()),
@@ -37,6 +50,7 @@ func NewReqContext(context *Context, req *http.Request, rw http.ResponseWriter) 
 		Rw:          rw,
 		ContentKind: contentType(req.Header.Get("Content-Type")),
 		Accept:      WantedOutputFormat(req),
+		RemoteIP:    remoteIP,
 	}
 }
 
@@ -66,7 +80,7 @@ func (rc ReqContext) WriteOutput(output interface{}, statusCode int) {
 }
 func (rc ReqContext) ValidateStruct(input interface{}) error {
 
-	return fmt.Errorf("Not implemented: ValidateeStruct")
+	return fmt.Errorf("Not implemented: ValidateStruct")
 }
 func (rc ReqContext) Unmarshal(body []byte, j interface{}) error {
 	if body == nil {

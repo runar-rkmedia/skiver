@@ -33,10 +33,11 @@ const (
 	CodeErrJmesPath         ErrorCodes = "Error: JmesPath"
 	CodeErrJmesPathMarshal  ErrorCodes = "Error: JmesPathMarshal"
 
-	CodeErrInputValidation ErrorCodes = "Error: General input validation"
-	CodeErrIDNonValid      ErrorCodes = "Error: ID not valid"
-	CodeErrIDTooLong       ErrorCodes = "Error: ID is too long"
-	CodeErrIDEmpty         ErrorCodes = "Error: ID was Empty"
+	CodeErrRequestEntityTooLarge ErrorCodes = "Error: Request Entity too large"
+	CodeErrInputValidation       ErrorCodes = "Error: General input validation"
+	CodeErrIDNonValid            ErrorCodes = "Error: ID not valid"
+	CodeErrIDTooLong             ErrorCodes = "Error: ID is too long"
+	CodeErrIDEmpty               ErrorCodes = "Error: ID was Empty"
 
 	CodeErrDBUpdateSchedule ErrorCodes = "Error: Database Update Schedule"
 	CodeErrDBUpdateEndpoint ErrorCodes = "Error: Database Update Endpoint"

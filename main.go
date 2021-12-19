@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -13,6 +13,7 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/dustin/go-humanize"
+	"github.com/google/uuid"
 	"github.com/qri-io/jsonschema"
 	"github.com/runar-rkmedia/gabyoall/api/utils"
 	"github.com/runar-rkmedia/gabyoall/logger"
@@ -20,6 +21,7 @@ import (
 	cfg "github.com/runar-rkmedia/skiver/config"
 	_ "github.com/runar-rkmedia/skiver/docs"
 	"github.com/runar-rkmedia/skiver/handlers"
+	"github.com/runar-rkmedia/skiver/localuser"
 	"github.com/runar-rkmedia/skiver/requestContext"
 	"github.com/runar-rkmedia/skiver/types"
 )
@@ -122,10 +124,13 @@ func main() {
 		Str("db", cfg.DBLocation).
 		Msg("Starting")
 	pubsub := PubSub{make(chan handlers.Msg)}
+	// IMPORTANT: database publishes changes, but for performance-reasons, it should not be used until the listener (ws) is started.
 	db, err := bboltStorage.NewBbolt(l, cfg.DBLocation, &pubsub)
 	if err != nil {
 		l.Fatal().Err(err).Msg("Failed to initialize storage")
 	}
+	pw := localuser.NewPwHasher([]byte(pwsalt))
+
 	ctx := requestContext.Context{
 		L:               l,
 		DB:              &db,
@@ -148,9 +153,38 @@ func main() {
 	// TODO: consider using a buffered channel.
 	handler.Handle("/ws/", handlers.NewWsHandler(logger.GetLoggerWithLevel("ws", "debug"), pubsub.ch, handlers.WsOptions{}))
 
+	// Ensure there is a admin-user available:
+	if adminUser, err := db.GetUserByUserName("admin"); err != nil {
+		if err == bboltStorage.ErrNotFound {
+			adminUser.UserName = "admin"
+			adminUser.Active = true
+			adminUser.Store = types.UserStoreLocal
+
+			hash, err := pw.Hash("admin")
+			if err != nil {
+				panic(err)
+			}
+			adminUser.PW = hash
+			adminUser.TemporaryPassword = true
+
+			_, err = db.CreateUser(adminUser)
+			if err != nil {
+				panic(err)
+			}
+
+			l.Info().
+				Str("userName", adminUser.UserName).
+				Str("Password", "admin").
+				Msg("No admin-account was found, so one was created with these credentials")
+
+		} else {
+			panic(err)
+		}
+	}
+
 	handler.Handle("/api/",
 		gziphandler.GzipHandler(
-			http.StripPrefix("/api/", EndpointsHandler(ctx))))
+			http.StripPrefix("/api/", EndpointsHandler(ctx, pw))))
 
 	useCert := false
 	if cfg.CertFile != "" {
@@ -208,10 +242,16 @@ var (
 		AllowOrigin: "_any_",
 		MaxAge:      24 * time.Hour,
 	}
-	pingByte = []byte{}
+	pingByte          = []byte{}
+	pwsalt            = "devsalt-123-123-123-123"
+	maxBodySize int64 = 1_000_000 // 1MB
 )
 
-func EndpointsHandler(ctx requestContext.Context) http.HandlerFunc {
+func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.HandlerFunc {
+	if pwsalt == "devsalt-123-123-123-123-123" {
+		ctx.L.Warn().Msg("Password-salt not set")
+	}
+	userSessions := localuser.NewUserSessionInMemory(localuser.UserSessionOptions{time.Hour}, uuid.NewString)
 	return func(rw http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "ping" {
 			rw.Write(pingByte)
@@ -241,9 +281,15 @@ func EndpointsHandler(ctx requestContext.Context) http.HandlerFunc {
 		isPut := r.Method == http.MethodPut
 		path := r.URL.Path
 		paths := strings.Split(strings.TrimSuffix(path, "/"), "/")
+		if r.ContentLength > maxBodySize {
+			rc.WriteErr(fmt.Errorf("max body size reached"), requestContext.CodeErrRequestEntityTooLarge)
+			return
+		}
 
 		if rc.ContentKind > 0 && (isPost || isPut) {
-			body, err = ioutil.ReadAll(r.Body)
+			// Read a maximum of 1MB. It is highly unlikely we actually want to do anything with the result
+			reader := io.LimitReader(r.Body, maxBodySize)
+			body, err = io.ReadAll(reader)
 			if err != nil {
 				rc.WriteErr(err, requestContext.CodeErrReadBody)
 			}
@@ -274,8 +320,89 @@ func EndpointsHandler(ctx requestContext.Context) http.HandlerFunc {
 				rc.WriteAuto(info, err, "serverInfo")
 				return
 			}
-		case "endpoint":
-			rw.Write(body)
+		case "login":
+			if !isPost {
+				rc.WriteErr(fmt.Errorf("Only POST is allowed here"), requestContext.CodeErrMethodNotAllowed)
+				break
+			}
+			var j types.LoginPayload
+			if body == nil {
+				rc.WriteErr(fmt.Errorf("Body was empty"), requestContext.CodeErrInputValidation)
+				return
+			}
+			err := rc.Unmarshal(body, &j)
+			if err != nil {
+				rc.WriteErr(err, "err-marshal-user")
+				return
+			}
+			vErrs, err := j.Validate()
+			if err != nil {
+				rc.WriteErr(err, "err-validate-user")
+				return
+			}
+			if vErrs != nil {
+
+				rc.WriteOutput(vErrs, http.StatusBadRequest)
+				return
+			}
+
+			user, err := ctx.DB.GetUserByUserName(j.Username)
+			if err != nil {
+				rc.WriteError("The supplied username/password is incorrect", "incorrect-user-password")
+				return
+			}
+
+			ok, err := pw.Verify(user.PW, j.Password)
+			if err != nil {
+				rc.WriteError("The supplied username/password is incorrect", "incorrect-user-password")
+				return
+			}
+			if !ok {
+				rc.WriteError("The supplied username/password is incorrect", "incorrect-user-password")
+				return
+			}
+			userAgent := r.UserAgent() + ";" + rc.RemoteIP
+
+			var session localuser.Session
+			sessions := userSessions.SessionsForUser(user.ID)
+
+			now := time.Now()
+			for i := 0; i < len(sessions); i++ {
+				// We already have the correct user, we are trying to identify their device,
+				// so that sessions are unique per device.
+				// This is of course not possible for all devices, because of user-privacy,
+				// which we should respect.
+				if sessions[i].UserAgent != userAgent {
+					continue
+				}
+				// if the user has a fair amount left in their session, it is not renewed
+				d := userSessions.TTL / 6 * 5
+				if sessions[i].Expires.Add(-d).Before(now) {
+					continue
+				}
+				session = sessions[i]
+			}
+
+			if session.UserAgent == "" {
+				session = userSessions.NewSession(user, userAgent)
+			}
+
+			expiresD := session.Expires.Sub(now)
+
+			cookie := &http.Cookie{
+				Name:     "token",
+				Value:    session.Token,
+				MaxAge:   int(expiresD * time.Second),
+				HttpOnly: true,
+			}
+			rw.Header().Add("session-expires", session.Expires.String())
+			rw.Header().Add("session-expires-in", expiresD.String())
+			http.SetCookie(rw, cookie)
+			rc.WriteOutput(struct {
+				Ok        bool
+				Expires   time.Time
+				ExpiresIn string
+			}{true, session.Expires, expiresD.String()}, http.StatusOK)
 			return
 			// // Create endpoint
 			// if isPost && len(paths) == 1 {
@@ -317,7 +444,7 @@ func EndpointsHandler(ctx requestContext.Context) http.HandlerFunc {
 			// }
 			// http.FileServer(frontend.StaticFiles).ServeHTTP(rc.Rw, rc.rw)
 
-			rc.WriteError(fmt.Sprintf("No route registerd for: %s %s", r.Method, r.URL.Path), requestContext.CodeErrNoRoute)
 		}
+		rc.WriteError(fmt.Sprintf("No route registerd for: %s %s", r.Method, r.URL.Path), requestContext.CodeErrNoRoute)
 	}
 }

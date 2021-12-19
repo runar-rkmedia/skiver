@@ -6,12 +6,15 @@ import (
 	"time"
 
 	"github.com/runar-rkmedia/gabyoall/logger"
+	"github.com/runar-rkmedia/skiver/types"
+	"go.etcd.io/bbolt"
 	bolt "go.etcd.io/bbolt"
 )
 
 var (
-	ErrMissingIdArg = errors.New("Missing id as argument")
-	ErrNotFound     = errors.New("Not found")
+	ErrMissingIdArg  = errors.New("Missing id as argument")
+	ErrNotFound      = errors.New("Not found")
+	ErrMissingBucket = errors.New("Bucket not found")
 )
 
 type PubSubPublisher interface {
@@ -32,7 +35,7 @@ func NewBbolt(l logger.AppLogger, path string, pubsub PubSubPublisher) (bb BBolt
 	bb.pubsub = pubsub
 	bb.Marshaller = Gob{}
 	err = bb.Update(func(t *bolt.Tx) error {
-		buckets := [][]byte{BucketEndpoints, BucketRequests, BucketSchedules, BucketStats}
+		buckets := [][]byte{BucketUsers, BucketLocalUsers}
 		for i := 0; i < len(buckets); i++ {
 			_, err := t.CreateBucketIfNotExists(buckets[i])
 			if err != nil {
@@ -48,6 +51,9 @@ func NewBbolt(l logger.AppLogger, path string, pubsub PubSubPublisher) (bb BBolt
 func (s *BBolter) PublishChange(kind PubType, variant PubVerb, contents interface{}) {
 	if s.pubsub == nil {
 		return
+	}
+	if s.l.HasDebug() {
+		s.l.Debug().Str("kind", string(kind)).Str("variant", string(variant)).Msg("Entity-change")
 	}
 	s.pubsub.Publish(string(kind), string(variant), contents)
 }
@@ -65,12 +71,12 @@ func (s *BBolter) GetItem(bucket []byte, id string, j interface{}) error {
 		return s.Unmarshal(b, j)
 	})
 	if err != nil {
-		s.l.Error().Err(err).Bytes("bucket", bucket).Str("id", id).Msg("Failed to lookup endpoint")
+		s.l.Error().Err(err).Bytes("bucket", bucket).Str("id", id).Msg("Failed to lookup item")
 	}
 
 	return err
 }
-func (s *BBolter) NewEntity() Entity {
+func (s *BBolter) NewEntity() types.Entity {
 	// ForceNewEntity may return an error, but it guarantees the the Entity is still usable.
 	// The error should be logged, though.
 	e, err := ForceNewEntity()
@@ -113,6 +119,28 @@ func (s *BBolter) updater(id string, bucket []byte, f func(b []byte) ([]byte, er
 	return err
 }
 
+// iterates over objects within a bucket.
+// The function-parameter is will receive each item as key/value
+// Returning true within this function will stop the iteration
+func (bb *BBolter) Iterate(bucket []byte, f func(key, b []byte) bool) error {
+	err := bb.View(func(t *bbolt.Tx) error {
+		b := t.Bucket(bucket)
+		if b == nil {
+			return ErrNotFound
+		}
+		c := b.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			if f(k, v) {
+				return nil
+			}
+		}
+
+		return ErrNotFound
+
+	})
+	return err
+}
+
 type BBolter struct {
 	*bolt.DB
 	pubsub PubSubPublisher
@@ -121,8 +149,6 @@ type BBolter struct {
 }
 
 var (
-	BucketEndpoints = []byte("endpoints")
-	BucketRequests  = []byte("requests")
-	BucketSchedules = []byte("schedules")
-	BucketStats     = []byte("stats")
+	BucketUsers      = []byte("users")
+	BucketLocalUsers = []byte("users-local")
 )
