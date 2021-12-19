@@ -16,6 +16,44 @@ definitions:
         type: object
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/requestContext
+
+  localeResponse:
+    type: object
+    properties:
+      todo: 
+        type: boolean
+  LocalePayload:
+    type: object
+    required: 
+      - iso639_1
+      - iso639_2
+      - iso639_3
+      - ietf_tag
+      - title
+    properties:
+      title:
+        type: string
+        minLength: 3
+        maxLength: 300
+      iso639_1:
+        type: string
+        minLength: 2
+        maxLength: 2
+      iso639_2:
+        type: string
+        minLength: 3
+        maxLength: 3
+      iso639_3:
+        type: string
+        minLength: 3
+        maxLength: 3
+      ietf_tag:
+        type: string
+        description: List of other Locales in preferred order for fallbacks
+        minLength: 2
+        maxLength: 12
+
+
   LoginPayload:
     properties:
       password:
@@ -58,19 +96,35 @@ paths:
           $ref: '#/responses/apiError'
       tags:
       - auth
+  /api/locale/:
+    post:
+      description: Create a locale
+      operationId: locale
+      responses:
+        "200":
+          $ref: '#/responses/localeResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - auth
 produces:
 - application/json
 - text/vnd.yaml
 - application/toml
 responses:
   apiError:
-    description: ""
+    description: "Consistant error-codes"
     schema:
       $ref: '#/definitions/ApiError'
+  localeResponse:
+    description: "Returns the locale"
+    schema:
+      $ref: '#/definitions/localeResponse'
   loginResponse:
-    description: Lists endpoints registered
+    description: ""
     schema:
       items:
+        # TODO: get the real response
         $ref: '#/definitions/LoginPayload'
       type: array
 schemes:

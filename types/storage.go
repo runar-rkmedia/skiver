@@ -5,15 +5,15 @@ import (
 )
 
 type Storage interface {
-	// Endpoints() (es map[string]EndpointEntity, err error)
-	// Endpoint(id string) (EndpointEntity, error)
-	// CreateEndpoint(e EndpointPayload) (EndpointEntity, error)
-	// UpdateEndpoint(id string, p EndpointPayload) (EndpointEntity, error)
-	// SoftDeleteEndpoint(id string) (EndpointEntity, error)
 	Size() (int64, error)
 	GetUser(userId string) (User, error)
 	GetUserByUserName(userName string) (User, error)
 	CreateUser(user User) (User, error)
+
+	GetLocale(ID string) (Locale, error)
+	CreateLocale(locale Locale) (Locale, error)
+	GetLocaleFilter(filter ...Locale) (Locale, error)
+	GetLocales() (map[string]Locale, error)
 }
 
 type Entity struct {

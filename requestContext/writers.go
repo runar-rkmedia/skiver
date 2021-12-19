@@ -37,9 +37,9 @@ func WriteError(msg string, code ErrorCodes, r *http.Request, rw http.ResponseWr
 	case CodeErrRequestEntityTooLarge:
 		statusCode = http.StatusRequestEntityTooLarge
 		// duplicates??
-	case CodeErrEndpoint, CodeErrNoRoute:
+	case CodeErrNotFoundLocale, CodeErrNoRoute:
 		statusCode = http.StatusNotFound
-	case CodeErrReadBody, CodeErrDBCreateEndpoint:
+	case CodeErrReadBody, CodeErrDBCreateLocale:
 		statusCode = http.StatusBadGateway
 	case CodeErrUnmarshal, CodeErrMarhal, CodeErrJmesPath, CodeErrJmesPathMarshal, CodeErrInputValidation, CodeErrIDNonValid, CodeErrIDTooLong, CodeErrIDEmpty:
 		statusCode = http.StatusBadRequest

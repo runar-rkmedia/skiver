@@ -1,14 +1,23 @@
 package types
 
+// # See https://en.wikipedia.org/wiki/Language_code for more information
 type Locale struct {
-	iso2  string
-	iso3  string
-	title string
+	Entity
+	// Represents the ISO-639-1 string, e.g. en
+	Iso639_1 string
+	// Represents the ISO-639-2 string, e.g. eng
+	Iso639_2 string
+	// Represents the ISO-639-3 string, e.g. eng
+	Iso639_3 string
+	// Represents the IETF language tag, e.g. en / en-US
+	IETF  string
+	Title string
 	// List of other Locales in preferred order for fallbacks
-	fallbacks []string
+	Fallbacks []string
 }
 
 type Translations struct {
+	Entity
 	LocaleID         string
 	Namespace        string
 	Prefix           string

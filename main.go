@@ -411,6 +411,42 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 				ExpiresIn string
 			}{true, session.Expires, expiresD.String()}, http.StatusOK)
 			return
+
+		case "locale":
+			if isGet {
+				locales, err := ctx.DB.GetLocales()
+				if err != nil {
+
+					if err == bboltStorage.ErrNotFound {
+						rc.WriteErr(err, requestContext.CodeErrNotFoundLocale)
+						return
+					}
+					rc.WriteErr(err, requestContext.CodeErrLocale)
+					return
+				}
+				rc.WriteOutput(locales, http.StatusOK)
+				return
+			}
+			if isPost {
+				var j models.LocalePayload
+				if err := rc.ValidateBytes(body, &j); err != nil {
+					return
+				}
+				l := types.Locale{
+					Iso639_1: *j.Iso6391,
+					Iso639_2: *j.Iso6392,
+					Iso639_3: *j.Iso6393,
+					IETF:     *j.IetfTag,
+					Title:    *j.Title,
+				}
+				locale, err := ctx.DB.CreateLocale(l)
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrDBCreateLocale)
+					return
+				}
+				rc.WriteOutput(locale, http.StatusCreated)
+				return
+			}
 			// // Create endpoint
 			// if isPost && len(paths) == 1 {
 			// 	var input types.EndpointPayload

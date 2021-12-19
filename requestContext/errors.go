@@ -23,8 +23,6 @@ var (
 )
 
 const (
-	CodeErrEndpoint         ErrorCodes = "Error: Regarding type Endpoint"
-	CodeErrRequest          ErrorCodes = "Error: Regarding type Request"
 	CodeErrMethodNotAllowed ErrorCodes = "Error: HTTP-Method is not allowed"
 	CodeErrNoRoute          ErrorCodes = "Error: No route matched for this http-path"
 	CodeErrReadBody         ErrorCodes = "Error: Failed to read body"
@@ -39,14 +37,10 @@ const (
 	CodeErrIDTooLong             ErrorCodes = "Error: ID is too long"
 	CodeErrIDEmpty               ErrorCodes = "Error: ID was Empty"
 
-	CodeErrDBUpdateSchedule ErrorCodes = "Error: Database Update Schedule"
-	CodeErrDBUpdateEndpoint ErrorCodes = "Error: Database Update Endpoint"
-	CodeErrDBUpdateRequest  ErrorCodes = "Error: Database Update Request"
-	CodeErrDBDeleteEndpoint ErrorCodes = "Error: Database Delete Endpoint"
-	CodeErrDBDeleteRequest  ErrorCodes = "Error: Database Delete Request"
-	CodeErrDBDeleteSchedule ErrorCodes = "Error: Database Delete Schedule"
-	CodeErrDBCreateEndpoint ErrorCodes = "Error: Database Create Endpoint"
-	CodeErrSchedule         ErrorCodes = "Error: Database Create Schedule"
-	CodeErrDBCreateRequest  ErrorCodes = "Error: Database Create Request"
-	CodeErrDBCreateSchedule ErrorCodes = "Error: Database Create Schedule"
+	CodeErrLocale ErrorCodes = "Error: Locale error"
+
+	CodeErrNotFoundLocale ErrorCodes = "Error: Locale not found"
+	CodeErrNotFoundUser   ErrorCodes = "Error: User not found"
+
+	CodeErrDBCreateLocale ErrorCodes = "Error: Database Create Locale"
 )
