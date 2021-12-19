@@ -4,21 +4,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/qri-io/jsonschema"
 	"github.com/runar-rkmedia/gabyoall/logger"
 	"github.com/runar-rkmedia/skiver/types"
-	"golang.org/x/net/context"
 )
-
-type validator interface {
-	ValidateBytes(ctx context.Context, b []byte) ([]jsonschema.KeyError, error)
-	Validate(ctx context.Context, data interface{}) *jsonschema.ValidationState
-}
 
 type Context struct {
 	L               logger.AppLogger
 	DB              types.Storage
-	StructValidater validator
+	StructValidater func(interface{}) error
 }
 type ReqContext struct {
 	Context     *Context
@@ -79,8 +72,7 @@ func (rc ReqContext) WriteOutput(output interface{}, statusCode int) {
 	WriteOutput(false, statusCode, output, rc.Req, rc.Rw)
 }
 func (rc ReqContext) ValidateStruct(input interface{}) error {
-
-	return fmt.Errorf("Not implemented: ValidateStruct")
+	return rc.Context.StructValidater(input)
 }
 func (rc ReqContext) Unmarshal(body []byte, j interface{}) error {
 	if body == nil {

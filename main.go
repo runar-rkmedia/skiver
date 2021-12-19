@@ -1,3 +1,4 @@
+//go:generate swagger generate model -f swagger.yml
 package main
 
 import (
@@ -14,20 +15,19 @@ import (
 	"github.com/NYTimes/gziphandler"
 	"github.com/dustin/go-humanize"
 	"github.com/google/uuid"
-	"github.com/qri-io/jsonschema"
 	"github.com/runar-rkmedia/gabyoall/api/utils"
 	"github.com/runar-rkmedia/gabyoall/logger"
 	"github.com/runar-rkmedia/skiver/bboltStorage"
 	cfg "github.com/runar-rkmedia/skiver/config"
-	_ "github.com/runar-rkmedia/skiver/docs"
 	"github.com/runar-rkmedia/skiver/handlers"
 	"github.com/runar-rkmedia/skiver/localuser"
+	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/requestContext"
 	"github.com/runar-rkmedia/skiver/types"
 )
 
 var (
-	//go:embed docs/generated-swagger.yml
+	//go:embed swagger.yml
 	swaggerYml string
 	// These are added at build...
 	Version      string
@@ -132,9 +132,15 @@ func main() {
 	pw := localuser.NewPwHasher([]byte(pwsalt))
 
 	ctx := requestContext.Context{
-		L:               l,
-		DB:              &db,
-		StructValidater: &jsonschema.Schema{},
+		L:  l,
+		DB: &db,
+		StructValidater: func(m interface{}) error {
+			v, ok := m.(models.Validator)
+			if !ok {
+				l.Fatal().Interface("type", m).Msg("does not implement Validator")
+			}
+			return models.Validate(v)
+		},
 	}
 	go utils.SelfCheck(utils.SelfCheckLimit{
 		MemoryMB:   1000,
@@ -325,34 +331,35 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 				rc.WriteErr(fmt.Errorf("Only POST is allowed here"), requestContext.CodeErrMethodNotAllowed)
 				break
 			}
-			var j types.LoginPayload
+			var j models.LoginPayload
 			if body == nil {
 				rc.WriteErr(fmt.Errorf("Body was empty"), requestContext.CodeErrInputValidation)
 				return
 			}
+			if err := rc.ValidateBytes(body, &j); err != nil {
+				return
+			}
+
+			fmt.Println("afily")
+
 			err := rc.Unmarshal(body, &j)
 			if err != nil {
 				rc.WriteErr(err, "err-marshal-user")
 				return
 			}
-			vErrs, err := j.Validate()
-			if err != nil {
-				rc.WriteErr(err, "err-validate-user")
-				return
-			}
+			vErrs := models.Validate(&j)
 			if vErrs != nil {
-
 				rc.WriteOutput(vErrs, http.StatusBadRequest)
 				return
 			}
 
-			user, err := ctx.DB.GetUserByUserName(j.Username)
+			user, err := ctx.DB.GetUserByUserName(*j.Username)
 			if err != nil {
 				rc.WriteError("The supplied username/password is incorrect", "incorrect-user-password")
 				return
 			}
 
-			ok, err := pw.Verify(user.PW, j.Password)
+			ok, err := pw.Verify(user.PW, *j.Password)
 			if err != nil {
 				rc.WriteError("The supplied username/password is incorrect", "incorrect-user-password")
 				return

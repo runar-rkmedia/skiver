@@ -50,8 +50,3 @@ const (
 	CodeErrDBCreateRequest  ErrorCodes = "Error: Database Create Request"
 	CodeErrDBCreateSchedule ErrorCodes = "Error: Database Create Schedule"
 )
-
-type ApiError struct {
-	Error string `json:"error"`
-	Code  string `json:"code,omitempty"`
-}

@@ -3,6 +3,8 @@ package requestContext
 import (
 	"net/http"
 	"strings"
+
+	"github.com/runar-rkmedia/skiver/models"
 )
 
 type OutputKind = int
@@ -21,14 +23,19 @@ func WriteAuto(output interface{}, err error, errCode ErrorCodes, r *http.Reques
 	return WriteOutput(false, http.StatusOK, output, r, rw)
 }
 func WriteErr(err error, code ErrorCodes, r *http.Request, rw http.ResponseWriter) error {
-	return WriteError(err.Error(), code, r, rw)
+	return WriteError(err.Error(), code, r, rw, err)
 }
-func WriteError(msg string, code ErrorCodes, r *http.Request, rw http.ResponseWriter) error {
-	ae := ApiError{msg, string(code)}
+func WriteError(msg string, code ErrorCodes, r *http.Request, rw http.ResponseWriter, details ...interface{}) error {
+	ae := models.APIError{Error: msg, Code: string(code)}
+	if details != nil && details[0] != nil {
+		ae.Details = details[0]
+	}
 	statusCode := http.StatusBadGateway
 	switch code {
 	case CodeErrMethodNotAllowed:
 		statusCode = http.StatusMethodNotAllowed
+	case CodeErrRequestEntityTooLarge:
+		statusCode = http.StatusRequestEntityTooLarge
 		// duplicates??
 	case CodeErrEndpoint, CodeErrNoRoute:
 		statusCode = http.StatusNotFound

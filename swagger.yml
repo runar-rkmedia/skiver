@@ -1,0 +1,78 @@
+basePath: /api
+consumes:
+- application/json
+- text/vnd.yaml
+- application/toml
+definitions:
+  ApiError:
+    properties:
+      code:
+        type: string
+        x-go-name: Code
+      error:
+        type: string
+        x-go-name: Error
+      details:
+        type: object
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/requestContext
+  LoginPayload:
+    properties:
+      password:
+        maxLength: 400
+        minLength: 3
+        type: string
+        x-go-name: Password
+      username:
+        example: abc123
+        maxLength: 100
+        minLength: 3
+        pattern: ^[^\s]*$
+        type: string
+        x-go-name: Username
+    type: object
+    required:
+      - username
+      - password
+    x-go-package: github.com/runar-rkmedia/skiver/types
+host: localhost
+info:
+  description: |-
+    Api fo Skiver-api.
+    <a href="https://insomnia.rest/run/?label=&uri=" target="_blank"><img src="https://insomnia.rest/images/run.svg" alt="Run in Insomnia"></a>
+    Title: "Skiver"
+  license:
+    name: MIT
+    url: http://opensource.org/licenses/MIT
+  title: Skiver API.
+  version: 0.0.1
+paths:
+  /api/login/:
+    post:
+      description: Login to aquire a token
+      operationId: login
+      responses:
+        "200":
+          $ref: '#/responses/loginResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - auth
+produces:
+- application/json
+- text/vnd.yaml
+- application/toml
+responses:
+  apiError:
+    description: ""
+    schema:
+      $ref: '#/definitions/ApiError'
+  loginResponse:
+    description: Lists endpoints registered
+    schema:
+      items:
+        $ref: '#/definitions/LoginPayload'
+      type: array
+schemes:
+- http
+swagger: "2.0"
