@@ -9,7 +9,13 @@ import (
 )
 
 type LoginPayload struct {
+	// minLength: 3
+	// maxLength: 100
+	// example: abc123
+	// pattern: ^[^\\s]*$
 	Username string `json:"username"`
+	// minLength: 3
+	// maxLength: 100
 	Password string `json:"password"`
 }
 
