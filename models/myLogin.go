@@ -5,7 +5,7 @@ import (
 	"github.com/go-openapi/strfmt"
 )
 
-func (m *LoginPayload) SuperValidate(formats strfmt.Registry) error {
+func (m *LoginInput) SuperValidate(formats strfmt.Registry) error {
 	err := m.Validate(formats)
 	if err == nil {
 		return nil

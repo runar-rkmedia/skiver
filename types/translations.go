@@ -4,16 +4,23 @@ package types
 type Locale struct {
 	Entity
 	// Represents the ISO-639-1 string, e.g. en
-	Iso639_1 string
+	Iso639_1 string `json:"iso_639_1"`
 	// Represents the ISO-639-2 string, e.g. eng
-	Iso639_2 string
+	Iso639_2 string `json:"iso_639_2"`
 	// Represents the ISO-639-3 string, e.g. eng
-	Iso639_3 string
+	Iso639_3 string `json:"iso_639_3"`
 	// Represents the IETF language tag, e.g. en / en-US
-	IETF  string
-	Title string
+	IETF  string `json:"ietf"`
+	Title string `json:"title"`
 	// List of other Locales in preferred order for fallbacks
-	Fallbacks []string
+	Fallbacks []string `json:"fallbacks,omitempty"`
+}
+
+// Locale represents a language, dialect etc.
+// swagger:response
+type localeResponse struct {
+	// in:body
+	Body Locale
 }
 
 type Translations struct {

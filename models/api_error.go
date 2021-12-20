@@ -20,11 +20,11 @@ type APIError struct {
 	// code
 	Code string `json:"code,omitempty"`
 
-	// error
-	Error string `json:"error,omitempty"`
-
 	// details
 	Details interface{} `json:"details,omitempty"`
+
+	// error
+	Error string `json:"error,omitempty"`
 }
 
 // Validate validates this Api error

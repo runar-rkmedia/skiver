@@ -8,7 +8,7 @@ import (
 	"github.com/ghodss/yaml"
 )
 
-func TestLoginPayload_Validate(t *testing.T) {
+func TestLoginInput_Validate(t *testing.T) {
 	type fields struct {
 		Username string
 		Password string
@@ -46,7 +46,7 @@ func TestLoginPayload_Validate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := LoginPayload{
+			l := LoginInput{
 				Username: &tt.fields.Username,
 				Password: &tt.fields.Password,
 			}
@@ -60,7 +60,7 @@ func TestLoginPayload_Validate(t *testing.T) {
 		})
 	}
 }
-func TestLoginPayload_ValidatePassword(t *testing.T) {
+func TestLoginInput_ValidatePassword(t *testing.T) {
 	type fields struct {
 		Username string
 		Password string
@@ -78,7 +78,7 @@ func TestLoginPayload_ValidatePassword(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := LoginPayload{
+			l := LoginInput{
 				Username: &tt.fields.Username,
 				Password: &tt.fields.Password,
 			}

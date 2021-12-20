@@ -37,6 +37,9 @@ const (
 	CodeErrIDTooLong             ErrorCodes = "Error: ID is too long"
 	CodeErrIDEmpty               ErrorCodes = "Error: ID was Empty"
 
+	CodeErrAuthenticationRequired ErrorCodes = "Error: Authentication required"
+	CodeErrAuthoriziationFailed   ErrorCodes = "Error: Authorization failed"
+
 	CodeErrLocale ErrorCodes = "Error: Locale error"
 
 	CodeErrNotFoundLocale ErrorCodes = "Error: Locale not found"

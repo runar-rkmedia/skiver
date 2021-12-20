@@ -8,70 +8,123 @@ definitions:
     properties:
       code:
         type: string
-        x-go-name: Code
-      error:
-        type: string
-        x-go-name: Error
       details:
         type: object
+      error:
+        type: string
     type: object
-    x-go-package: github.com/runar-rkmedia/skiver/requestContext
-
-  localeResponse:
-    type: object
+  Locale:
+    description: '# See https://en.wikipedia.org/wiki/Language_code for more information'
     properties:
-      todo: 
-        type: boolean
-  LocalePayload:
-    type: object
-    required: 
-      - iso639_1
-      - iso639_2
-      - iso639_3
-      - ietf_tag
-      - title
-    properties:
-      title:
-        type: string
-        minLength: 3
-        maxLength: 300
-      iso639_1:
-        type: string
-        minLength: 2
-        maxLength: 2
-      iso639_2:
-        type: string
-        minLength: 3
-        maxLength: 3
-      iso639_3:
-        type: string
-        minLength: 3
-        maxLength: 3
-      ietf_tag:
-        type: string
+      Fallbacks:
         description: List of other Locales in preferred order for fallbacks
-        minLength: 2
+        items:
+          type: string
+        type: array
+      IETF:
+        description: Represents the IETF language tag, e.g. en / en-US
+        type: string
+      Iso639_1:
+        description: Represents the ISO-639-1 string, e.g. en
+        type: string
+      Iso639_2:
+        description: Represents the ISO-639-2 string, e.g. eng
+        type: string
+      Iso639_3:
+        description: Represents the ISO-639-3 string, e.g. eng
+        type: string
+      Title:
+        type: string
+      createdAt:
+        description: Time of which the entity was created in the database
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      createdBy:
+        description: User id refering to the user who created the item
+        type: string
+        x-go-name: CreatedBy
+      deleted:
+        description: |-
+          If set, the item is considered deleted. The item will normally not get deleted from the database,
+          but it may if cleanup is required.
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      id:
+        description: Unique identifier of the entity
+        type: string
+        x-go-name: ID
+      updatedAt:
+        description: Time of which the entity was updated, if any
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updatedBy:
+        description: User id refering to who created the item
+        type: string
+        x-go-name: UpdatedBy
+    required:
+    - createdAt
+    - id
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
+  LocaleInput:
+    properties:
+      ietf_tag:
+        description: List of other Locales in preferred order for fallbacks
         maxLength: 12
-
-
-  LoginPayload:
+        minLength: 2
+        type: string
+      iso639_1:
+        maxLength: 2
+        minLength: 2
+        type: string
+      iso639_2:
+        maxLength: 3
+        minLength: 3
+        type: string
+      iso639_3:
+        maxLength: 3
+        minLength: 3
+        type: string
+      title:
+        maxLength: 300
+        minLength: 3
+        type: string
+    required:
+    - iso639_1
+    - iso639_2
+    - iso639_3
+    - ietf_tag
+    - title
+    type: object
+  LoginInput:
     properties:
       password:
         maxLength: 400
         minLength: 3
         type: string
-        x-go-name: Password
       username:
         example: abc123
         maxLength: 100
         minLength: 3
         pattern: ^[^\s]*$
         type: string
-        x-go-name: Username
-    type: object
     required:
-      - username
-      - password
+    - username
+    - password
+    type: object
+  LoginResponse:
+    properties:
+      Expires:
+        format: date-time
+        type: string
+      ExpiresIn:
+        type: string
+      Ok:
+        type: boolean
+    type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
 host: localhost
 info:
@@ -85,26 +138,47 @@ info:
   title: Skiver API.
   version: 0.0.1
 paths:
-  /api/login/:
-    post:
-      description: Login to aquire a token
-      operationId: login
+  /api/locale/:
+    get:
+      description: List locales
+      operationId: getLocale
       responses:
         "200":
-          $ref: '#/responses/loginResponse'
+          $ref: '#/responses/LocalesResponse'
         "500":
           $ref: '#/responses/apiError'
       tags:
-      - auth
-  /api/locale/:
+      - locale
     post:
       description: Create a locale
-      operationId: locale
+      operationId: listLocale
+      parameters:
+      - in: body
+        name: LocaleInput
+        schema:
+          $ref: '#/definitions/LocaleInput'
       responses:
         "200":
           $ref: '#/responses/localeResponse'
         "500":
           $ref: '#/responses/apiError'
+      tags:
+      - locale
+  /api/login/:
+    post:
+      description: Login to aquire a token, set in a cookie
+      operationId: login
+      parameters:
+      - in: body
+        name: LoginInput
+        schema:
+          $ref: '#/definitions/LoginInput'
+      responses:
+        "200":
+          $ref: '#/responses/loginResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      security: []
       tags:
       - auth
 produces:
@@ -112,21 +186,27 @@ produces:
 - text/vnd.yaml
 - application/toml
 responses:
-  apiError:
-    description: "Consistant error-codes"
-    schema:
-      $ref: '#/definitions/ApiError'
-  localeResponse:
-    description: "Returns the locale"
-    schema:
-      $ref: '#/definitions/localeResponse'
-  loginResponse:
+  LocalesResponse:
     description: ""
     schema:
       items:
-        # TODO: get the real response
-        $ref: '#/definitions/LoginPayload'
+        $ref: '#/definitions/Locale'
       type: array
+  apiError:
+    description: Consistant error-codes
+    schema:
+      $ref: '#/definitions/ApiError'
+  localeResponse:
+    description: Locale represents a language, dialect etc.
+    schema:
+      $ref: '#/definitions/Locale'
+  loginResponse:
+    description: Locale represents a language, dialect etc.
+    schema:
+      $ref: '#/definitions/LoginResponse'
+      type: object
 schemes:
 - http
+security:
+- cookieAuth: []
 swagger: "2.0"

@@ -58,8 +58,8 @@ func (us UserSessionInMemory) SessionsForUser(userId string) (s []Session) {
 	}
 	return
 }
-func (us UserSessionInMemory) GetSession(userId string) (s Session, err error) {
-	v, exp, found := us.c.GetWithExpiration(userId)
+func (us UserSessionInMemory) GetSession(token string) (s Session, err error) {
+	v, exp, found := us.c.GetWithExpiration(token)
 	if !found {
 		return s, ErrNotFound
 	}

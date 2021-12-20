@@ -1,0 +1,161 @@
+basePath: /api
+consumes:
+- application/json
+- text/vnd.yaml
+- application/toml
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      name: token
+security:
+  - cookieAuth: []
+definitions:
+  ApiError:
+    properties:
+      code:
+        type: string
+      error:
+        type: string
+      details:
+        type: object
+    type: object
+
+  LocaleInput:
+    type: object
+    required: 
+      - iso639_1
+      - iso639_2
+      - iso639_3
+      - ietf_tag
+      - title
+    properties:
+      title:
+        type: string
+        minLength: 3
+        maxLength: 300
+      iso639_1:
+        type: string
+        minLength: 2
+        maxLength: 2
+      iso639_2:
+        type: string
+        minLength: 3
+        maxLength: 3
+      iso639_3:
+        type: string
+        minLength: 3
+        maxLength: 3
+      ietf_tag:
+        type: string
+        description: List of other Locales in preferred order for fallbacks
+        minLength: 2
+        maxLength: 12
+
+
+  LoginInput:
+    properties:
+      password:
+        maxLength: 400
+        minLength: 3
+        type: string
+      username:
+        example: abc123
+        maxLength: 100
+        minLength: 3
+        pattern: ^[^\s]*$
+        type: string
+    type: object
+    required:
+      - username
+      - password
+host: localhost
+info:
+  description: |-
+    Api fo Skiver-api.
+    <a href="https://insomnia.rest/run/?label=&uri=" target="_blank"><img src="https://insomnia.rest/images/run.svg" alt="Run in Insomnia"></a>
+    Title: "Skiver"
+  license:
+    name: MIT
+    url: http://opensource.org/licenses/MIT
+  title: Skiver API.
+  version: 0.0.1
+paths:
+  /api/login/:
+    post:
+      security: []
+      description: Login to aquire a token, set in a cookie
+      operationId: login
+      parameters:
+      - in: body
+        name: LoginInput
+        schema:
+          $ref: '#/definitions/LoginInput'
+      responses:
+        "200":
+          $ref: '#/responses/loginResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - auth
+  /api/locale/:
+    post:
+      description: Create a locale
+      operationId: listLocale
+      parameters:
+      - in: body
+        name: LocaleInput
+        schema:
+          $ref: '#/definitions/LocaleInput'
+      responses:
+        "200":
+          $ref: '#/responses/localeResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - locale
+    get:
+      description: List locales
+      operationId: getLocale
+      responses:
+        "200":
+          $ref: '#/responses/LocalesResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - locale
+produces:
+- application/json
+- text/vnd.yaml
+- application/toml
+responses:
+  apiError:
+    description: "Consistant error-codes"
+    schema:
+      $ref: '#/definitions/ApiError'
+  loginResponse:
+    description: >
+      On successful authentication, the token is set in a cookie named 'token'.
+
+      For subsequent requests, you need to include the token.
+      Browsers typically do this automatically (CORS).
+
+      The token is by default valid for one hour.
+    headers:
+      Set-Cookie:
+        type: string
+        schema:
+          type: string
+          example: token=b6f7502c-2d39-4ddb-9890-84cb10d9bd13; Max-Age=3600; HttpOnly
+    schema:
+      $ref: '#/definitions/LoginResponse'
+      type: object
+  LocalesResponse:
+    description: ""
+    schema:
+      items:
+        $ref: '#/definitions/Locale'
+      type: array
+schemes:
+- http
+swagger: "2.0"

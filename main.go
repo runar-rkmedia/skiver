@@ -1,11 +1,14 @@
+//go:generate swagger generate spec -i base-swagger.yml -x models -o swagger.yml --scan-models
 //go:generate swagger generate model -f swagger.yml
 package main
 
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,6 +17,7 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/dustin/go-humanize"
+	swaggerMiddleware "github.com/go-openapi/runtime/middleware"
 	"github.com/google/uuid"
 	"github.com/runar-rkmedia/gabyoall/api/utils"
 	"github.com/runar-rkmedia/gabyoall/logger"
@@ -149,8 +153,19 @@ func main() {
 		Interval:   time.Second * 15,
 	}, logger.GetLogger("self-check"), 0)
 
-	address := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	address := net.JoinHostPort(cfg.Address, strconv.Itoa(cfg.Port))
 	handler := http.NewServeMux()
+	handler.Handle("/docs", swaggerMiddleware.SwaggerUI(swaggerMiddleware.SwaggerUIOpts{
+		BasePath:         "/",
+		Path:             "",
+		SpecURL:          "/api/swagger.yml",
+		SwaggerURL:       "",
+		SwaggerPresetURL: "",
+		SwaggerStylesURL: "",
+		Favicon32:        "",
+		Favicon16:        "",
+		Title:            "Skiver",
+	}, handler))
 	handler.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 	handler.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
 	handler.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
@@ -230,7 +245,7 @@ func main() {
 		}
 		err = srv.ListenAndServeTLS("server.crt", "server.key")
 	} else {
-		srv.ListenAndServe()
+		err = srv.ListenAndServe()
 	}
 	if err != nil {
 		l.Fatal().Err(err).Msg("Failed to create listener")
@@ -253,11 +268,12 @@ var (
 	maxBodySize int64 = 1_000_000 // 1MB
 )
 
+// TODO: split into separate handlers
 func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.HandlerFunc {
 	if pwsalt == "devsalt-123-123-123-123-123" {
 		ctx.L.Warn().Msg("Password-salt not set")
 	}
-	userSessions := localuser.NewUserSessionInMemory(localuser.UserSessionOptions{time.Hour}, uuid.NewString)
+	userSessions := localuser.NewUserSessionInMemory(localuser.UserSessionOptions{TTL: time.Hour}, uuid.NewString)
 	return func(rw http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "ping" {
 			rw.Write(pingByte)
@@ -331,7 +347,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 				rc.WriteErr(fmt.Errorf("Only POST is allowed here"), requestContext.CodeErrMethodNotAllowed)
 				break
 			}
-			var j models.LoginPayload
+			var j models.LoginInput
 			if body == nil {
 				rc.WriteErr(fmt.Errorf("Body was empty"), requestContext.CodeErrInputValidation)
 				return
@@ -339,8 +355,6 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 			if err := rc.ValidateBytes(body, &j); err != nil {
 				return
 			}
-
-			fmt.Println("afily")
 
 			err := rc.Unmarshal(body, &j)
 			if err != nil {
@@ -398,20 +412,45 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 
 			cookie := &http.Cookie{
 				Name:     "token",
+				Path:     "/api/",
 				Value:    session.Token,
-				MaxAge:   int(expiresD * time.Second),
+				MaxAge:   int(expiresD.Seconds()),
 				HttpOnly: true,
 			}
 			rw.Header().Add("session-expires", session.Expires.String())
 			rw.Header().Add("session-expires-in", expiresD.String())
+			rw.Header().Add("session-expires-in-seconds", strconv.Itoa(int(expiresD.Seconds())))
 			http.SetCookie(rw, cookie)
-			rc.WriteOutput(struct {
-				Ok        bool
-				Expires   time.Time
-				ExpiresIn string
-			}{true, session.Expires, expiresD.String()}, http.StatusOK)
+			rc.WriteOutput(types.LoginResponse{
+				Ok:        true,
+				Expires:   session.Expires,
+				ExpiresIn: expiresD.String(),
+			}, http.StatusOK)
 			return
 
+		}
+		// Login required beyond this point
+
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			rc.WriteError("Not logged in (no cookie)", requestContext.CodeErrAuthenticationRequired)
+			return
+		}
+		session, err := userSessions.GetSession(cookie.Value)
+		if err != nil {
+			rc.WriteError("Not logged in (session not found)", requestContext.CodeErrAuthenticationRequired)
+			return
+		}
+		expiresD := session.Expires.Sub(time.Now())
+		rw.Header().Add("session-expires", session.Expires.String())
+		rw.Header().Add("session-expires-in", expiresD.String())
+		rw.Header().Add("session-expires-in-seconds", strconv.Itoa(int(expiresD.Seconds())))
+		rc.L.Debug().
+			Str("path", path).
+			Str("username", session.User.UserName).
+			Msg("User is perorming action on route")
+
+		switch paths[0] {
 		case "locale":
 			if isGet {
 				locales, err := ctx.DB.GetLocales()
@@ -428,7 +467,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 				return
 			}
 			if isPost {
-				var j models.LocalePayload
+				var j models.LocaleInput
 				if err := rc.ValidateBytes(body, &j); err != nil {
 					return
 				}

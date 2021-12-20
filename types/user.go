@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 type User struct {
 	Entity
 	UserName string `json:"userName"`
@@ -17,3 +19,16 @@ const (
 	// A local
 	UserStoreLocal UserStore = iota + 1
 )
+
+// Locale represents a language, dialect etc.
+// swagger:response
+type loginResponse struct {
+	// in:body
+	Body LoginResponse
+}
+
+type LoginResponse struct {
+	Ok        bool
+	Expires   time.Time
+	ExpiresIn string
+}

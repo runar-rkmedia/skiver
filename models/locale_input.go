@@ -14,10 +14,10 @@ import (
 	"github.com/go-openapi/validate"
 )
 
-// LocalePayload locale payload
+// LocaleInput locale input
 //
-// swagger:model LocalePayload
-type LocalePayload struct {
+// swagger:model LocaleInput
+type LocaleInput struct {
 
 	// List of other Locales in preferred order for fallbacks
 	// Required: true
@@ -50,8 +50,8 @@ type LocalePayload struct {
 	Title *string `json:"title"`
 }
 
-// Validate validates this locale payload
-func (m *LocalePayload) Validate(formats strfmt.Registry) error {
+// Validate validates this locale input
+func (m *LocaleInput) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateIetfTag(formats); err != nil {
@@ -80,7 +80,7 @@ func (m *LocalePayload) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *LocalePayload) validateIetfTag(formats strfmt.Registry) error {
+func (m *LocaleInput) validateIetfTag(formats strfmt.Registry) error {
 
 	if err := validate.Required("ietf_tag", "body", m.IetfTag); err != nil {
 		return err
@@ -97,7 +97,7 @@ func (m *LocalePayload) validateIetfTag(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *LocalePayload) validateIso6391(formats strfmt.Registry) error {
+func (m *LocaleInput) validateIso6391(formats strfmt.Registry) error {
 
 	if err := validate.Required("iso639_1", "body", m.Iso6391); err != nil {
 		return err
@@ -114,7 +114,7 @@ func (m *LocalePayload) validateIso6391(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *LocalePayload) validateIso6392(formats strfmt.Registry) error {
+func (m *LocaleInput) validateIso6392(formats strfmt.Registry) error {
 
 	if err := validate.Required("iso639_2", "body", m.Iso6392); err != nil {
 		return err
@@ -131,7 +131,7 @@ func (m *LocalePayload) validateIso6392(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *LocalePayload) validateIso6393(formats strfmt.Registry) error {
+func (m *LocaleInput) validateIso6393(formats strfmt.Registry) error {
 
 	if err := validate.Required("iso639_3", "body", m.Iso6393); err != nil {
 		return err
@@ -148,7 +148,7 @@ func (m *LocalePayload) validateIso6393(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *LocalePayload) validateTitle(formats strfmt.Registry) error {
+func (m *LocaleInput) validateTitle(formats strfmt.Registry) error {
 
 	if err := validate.Required("title", "body", m.Title); err != nil {
 		return err
@@ -165,13 +165,13 @@ func (m *LocalePayload) validateTitle(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this locale payload based on context it is used
-func (m *LocalePayload) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+// ContextValidate validates this locale input based on context it is used
+func (m *LocaleInput) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	return nil
 }
 
 // MarshalBinary interface implementation
-func (m *LocalePayload) MarshalBinary() ([]byte, error) {
+func (m *LocaleInput) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -179,8 +179,8 @@ func (m *LocalePayload) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *LocalePayload) UnmarshalBinary(b []byte) error {
-	var res LocalePayload
+func (m *LocaleInput) UnmarshalBinary(b []byte) error {
+	var res LocaleInput
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

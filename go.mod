@@ -24,6 +24,7 @@ require (
 	github.com/go-openapi/runtime v0.21.0 // indirect
 	github.com/go-openapi/spec v0.20.4 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
+	github.com/go-swagger/go-swagger v0.28.0 // indirect
 	github.com/go-test/deep v1.0.8 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
