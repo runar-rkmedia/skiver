@@ -27,8 +27,9 @@ type localeResponse struct {
 type Translations struct {
 	Entity
 	LocaleID         string
-	Namespace        string
+	Project          string
 	Prefix           string
+	Value            string
 	Key              string
 	Title            string
 	Description      string
