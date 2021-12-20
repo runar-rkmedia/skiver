@@ -1,6 +1,7 @@
 package types
 
 // # See https://en.wikipedia.org/wiki/Language_code for more information
+// TODO: consider supporting other standards here, like Windows(?), which seem to have their own thing.
 type Locale struct {
 	Entity
 	// Represents the ISO-639-1 string, e.g. en

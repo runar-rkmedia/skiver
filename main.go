@@ -174,34 +174,8 @@ func main() {
 	// TODO: consider using a buffered channel.
 	handler.Handle("/ws/", handlers.NewWsHandler(logger.GetLoggerWithLevel("ws", "debug"), pubsub.ch, handlers.WsOptions{}))
 
-	// Ensure there is a admin-user available:
-	if adminUser, err := db.GetUserByUserName("admin"); err != nil {
-		if err == bboltStorage.ErrNotFound {
-			adminUser.UserName = "admin"
-			adminUser.Active = true
-			adminUser.Store = types.UserStoreLocal
-
-			hash, err := pw.Hash("admin")
-			if err != nil {
-				panic(err)
-			}
-			adminUser.PW = hash
-			adminUser.TemporaryPassword = true
-
-			_, err = db.CreateUser(adminUser)
-			if err != nil {
-				panic(err)
-			}
-
-			l.Info().
-				Str("userName", adminUser.UserName).
-				Str("Password", "admin").
-				Msg("No admin-account was found, so one was created with these credentials")
-
-		} else {
-			panic(err)
-		}
-	}
+	types.SeedUsers(&db, nil, pw.Hash)
+	types.SeedLocales(&db, nil)
 
 	handler.Handle("/api/",
 		gziphandler.GzipHandler(
