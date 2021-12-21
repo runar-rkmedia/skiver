@@ -4,8 +4,7 @@ gitHash := $(shell git rev-parse --short HEAD)
 buildDate := $(shell TZ=UTC date +"%Y-%m-%dT%H:%M:%S")
 ldflags=-X 'main.Version=$(version)' -X 'main.BuildDateStr=$(buildDate)' -X 'main.GitHash=$(gitHash)' -X 'main.IsDevStr=0'
 watch:
-	# cd frontend && yarn watch &
-	echo "frontend not created yet!"
+	cd frontend && yarn watch &
 	${MAKE} test-watch &
 	fd -e go  | entr -r  sh -c "echo restarting...; go run main.go"
 gen:
@@ -28,8 +27,7 @@ swagger-watch:
 	echo "Watch the base-swagger and the types-folder"
 	printf "base-swagger.yml\n$(fd '' types)" | entr -r go generate ./...
 build-web:
-	echo "frontend not created yet!"
-	# cd frontend && yarn build
+	cd frontend && yarn build
 generate:
 	${MAKE} swagger-clean
 	go generate ./...

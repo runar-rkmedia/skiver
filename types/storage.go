@@ -6,6 +6,7 @@ import (
 
 type Storage interface {
 	Size() (int64, error)
+
 	GetUser(userId string) (User, error)
 	GetUserByUserName(userName string) (User, error)
 	CreateUser(user User) (User, error)
@@ -14,6 +15,10 @@ type Storage interface {
 	CreateLocale(locale Locale) (Locale, error)
 	GetLocaleFilter(filter ...Locale) (Locale, error)
 	GetLocales() (map[string]Locale, error)
+
+	GetProject(ID string) (*Project, error)
+	CreateProject(locale Project) (Project, error)
+	GetProjects() (map[string]Project, error)
 }
 
 type Entity struct {

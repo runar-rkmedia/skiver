@@ -81,6 +81,17 @@ info:
   title: Skiver API.
   version: 0.0.1
 paths:
+  /api/serverInfo/:
+    get:
+      summary: Information about the server
+      operationId: getServerInfo
+      responses:
+        "200":
+          $ref: '#/responses/serverInfo'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - server
   /api/project/:
     get:
       summary: List projects
@@ -124,6 +135,19 @@ paths:
       tags:
       - translation
   /api/login/:
+    get:
+      summary: Get login-information
+      description: "Returns information about the logged in user"
+      operationId: getLogin
+      responses:
+        "200":
+          $ref: '#/responses/loginResponse'
+        "403":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - auth
     post:
       security: []
       summary: Login

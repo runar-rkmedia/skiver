@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	ErrMissingIdArg  = errors.New("Missing id as argument")
+	ErrMissingIdArg = errors.New("Missing id as argument")
+	// deprecated. return pointer instead
 	ErrNotFound      = errors.New("Not found")
 	ErrMissingBucket = errors.New("Bucket not found")
 )
@@ -35,7 +36,7 @@ func NewBbolt(l logger.AppLogger, path string, pubsub PubSubPublisher) (bb BBolt
 	bb.pubsub = pubsub
 	bb.Marshaller = Gob{}
 	err = bb.Update(func(t *bolt.Tx) error {
-		buckets := [][]byte{BucketUsers, BucketLocales, BucketTranslations}
+		buckets := [][]byte{BucketUsers, BucketLocales, BucketTranslations, BucketProjects}
 		for i := 0; i < len(buckets); i++ {
 			_, err := t.CreateBucketIfNotExists(buckets[i])
 			if err != nil {
@@ -152,4 +153,5 @@ var (
 	BucketUsers        = []byte("users")
 	BucketLocales      = []byte("locales")
 	BucketTranslations = []byte("translations")
+	BucketProjects     = []byte("projects")
 )

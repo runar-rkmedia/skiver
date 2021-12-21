@@ -16,3 +16,10 @@ type ServerInfo struct {
 	DatabaseSize    int64
 	DatabaseSizeStr string
 }
+
+// Server info
+// swagger:response
+type serverInfo struct {
+	// in:body
+	Body []ServerInfo
+}

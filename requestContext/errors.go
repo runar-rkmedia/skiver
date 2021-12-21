@@ -40,10 +40,12 @@ const (
 	CodeErrAuthenticationRequired ErrorCodes = "Error: Authentication required"
 	CodeErrAuthoriziationFailed   ErrorCodes = "Error: Authorization failed"
 
-	CodeErrLocale ErrorCodes = "Error: Locale error"
+	CodeErrLocale  ErrorCodes = "Error: Locale error"
+	CodeErrProject ErrorCodes = "Error: Project error"
 
 	CodeErrNotFoundLocale ErrorCodes = "Error: Locale not found"
 	CodeErrNotFoundUser   ErrorCodes = "Error: User not found"
 
 	CodeErrDBCreateLocale ErrorCodes = "Error: Database Create Locale"
+	CodeErrCreateProject  ErrorCodes = "Error: Database Create Project"
 )

@@ -1,0 +1,274 @@
+:root {
+  --color-error-icon: hsl(1.1, 83.2%, 62.5%);
+  --color-warning-icon: hsl(35.8, 100%, 50%);
+  --color-info-icon: hsl(199, 92%, 56%);
+  --color-success-icon: hsl(122.4, 39.4%, 49.2%);
+  --color-secondary: var(--color-teal-500);
+  --color-secondary-300: var(--color-teal-500);
+  --color-secondary-700: var(--color-teal-700);
+  --color-primary: var(--color-indigo-500);
+  --color-primary-300: var(--color-indigo-500);
+  --color-primary-700: var(--color-indigo-500);
+  --color-danger-300: var(--color-orange-300);
+  --color-danger:  var(--color-orange-500);
+  --color-danger-700: var(--color-orange-700);
+}
+.color-error {
+  color: var(--color-error-icon);
+}
+.color-warning {
+  color: var(--color-warning-icon);
+}
+.color-info {
+  color: var(--color-info-icon);
+}
+.color-success {
+  color: var(--color-success-icon);
+}
+.color-primary {
+  color: var(--color-primary);
+}
+.color-secondary {
+  color: var(--color-secondary);
+}
+.color-tertiary {
+  color: var(--color-red-500);
+}
+body {
+  background-color: var(--color-black);
+  font-family: var(--font-sans);
+  margin: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+.error.fas {
+  color: var(--color-error-icon);
+}
+.warning.fas {
+  color: var(--color-warning-icon);
+}
+.info.fas {
+  color: var(--color-info-icon);
+}
+.success.fas {
+  color: var(--color-success-icon);
+}
+
+paper {
+  display: block;
+  box-shadow: var(--elevation-4);
+  border-radius: var(--radius-2xl);
+  background-color: var(--color-grey-100);
+  padding-inline: var(--size-4);
+  padding-block: var(--size-2);
+  margin-block-end: var(--size-8);
+  position: relative;
+}
+paper .collapse h3 {
+  margin-block: var(--size-1);
+}
+paper paper {
+  border: 1px solid var(--color-black);
+  box-shadow: var(--elevation-6);
+}
+
+nav .active .fas {
+  transform: scale(1.2);
+}
+
+label.checkbox {
+  flex-direction: row;
+  align-items: center;
+}
+label.checkbox input {
+  order: -1;
+  height: var(--size-6);
+  width: var(--size-6);
+  margin-inline-end: var(--size-4);
+}
+
+label {
+  font-size: 1.2rem;
+  margin-block-start: var(--size-4);
+  margin-block-end: var(--size-2);
+}
+
+input,
+select {
+  font-size: 1.2rem;
+  padding: var(--size-2);
+  border-radius: var(--radius-md);
+}
+input:focus,
+select:focus {
+  box-shadow: var(--elevation-4);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+form label {
+  display: flex;
+  flex-direction: column;
+}
+
+nav button,
+.btn-reset,
+.icon-button {
+  border: none;
+  cursor: pointer;
+  margin: 0;
+  padding: var(--size-1) var(--size-2);
+  width: auto;
+  overflow: visible;
+
+  background: transparent;
+
+  /* inherit font & color from ancestor */
+  color: inherit;
+  font: inherit;
+
+  /* Normalize `line-height`. Cannot be changed from `normal` in Firefox 4+. */
+  line-height: normal;
+
+  /* Corrects font smoothing for webkit */
+  -webkit-font-smoothing: inherit;
+  -moz-osx-font-smoothing: inherit;
+
+  /* Corrects inability to style clickable `input` types in iOS */
+  -webkit-appearance: none;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button.primary,
+button.danger,
+button.secondary {
+  padding-inline: var(--size-4);
+  padding-block: var(--size-2);
+}
+
+button.primary {
+  background-color: var(--color-primary);
+  color: var(--color-grey-100);
+}
+button.primary:focus:not(:disabled),
+button.primary:hover:not(:disabled) {
+  background-color: var(--color-primary-700);
+}
+button.primary:disabled {
+  background-color: var(--color-primary-300);
+}
+
+button.danger {
+  background-color: var(--color-danger);
+  color: var(--color-grey-100);
+}
+button.danger:focus:not(:disabled),
+button.danger:hover:not(:disabled) {
+  background-color: var(--color-danger-700);
+}
+button.danger:disabled {
+  background-color: var(--color-danger-300);
+}
+
+button.secondary:disabled {
+  background-color: var(--color-secondary-300);
+}
+button.secondary {
+  background-color: var(--color-secondary);
+  color: var(--color-grey-100);
+}
+button.secondary:focus:not(:disabled),
+button.secondary:hover:not(:disabled) {
+  background-color: var(--color-secondary-700);
+}
+
+.icon-button {
+  padding: var(--size-1) var(--size-2);
+}
+
+code {
+  background-color: var(--color-grey-300);
+  padding-inline: var(--size-2);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  padding-block: 4px;
+  margin-block: -4px;
+  margin-inline: var(--size-2);
+}
+
+.label-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.label-group label {
+  width: 100%;
+}
+@media screen and (min-width: 576px) {
+  .label-group {
+    flex-direction: row;
+  }
+  .label-group label {
+    flex: 1;
+    min-width: 22ch;
+  }
+}
+
+.label-group label:not(:last-of-type) {
+  margin-inline-end: var(--size-4);
+}
+
+table {
+  width: 100%;
+}
+
+label .required::after {
+  content: " (Required)";
+  opacity: 0.7;
+}
+
+table * {
+  text-align: left;
+}
+table tr:nth-child(odd) {
+  background-color: var(--color-grey-300);
+}
+
+input:invalid, input[aria-invalid]
+textarea:invalid, textarea[aria-invalid]
+select:invalid, select[aria-invalid]
+  {
+  color: var(--color-error-icon);
+}
+.validation-error-msg {
+  color: var(--color-error-icon)
+}
+.input-button {
+  position: relative;
+}
+.input-button input {
+  width: 100%;
+  border-inline-end: unset;
+  border-bottom-right-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
+}
+.input-button button:last-of-type {
+  position: absolute;
+  right:0;
+  top: 0;
+  height: 100%;
+  border-bottom-right-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
+  border: 1px solid var(--color-black);
+
+}

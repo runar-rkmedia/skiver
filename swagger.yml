@@ -161,13 +161,60 @@ definitions:
     type: object
   LoginResponse:
     properties:
-      Expires:
+      Active:
+        description: If not active, the account cannot be used until any issues are
+          resolved.
+        type: boolean
+      createdAt:
+        description: Time of which the entity was created in the database
         format: date-time
         type: string
-      ExpiresIn:
+        x-go-name: CreatedAt
+      createdBy:
+        description: User id refering to the user who created the item
         type: string
-      Ok:
+        x-go-name: CreatedBy
+      deleted:
+        description: |-
+          If set, the item is considered deleted. The item will normally not get deleted from the database,
+          but it may if cleanup is required.
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      expires:
+        format: date-time
+        type: string
+        x-go-name: Expires
+      expires_in:
+        type: string
+        x-go-name: ExpiresIn
+      id:
+        description: Unique identifier of the entity
+        type: string
+        x-go-name: ID
+      ok:
         type: boolean
+        x-go-name: Ok
+      temporary_password:
+        description: If set, the user must change the password before the account
+          can be used
+        type: boolean
+        x-go-name: TemporaryPassword
+      updatedAt:
+        description: Time of which the entity was updated, if any
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updatedBy:
+        description: User id refering to who created the item
+        type: string
+        x-go-name: UpdatedBy
+      userName:
+        type: string
+        x-go-name: UserName
+    required:
+    - createdAt
+    - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
   Project:
@@ -255,6 +302,30 @@ definitions:
         x-go-name: Title
     required:
     - title
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
+  ServerInfo:
+    properties:
+      BuildDate:
+        description: Date of build
+        format: date-time
+        type: string
+      DatabaseSize:
+        description: Size of database.
+        format: int64
+        type: integer
+      DatabaseSizeStr:
+        type: string
+      GitHash:
+        description: Short githash for current commit
+        type: string
+      ServerStartedAt:
+        description: When the server was started
+        format: date-time
+        type: string
+      Version:
+        description: Version-number for commit
+        type: string
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
   Translation:
@@ -454,6 +525,19 @@ paths:
       tags:
       - locale
   /api/login/:
+    get:
+      description: Returns information about the logged in user
+      operationId: getLogin
+      responses:
+        "200":
+          $ref: '#/responses/loginResponse'
+        "403":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Get login-information
+      tags:
+      - auth
     post:
       description: Login to aquire a token, set in a cookie
       operationId: login
@@ -499,6 +583,17 @@ paths:
       summary: Create a new project
       tags:
       - project
+  /api/serverInfo/:
+    get:
+      operationId: getServerInfo
+      responses:
+        "200":
+          $ref: '#/responses/serverInfo'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Information about the server
+      tags:
+      - server
   /api/translation/:
     get:
       operationId: getTranslation
@@ -572,6 +667,12 @@ responses:
     schema:
       $ref: '#/definitions/LoginResponse'
       type: object
+  serverInfo:
+    description: Server info
+    schema:
+      items:
+        $ref: '#/definitions/ServerInfo'
+      type: array
 schemes:
 - http
 security:

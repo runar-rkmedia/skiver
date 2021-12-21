@@ -28,7 +28,8 @@ type loginResponse struct {
 }
 
 type LoginResponse struct {
-	Ok        bool
-	Expires   time.Time
-	ExpiresIn string
+	User
+	Ok        bool      `json:"ok"`
+	Expires   time.Time `json:"expires"`
+	ExpiresIn string    `json:"expires_in"`
 }

@@ -4,6 +4,9 @@
 //go:generate swagger generate model -f swagger.yml
 //go:generate echo "Validating spec..."
 //go:generate swagger validate swagger.yml
+//go:generate echo "Generating frontend-types"
+//go:generate sh -c "cd frontend && yarn gen"
+//go:generate echo "done"
 package main
 
 import (
@@ -27,6 +30,7 @@ import (
 	"github.com/runar-rkmedia/gabyoall/logger"
 	"github.com/runar-rkmedia/skiver/bboltStorage"
 	cfg "github.com/runar-rkmedia/skiver/config"
+	"github.com/runar-rkmedia/skiver/frontend"
 	"github.com/runar-rkmedia/skiver/handlers"
 	"github.com/runar-rkmedia/skiver/localuser"
 	"github.com/runar-rkmedia/skiver/models"
@@ -93,7 +97,6 @@ func getDefaultDBLocation() string {
 	return "./skiver.bbolt"
 }
 
-//g//o:generate sh -c "cd ../frontend && yarn gen"
 func main() {
 	err := cfg.InitConfig()
 	if err != nil {
@@ -196,9 +199,9 @@ func main() {
 
 	if isDev {
 		// In development, we serve the file directly.
-		// handler.Handle("/", http.FileServer(http.Dir("./frontend/dist/")))
+		handler.Handle("/", http.FileServer(http.Dir("./frontend/dist/")))
 	} else {
-		// handler.Handle("/", frontend.DistServer)
+		handler.Handle("/", frontend.DistServer)
 	}
 	l.Info().Str("address", cfg.Address).Int("port", cfg.Port).Bool("redirectHttpToHttps", useCert && cfg.RedirectPort != 0).Bool("tls", useCert).Msg("Creating listener")
 	srv := http.Server{Addr: address, Handler: handler}
@@ -294,6 +297,23 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 				rc.WriteErr(err, requestContext.CodeErrReadBody)
 			}
 		}
+		// Check login
+		var session *localuser.Session
+		if cookie, err := r.Cookie("token"); err == nil {
+			fmt.Println("cooki???e", cookie, err)
+			sess, err := userSessions.GetSession(cookie.Value)
+			fmt.Println(sess, err)
+			if err == nil {
+				expiresD := sess.Expires.Sub(time.Now())
+				rw.Header().Add("session-expires", sess.Expires.String())
+				rw.Header().Add("session-expires-in", expiresD.String())
+				rw.Header().Add("session-expires-in-seconds", strconv.Itoa(int(expiresD.Seconds())))
+				session = &sess
+			}
+		} else {
+			fmt.Println("cookie", cookie, err)
+
+		}
 
 		switch paths[0] {
 		case "swagger", "swagger.yaml", "swagger.yml":
@@ -321,6 +341,21 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 				return
 			}
 		case "login":
+			if isGet {
+				fmt.Println("sesssss", session)
+				if session == nil {
+					rc.WriteError("Not logged in", requestContext.CodeErrAuthenticationRequired)
+					return
+				}
+				expiresD := session.Expires.Sub(time.Now())
+				rc.WriteOutput(types.LoginResponse{
+					User:      session.User,
+					Ok:        true,
+					Expires:   session.Expires,
+					ExpiresIn: expiresD.String(),
+				}, http.StatusOK)
+				return
+			}
 			if !isPost {
 				rc.WriteErr(fmt.Errorf("Only POST is allowed here"), requestContext.CodeErrMethodNotAllowed)
 				break
@@ -400,6 +435,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 			rw.Header().Add("session-expires-in-seconds", strconv.Itoa(int(expiresD.Seconds())))
 			http.SetCookie(rw, cookie)
 			rc.WriteOutput(types.LoginResponse{
+				User:      session.User,
 				Ok:        true,
 				Expires:   session.Expires,
 				ExpiresIn: expiresD.String(),
@@ -407,28 +443,42 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 			return
 
 		}
+
 		// Login required beyond this point
 
-		cookie, err := r.Cookie("token")
-		if err != nil {
-			rc.WriteError("Not logged in (no cookie)", requestContext.CodeErrAuthenticationRequired)
+		if session == nil {
+			rc.WriteError("Not logged in", requestContext.CodeErrAuthenticationRequired)
 			return
 		}
-		session, err := userSessions.GetSession(cookie.Value)
-		if err != nil {
-			rc.WriteError("Not logged in (session not found)", requestContext.CodeErrAuthenticationRequired)
-			return
-		}
-		expiresD := session.Expires.Sub(time.Now())
-		rw.Header().Add("session-expires", session.Expires.String())
-		rw.Header().Add("session-expires-in", expiresD.String())
-		rw.Header().Add("session-expires-in-seconds", strconv.Itoa(int(expiresD.Seconds())))
 		rc.L.Debug().
 			Str("path", path).
 			Str("username", session.User.UserName).
 			Msg("User is perorming action on route")
 
 		switch paths[0] {
+		case "project":
+			if isGet {
+				projects, err := ctx.DB.GetProjects()
+				rc.WriteAuto(projects, err, requestContext.CodeErrProject)
+				return
+			}
+			if isPost {
+				var j models.ProjectInput
+				if err := rc.ValidateBytes(body, &j); err != nil {
+					return
+				}
+
+				l := types.Project{
+					ProjectInput: types.ProjectInput{
+						Title:        *j.Title,
+						Description:  j.Description,
+						IncludedTags: j.IncludedTags,
+					},
+				}
+				locale, err := ctx.DB.CreateProject(l)
+				rc.WriteAuto(locale, err, requestContext.CodeErrCreateProject)
+				return
+			}
 		case "locale":
 			if isGet {
 				locales, err := ctx.DB.GetLocales()
@@ -464,46 +514,6 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 				rc.WriteOutput(locale, http.StatusCreated)
 				return
 			}
-			// // Create endpoint
-			// if isPost && len(paths) == 1 {
-			// 	var input types.EndpointPayload
-			// 	if err := rc.ValidateBytes(body, &input); err != nil {
-			// 		return
-			// 	}
-			// 	e, err := ctx.DB.CreateEndpoint(input)
-			// 	rc.WriteAuto(e, err, requestContext.CodeErrDBCreateEndpoint)
-			// 	return
-			// }
-			// // List endpoints
-			// if isGet && len(paths) == 1 {
-			// 	es, err := ctx.DB.Endpoints()
-			// 	rc.WriteAuto(es, err, requestContext.CodeErrEndpoint)
-			// 	return
-			// }
-			// // Get endpoint
-			// if isGet && len(paths) == 2 {
-			// 	es, err := ctx.DB.Endpoint(paths[1])
-			// 	rc.WriteAuto(es, err, requestContext.CodeErrEndpoint)
-			// 	return
-			// }
-			// // Update endpoint
-			// if isPut && len(paths) == 2 {
-			// 	var input types.EndpointPayload
-			// 	if err := rc.ValidateBytes(body, &input); err != nil {
-			// 		return
-			// 	}
-			// 	e, err := ctx.DB.UpdateEndpoint(paths[1], input)
-			// 	rc.WriteAuto(e, err, requestContext.CodeErrDBUpdateEndpoint)
-			// 	return
-			// }
-			// // Delete endpoint
-			// if isDelete && len(paths) == 2 {
-			// 	e, err := ctx.DB.SoftDeleteEndpoint(paths[1])
-			// 	rc.WriteAuto(e, err, requestContext.CodeErrDBDeleteEndpoint)
-			// 	return
-			// }
-			// http.FileServer(frontend.StaticFiles).ServeHTTP(rc.Rw, rc.rw)
-
 		}
 		rc.WriteError(fmt.Sprintf("No route registerd for: %s %s", r.Method, r.URL.Path), requestContext.CodeErrNoRoute)
 	}

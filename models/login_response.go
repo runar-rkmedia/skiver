@@ -19,22 +19,71 @@ import (
 // swagger:model LoginResponse
 type LoginResponse struct {
 
+	// If not active, the account cannot be used until any issues are resolved.
+	Active bool `json:"Active,omitempty"`
+
+	// Time of which the entity was created in the database
+	// Required: true
+	// Format: date-time
+	CreatedAt *strfmt.DateTime `json:"createdAt"`
+
+	// User id refering to the user who created the item
+	CreatedBy string `json:"createdBy,omitempty"`
+
+	// If set, the item is considered deleted. The item will normally not get deleted from the database,
+	// but it may if cleanup is required.
+	// Format: date-time
+	Deleted strfmt.DateTime `json:"deleted,omitempty"`
+
 	// expires
 	// Format: date-time
-	Expires strfmt.DateTime `json:"Expires,omitempty"`
+	Expires strfmt.DateTime `json:"expires,omitempty"`
 
 	// expires in
-	ExpiresIn string `json:"ExpiresIn,omitempty"`
+	ExpiresIn string `json:"expires_in,omitempty"`
+
+	// Unique identifier of the entity
+	// Required: true
+	ID *string `json:"id"`
 
 	// ok
-	Ok bool `json:"Ok,omitempty"`
+	Ok bool `json:"ok,omitempty"`
+
+	// If set, the user must change the password before the account can be used
+	TemporaryPassword bool `json:"temporary_password,omitempty"`
+
+	// Time of which the entity was updated, if any
+	// Format: date-time
+	UpdatedAt strfmt.DateTime `json:"updatedAt,omitempty"`
+
+	// User id refering to who created the item
+	UpdatedBy string `json:"updatedBy,omitempty"`
+
+	// user name
+	UserName string `json:"userName,omitempty"`
 }
 
 // Validate validates this login response
 func (m *LoginResponse) Validate(formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.validateCreatedAt(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateDeleted(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateExpires(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateID(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateUpdatedAt(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -44,12 +93,58 @@ func (m *LoginResponse) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *LoginResponse) validateCreatedAt(formats strfmt.Registry) error {
+
+	if err := validate.Required("createdAt", "body", m.CreatedAt); err != nil {
+		return err
+	}
+
+	if err := validate.FormatOf("createdAt", "body", "date-time", m.CreatedAt.String(), formats); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *LoginResponse) validateDeleted(formats strfmt.Registry) error {
+	if swag.IsZero(m.Deleted) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("deleted", "body", "date-time", m.Deleted.String(), formats); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *LoginResponse) validateExpires(formats strfmt.Registry) error {
 	if swag.IsZero(m.Expires) { // not required
 		return nil
 	}
 
-	if err := validate.FormatOf("Expires", "body", "date-time", m.Expires.String(), formats); err != nil {
+	if err := validate.FormatOf("expires", "body", "date-time", m.Expires.String(), formats); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *LoginResponse) validateID(formats strfmt.Registry) error {
+
+	if err := validate.Required("id", "body", m.ID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *LoginResponse) validateUpdatedAt(formats strfmt.Registry) error {
+	if swag.IsZero(m.UpdatedAt) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("updatedAt", "body", "date-time", m.UpdatedAt.String(), formats); err != nil {
 		return err
 	}
 
