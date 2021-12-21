@@ -14,11 +14,10 @@ import (
 	"github.com/go-openapi/validate"
 )
 
-// Locale # See https://en.wikipedia.org/wiki/Language_code for more information
-// TODO: consider supporting other standards here, like Windows(?), which seem to have their own thing.
+// Project project
 //
-// swagger:model Locale
-type Locale struct {
+// swagger:model Project
+type Project struct {
 
 	// Time of which the entity was created in the database
 	// Required: true
@@ -33,27 +32,26 @@ type Locale struct {
 	// Format: date-time
 	Deleted strfmt.DateTime `json:"deleted,omitempty"`
 
-	// List of other Locales in preferred order for fallbacks
-	Fallbacks []string `json:"fallbacks"`
+	// description
+	// Example: Project-description
+	// Max Length: 8000
+	Description string `json:"description,omitempty"`
 
 	// Unique identifier of the entity
 	// Required: true
 	ID *string `json:"id"`
 
-	// Represents the IETF language tag, e.g. en / en-US
-	IETF string `json:"ietf,omitempty"`
-
-	// Represents the ISO-639-1 string, e.g. en
-	Iso6391 string `json:"iso_639_1,omitempty"`
-
-	// Represents the ISO-639-2 string, e.g. eng
-	Iso6392 string `json:"iso_639_2,omitempty"`
-
-	// Represents the ISO-639-3 string, e.g. eng
-	Iso6393 string `json:"iso_639_3,omitempty"`
+	// If present, any translations with tags matching will also be included in the exported translations
+	// If the project contains conflicting translations, the project has presedence.
+	// Example: ["actions","general"]
+	IncludedTags []string `json:"included_tags"`
 
 	// title
-	Title string `json:"title,omitempty"`
+	// Example: My Great Project
+	// Required: true
+	// Max Length: 400
+	// Min Length: 2
+	Title *string `json:"title"`
 
 	// Time of which the entity was updated, if any
 	// Format: date-time
@@ -63,8 +61,8 @@ type Locale struct {
 	UpdatedBy string `json:"updatedBy,omitempty"`
 }
 
-// Validate validates this locale
-func (m *Locale) Validate(formats strfmt.Registry) error {
+// Validate validates this project
+func (m *Project) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateCreatedAt(formats); err != nil {
@@ -75,7 +73,15 @@ func (m *Locale) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateDescription(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateID(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTitle(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -89,7 +95,7 @@ func (m *Locale) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Locale) validateCreatedAt(formats strfmt.Registry) error {
+func (m *Project) validateCreatedAt(formats strfmt.Registry) error {
 
 	if err := validate.Required("createdAt", "body", m.CreatedAt); err != nil {
 		return err
@@ -102,7 +108,7 @@ func (m *Locale) validateCreatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Locale) validateDeleted(formats strfmt.Registry) error {
+func (m *Project) validateDeleted(formats strfmt.Registry) error {
 	if swag.IsZero(m.Deleted) { // not required
 		return nil
 	}
@@ -114,7 +120,19 @@ func (m *Locale) validateDeleted(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Locale) validateID(formats strfmt.Registry) error {
+func (m *Project) validateDescription(formats strfmt.Registry) error {
+	if swag.IsZero(m.Description) { // not required
+		return nil
+	}
+
+	if err := validate.MaxLength("description", "body", m.Description, 8000); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Project) validateID(formats strfmt.Registry) error {
 
 	if err := validate.Required("id", "body", m.ID); err != nil {
 		return err
@@ -123,7 +141,24 @@ func (m *Locale) validateID(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Locale) validateUpdatedAt(formats strfmt.Registry) error {
+func (m *Project) validateTitle(formats strfmt.Registry) error {
+
+	if err := validate.Required("title", "body", m.Title); err != nil {
+		return err
+	}
+
+	if err := validate.MinLength("title", "body", *m.Title, 2); err != nil {
+		return err
+	}
+
+	if err := validate.MaxLength("title", "body", *m.Title, 400); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Project) validateUpdatedAt(formats strfmt.Registry) error {
 	if swag.IsZero(m.UpdatedAt) { // not required
 		return nil
 	}
@@ -135,13 +170,13 @@ func (m *Locale) validateUpdatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this locale based on context it is used
-func (m *Locale) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+// ContextValidate validates this project based on context it is used
+func (m *Project) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	return nil
 }
 
 // MarshalBinary interface implementation
-func (m *Locale) MarshalBinary() ([]byte, error) {
+func (m *Project) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -149,8 +184,8 @@ func (m *Locale) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *Locale) UnmarshalBinary(b []byte) error {
-	var res Locale
+func (m *Project) UnmarshalBinary(b []byte) error {
+	var res Project
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

@@ -81,13 +81,57 @@ info:
   title: Skiver API.
   version: 0.0.1
 paths:
+  /api/project/:
+    get:
+      summary: List projects
+      operationId: getProject
+      responses:
+        "200":
+          $ref: '#/responses/ProjectResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - project
+    post:
+      summary: Create a new project
+      operationId: createProject
+      responses:
+        "200":
+          $ref: '#/responses/ProjectsResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - project
+  /api/translation/:
+    get:
+      summary: List translations
+      operationId: getTranslation
+      responses:
+        "200":
+          $ref: '#/responses/TranslationsResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - translation
+    post:
+      summary: Create a new translation
+      operationId: createTranslation
+      responses:
+        "200":
+          $ref: '#/responses/TranslationResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - translation
   /api/login/:
     post:
       security: []
+      summary: Login
       description: Login to aquire a token, set in a cookie
       operationId: login
       parameters:
       - in: body
+        required: true
         name: LoginInput
         schema:
           $ref: '#/definitions/LoginInput'
@@ -100,10 +144,11 @@ paths:
       - auth
   /api/locale/:
     post:
-      description: Create a locale
+      summary: Create a locale
       operationId: listLocale
       parameters:
       - in: body
+        required: true
         name: LocaleInput
         schema:
           $ref: '#/definitions/LocaleInput'
@@ -115,7 +160,7 @@ paths:
       tags:
       - locale
     get:
-      description: List locales
+      summary: List locales
       operationId: getLocale
       responses:
         "200":
@@ -156,6 +201,37 @@ responses:
       items:
         $ref: '#/definitions/Locale'
       type: array
+  ProjectResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/Project'
+      type: object
+  ProjectsResponse:
+    description: ""
+    schema:
+      items:
+        $ref: '#/definitions/Project'
+      type: array
+  TranslationResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/Translation'
+      type: object
+  TranslationsResponse:
+    description: ""
+    schema:
+      items:
+        $ref: '#/definitions/Translation'
+      type: array
 schemes:
 - http
 swagger: "2.0"
+tags: 
+  - name: project
+    description: More or less like a folder
+  - name: locale
+    description: Language-like
+  - name: translation
+    description: The specific translation of some key
+  - name: auth
+    description: Authentication and Authorization

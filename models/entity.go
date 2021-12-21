@@ -14,11 +14,10 @@ import (
 	"github.com/go-openapi/validate"
 )
 
-// Locale # See https://en.wikipedia.org/wiki/Language_code for more information
-// TODO: consider supporting other standards here, like Windows(?), which seem to have their own thing.
+// Entity entity
 //
-// swagger:model Locale
-type Locale struct {
+// swagger:model Entity
+type Entity struct {
 
 	// Time of which the entity was created in the database
 	// Required: true
@@ -33,27 +32,9 @@ type Locale struct {
 	// Format: date-time
 	Deleted strfmt.DateTime `json:"deleted,omitempty"`
 
-	// List of other Locales in preferred order for fallbacks
-	Fallbacks []string `json:"fallbacks"`
-
 	// Unique identifier of the entity
 	// Required: true
 	ID *string `json:"id"`
-
-	// Represents the IETF language tag, e.g. en / en-US
-	IETF string `json:"ietf,omitempty"`
-
-	// Represents the ISO-639-1 string, e.g. en
-	Iso6391 string `json:"iso_639_1,omitempty"`
-
-	// Represents the ISO-639-2 string, e.g. eng
-	Iso6392 string `json:"iso_639_2,omitempty"`
-
-	// Represents the ISO-639-3 string, e.g. eng
-	Iso6393 string `json:"iso_639_3,omitempty"`
-
-	// title
-	Title string `json:"title,omitempty"`
 
 	// Time of which the entity was updated, if any
 	// Format: date-time
@@ -63,8 +44,8 @@ type Locale struct {
 	UpdatedBy string `json:"updatedBy,omitempty"`
 }
 
-// Validate validates this locale
-func (m *Locale) Validate(formats strfmt.Registry) error {
+// Validate validates this entity
+func (m *Entity) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateCreatedAt(formats); err != nil {
@@ -89,7 +70,7 @@ func (m *Locale) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Locale) validateCreatedAt(formats strfmt.Registry) error {
+func (m *Entity) validateCreatedAt(formats strfmt.Registry) error {
 
 	if err := validate.Required("createdAt", "body", m.CreatedAt); err != nil {
 		return err
@@ -102,7 +83,7 @@ func (m *Locale) validateCreatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Locale) validateDeleted(formats strfmt.Registry) error {
+func (m *Entity) validateDeleted(formats strfmt.Registry) error {
 	if swag.IsZero(m.Deleted) { // not required
 		return nil
 	}
@@ -114,7 +95,7 @@ func (m *Locale) validateDeleted(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Locale) validateID(formats strfmt.Registry) error {
+func (m *Entity) validateID(formats strfmt.Registry) error {
 
 	if err := validate.Required("id", "body", m.ID); err != nil {
 		return err
@@ -123,7 +104,7 @@ func (m *Locale) validateID(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Locale) validateUpdatedAt(formats strfmt.Registry) error {
+func (m *Entity) validateUpdatedAt(formats strfmt.Registry) error {
 	if swag.IsZero(m.UpdatedAt) { // not required
 		return nil
 	}
@@ -135,13 +116,13 @@ func (m *Locale) validateUpdatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this locale based on context it is used
-func (m *Locale) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+// ContextValidate validates this entity based on context it is used
+func (m *Entity) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	return nil
 }
 
 // MarshalBinary interface implementation
-func (m *Locale) MarshalBinary() ([]byte, error) {
+func (m *Entity) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -149,8 +130,8 @@ func (m *Locale) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *Locale) UnmarshalBinary(b []byte) error {
-	var res Locale
+func (m *Entity) UnmarshalBinary(b []byte) error {
+	var res Entity
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

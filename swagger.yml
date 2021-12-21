@@ -13,28 +13,8 @@ definitions:
       error:
         type: string
     type: object
-  Locale:
-    description: '# See https://en.wikipedia.org/wiki/Language_code for more information'
+  Entity:
     properties:
-      Fallbacks:
-        description: List of other Locales in preferred order for fallbacks
-        items:
-          type: string
-        type: array
-      IETF:
-        description: Represents the IETF language tag, e.g. en / en-US
-        type: string
-      Iso639_1:
-        description: Represents the ISO-639-1 string, e.g. en
-        type: string
-      Iso639_2:
-        description: Represents the ISO-639-2 string, e.g. eng
-        type: string
-      Iso639_3:
-        description: Represents the ISO-639-3 string, e.g. eng
-        type: string
-      Title:
-        type: string
       createdAt:
         description: Time of which the entity was created in the database
         format: date-time
@@ -55,6 +35,70 @@ definitions:
         description: Unique identifier of the entity
         type: string
         x-go-name: ID
+      updatedAt:
+        description: Time of which the entity was updated, if any
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updatedBy:
+        description: User id refering to who created the item
+        type: string
+        x-go-name: UpdatedBy
+    required:
+    - createdAt
+    - id
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
+  Locale:
+    description: |-
+      # See https://en.wikipedia.org/wiki/Language_code for more information
+      TODO: consider supporting other standards here, like Windows(?), which seem to have their own thing.
+    properties:
+      createdAt:
+        description: Time of which the entity was created in the database
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      createdBy:
+        description: User id refering to the user who created the item
+        type: string
+        x-go-name: CreatedBy
+      deleted:
+        description: |-
+          If set, the item is considered deleted. The item will normally not get deleted from the database,
+          but it may if cleanup is required.
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      fallbacks:
+        description: List of other Locales in preferred order for fallbacks
+        items:
+          type: string
+        type: array
+        x-go-name: Fallbacks
+      id:
+        description: Unique identifier of the entity
+        type: string
+        x-go-name: ID
+      ietf:
+        description: Represents the IETF language tag, e.g. en / en-US
+        type: string
+        x-go-name: IETF
+      iso_639_1:
+        description: Represents the ISO-639-1 string, e.g. en
+        type: string
+        x-go-name: Iso639_1
+      iso_639_2:
+        description: Represents the ISO-639-2 string, e.g. eng
+        type: string
+        x-go-name: Iso639_2
+      iso_639_3:
+        description: Represents the ISO-639-3 string, e.g. eng
+        type: string
+        x-go-name: Iso639_3
+      title:
+        type: string
+        x-go-name: Title
       updatedAt:
         description: Time of which the entity was updated, if any
         format: date-time
@@ -126,6 +170,250 @@ definitions:
         type: boolean
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
+  Project:
+    properties:
+      createdAt:
+        description: Time of which the entity was created in the database
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      createdBy:
+        description: User id refering to the user who created the item
+        type: string
+        x-go-name: CreatedBy
+      deleted:
+        description: |-
+          If set, the item is considered deleted. The item will normally not get deleted from the database,
+          but it may if cleanup is required.
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      description:
+        example: Project-description
+        maxLength: 8000
+        type: string
+        x-go-name: Description
+      id:
+        description: Unique identifier of the entity
+        type: string
+        x-go-name: ID
+      included_tags:
+        description: |-
+          If present, any translations with tags matching will also be included in the exported translations
+          If the project contains conflicting translations, the project has presedence.
+        example:
+        - actions
+        - general
+        items:
+          type: string
+        type: array
+        x-go-name: IncludedTags
+      title:
+        example: My Great Project
+        maxLength: 400
+        minLength: 2
+        type: string
+        x-go-name: Title
+      updatedAt:
+        description: Time of which the entity was updated, if any
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updatedBy:
+        description: User id refering to who created the item
+        type: string
+        x-go-name: UpdatedBy
+    required:
+    - createdAt
+    - id
+    - title
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
+  ProjectInput:
+    properties:
+      description:
+        example: Project-description
+        maxLength: 8000
+        type: string
+        x-go-name: Description
+      included_tags:
+        description: |-
+          If present, any translations with tags matching will also be included in the exported translations
+          If the project contains conflicting translations, the project has presedence.
+        example:
+        - actions
+        - general
+        items:
+          type: string
+        type: array
+        x-go-name: IncludedTags
+      title:
+        example: My Great Project
+        maxLength: 400
+        minLength: 2
+        type: string
+        x-go-name: Title
+    required:
+    - title
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
+  Translation:
+    properties:
+      aliases:
+        items:
+          type: string
+        type: array
+        x-go-name: Aliases
+      context:
+        description: Used as a variation for the key
+        type: string
+        x-go-name: Context
+      createdAt:
+        description: Time of which the entity was created in the database
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      createdBy:
+        description: User id refering to the user who created the item
+        type: string
+        x-go-name: CreatedBy
+      deleted:
+        description: |-
+          If set, the item is considered deleted. The item will normally not get deleted from the database,
+          but it may if cleanup is required.
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      description:
+        description: Description for the key, its use and where the key is used.
+        type: string
+        x-go-name: Description
+      id:
+        description: Unique identifier of the entity
+        type: string
+        x-go-name: ID
+      key:
+        description: |-
+          Final part of the identifiying key.
+          With the example-input, the complete generated key would be store.product.description
+        example: description
+        type: string
+        x-go-name: Key
+      locale_id:
+        type: string
+        x-go-name: LocaleID
+      prefix:
+        description: Can be a dot-separated path-like string
+        example: store.products
+        type: string
+        x-go-name: Prefix
+      project:
+        type: string
+        x-go-name: ProjectID
+      tags:
+        items:
+          type: string
+        type: array
+        x-go-name: Tag
+      title:
+        description: Title with short description of the key
+        type: string
+        x-go-name: Title
+      updatedAt:
+        description: Time of which the entity was updated, if any
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updatedBy:
+        description: User id refering to who created the item
+        type: string
+        x-go-name: UpdatedBy
+      value:
+        description: The pre-interpolated value to use  with translations
+        example: The {{productName}} fires up to {{count}} bullets of {{subject}}.
+        type: string
+        x-go-name: Value
+      variables:
+        additionalProperties:
+          type: object
+        description: |-
+          Variables used within the translation.
+          This helps with giving translators more context,
+          The value for the translation will be used in examples.
+        example:
+          count: 3
+          productName: X-Buster
+          subject: compressed solar energy
+        type: object
+        x-go-name: Variables
+    required:
+    - createdAt
+    - id
+    type: object
+    x-go-name: Translations
+    x-go-package: github.com/runar-rkmedia/skiver/types
+  TranslationInput:
+    properties:
+      aliases:
+        items:
+          type: string
+        type: array
+        x-go-name: Aliases
+      context:
+        description: Used as a variation for the key
+        type: string
+        x-go-name: Context
+      description:
+        description: Description for the key, its use and where the key is used.
+        type: string
+        x-go-name: Description
+      key:
+        description: |-
+          Final part of the identifiying key.
+          With the example-input, the complete generated key would be store.product.description
+        example: description
+        type: string
+        x-go-name: Key
+      locale_id:
+        type: string
+        x-go-name: LocaleID
+      prefix:
+        description: Can be a dot-separated path-like string
+        example: store.products
+        type: string
+        x-go-name: Prefix
+      project:
+        type: string
+        x-go-name: ProjectID
+      tags:
+        items:
+          type: string
+        type: array
+        x-go-name: Tag
+      title:
+        description: Title with short description of the key
+        type: string
+        x-go-name: Title
+      value:
+        description: The pre-interpolated value to use  with translations
+        example: The {{productName}} fires up to {{count}} bullets of {{subject}}.
+        type: string
+        x-go-name: Value
+      variables:
+        additionalProperties:
+          type: object
+        description: |-
+          Variables used within the translation.
+          This helps with giving translators more context,
+          The value for the translation will be used in examples.
+        example:
+          count: 3
+          productName: X-Buster
+          subject: compressed solar energy
+        type: object
+        x-go-name: Variables
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
 host: localhost
 info:
   description: |-
@@ -140,21 +428,21 @@ info:
 paths:
   /api/locale/:
     get:
-      description: List locales
       operationId: getLocale
       responses:
         "200":
           $ref: '#/responses/LocalesResponse'
         "500":
           $ref: '#/responses/apiError'
+      summary: List locales
       tags:
       - locale
     post:
-      description: Create a locale
       operationId: listLocale
       parameters:
       - in: body
         name: LocaleInput
+        required: true
         schema:
           $ref: '#/definitions/LocaleInput'
       responses:
@@ -162,6 +450,7 @@ paths:
           $ref: '#/responses/localeResponse'
         "500":
           $ref: '#/responses/apiError'
+      summary: Create a locale
       tags:
       - locale
   /api/login/:
@@ -171,6 +460,7 @@ paths:
       parameters:
       - in: body
         name: LoginInput
+        required: true
         schema:
           $ref: '#/definitions/LoginInput'
       responses:
@@ -179,8 +469,63 @@ paths:
         "500":
           $ref: '#/responses/apiError'
       security: []
+      summary: Login
       tags:
       - auth
+  /api/project/:
+    get:
+      operationId: getProject
+      responses:
+        "200":
+          $ref: '#/responses/ProjectResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: List projects
+      tags:
+      - project
+    post:
+      operationId: createProject
+      parameters:
+      - in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/ProjectInput'
+      responses:
+        "200":
+          $ref: '#/responses/ProjectsResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Create a new project
+      tags:
+      - project
+  /api/translation/:
+    get:
+      operationId: getTranslation
+      responses:
+        "200":
+          $ref: '#/responses/TranslationsResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: List translations
+      tags:
+      - translation
+    post:
+      operationId: createTranslation
+      parameters:
+      - in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/TranslationInput'
+      responses:
+        "200":
+          $ref: '#/responses/TranslationResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Create a new translation
+      tags:
+      - translation
 produces:
 - application/json
 - text/vnd.yaml
@@ -191,6 +536,28 @@ responses:
     schema:
       items:
         $ref: '#/definitions/Locale'
+      type: array
+  ProjectResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/Project'
+      type: object
+  ProjectsResponse:
+    description: ""
+    schema:
+      items:
+        $ref: '#/definitions/Project'
+      type: array
+  TranslationResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/Translation'
+      type: object
+  TranslationsResponse:
+    description: ""
+    schema:
+      items:
+        $ref: '#/definitions/Translation'
       type: array
   apiError:
     description: Consistant error-codes
@@ -210,3 +577,12 @@ schemes:
 security:
 - cookieAuth: []
 swagger: "2.0"
+tags:
+- description: More or less like a folder
+  name: project
+- description: Language-like
+  name: locale
+- description: The specific translation of some key
+  name: translation
+- description: Authentication and Authorization
+  name: auth

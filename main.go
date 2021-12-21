@@ -1,5 +1,9 @@
+//go:generate echo "Generating spec..."
 //go:generate swagger generate spec -i base-swagger.yml -x models -o swagger.yml --scan-models
+//go:generate echo "Generating model..."
 //go:generate swagger generate model -f swagger.yml
+//go:generate echo "Validating spec..."
+//go:generate swagger validate swagger.yml
 package main
 
 import (

@@ -14,11 +14,16 @@ import (
 	"github.com/go-openapi/validate"
 )
 
-// Locale # See https://en.wikipedia.org/wiki/Language_code for more information
-// TODO: consider supporting other standards here, like Windows(?), which seem to have their own thing.
+// Translations translations
 //
-// swagger:model Locale
-type Locale struct {
+// swagger:model Translations
+type Translations struct {
+
+	// aliases
+	Aliases []string `json:"aliases"`
+
+	// Used as a variation for the key
+	Context string `json:"context,omitempty"`
 
 	// Time of which the entity was created in the database
 	// Required: true
@@ -33,26 +38,32 @@ type Locale struct {
 	// Format: date-time
 	Deleted strfmt.DateTime `json:"deleted,omitempty"`
 
-	// List of other Locales in preferred order for fallbacks
-	Fallbacks []string `json:"fallbacks"`
+	// Description for the key, its use and where the key is used.
+	Description string `json:"description,omitempty"`
 
 	// Unique identifier of the entity
 	// Required: true
 	ID *string `json:"id"`
 
-	// Represents the IETF language tag, e.g. en / en-US
-	IETF string `json:"ietf,omitempty"`
+	// Final part of the identifiying key.
+	// With the example-input, the complete generated key would be store.product.description
+	// Example: description
+	Key string `json:"key,omitempty"`
 
-	// Represents the ISO-639-1 string, e.g. en
-	Iso6391 string `json:"iso_639_1,omitempty"`
+	// locale ID
+	LocaleID string `json:"locale_id,omitempty"`
 
-	// Represents the ISO-639-2 string, e.g. eng
-	Iso6392 string `json:"iso_639_2,omitempty"`
+	// Can be a dot-separated path-like string
+	// Example: store.products
+	Prefix string `json:"prefix,omitempty"`
 
-	// Represents the ISO-639-3 string, e.g. eng
-	Iso6393 string `json:"iso_639_3,omitempty"`
+	// project ID
+	ProjectID string `json:"project,omitempty"`
 
-	// title
+	// tag
+	Tag []string `json:"tags"`
+
+	// Title with short description of the key
 	Title string `json:"title,omitempty"`
 
 	// Time of which the entity was updated, if any
@@ -61,10 +72,20 @@ type Locale struct {
 
 	// User id refering to who created the item
 	UpdatedBy string `json:"updatedBy,omitempty"`
+
+	// The pre-interpolated value to use  with translations
+	// Example: The {{productName}} fires up to {{count}} bullets of {{subject}}.
+	Value string `json:"value,omitempty"`
+
+	// Variables used within the translation.
+	// This helps with giving translators more context,
+	// The value for the translation will be used in examples.
+	// Example: {"count":3,"productName":"X-Buster","subject":"compressed solar energy"}
+	Variables map[string]interface{} `json:"variables,omitempty"`
 }
 
-// Validate validates this locale
-func (m *Locale) Validate(formats strfmt.Registry) error {
+// Validate validates this translations
+func (m *Translations) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateCreatedAt(formats); err != nil {
@@ -89,7 +110,7 @@ func (m *Locale) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Locale) validateCreatedAt(formats strfmt.Registry) error {
+func (m *Translations) validateCreatedAt(formats strfmt.Registry) error {
 
 	if err := validate.Required("createdAt", "body", m.CreatedAt); err != nil {
 		return err
@@ -102,7 +123,7 @@ func (m *Locale) validateCreatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Locale) validateDeleted(formats strfmt.Registry) error {
+func (m *Translations) validateDeleted(formats strfmt.Registry) error {
 	if swag.IsZero(m.Deleted) { // not required
 		return nil
 	}
@@ -114,7 +135,7 @@ func (m *Locale) validateDeleted(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Locale) validateID(formats strfmt.Registry) error {
+func (m *Translations) validateID(formats strfmt.Registry) error {
 
 	if err := validate.Required("id", "body", m.ID); err != nil {
 		return err
@@ -123,7 +144,7 @@ func (m *Locale) validateID(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Locale) validateUpdatedAt(formats strfmt.Registry) error {
+func (m *Translations) validateUpdatedAt(formats strfmt.Registry) error {
 	if swag.IsZero(m.UpdatedAt) { // not required
 		return nil
 	}
@@ -135,13 +156,13 @@ func (m *Locale) validateUpdatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this locale based on context it is used
-func (m *Locale) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+// ContextValidate validates this translations based on context it is used
+func (m *Translations) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	return nil
 }
 
 // MarshalBinary interface implementation
-func (m *Locale) MarshalBinary() ([]byte, error) {
+func (m *Translations) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -149,8 +170,8 @@ func (m *Locale) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *Locale) UnmarshalBinary(b []byte) error {
-	var res Locale
+func (m *Translations) UnmarshalBinary(b []byte) error {
+	var res Translations
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

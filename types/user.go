@@ -16,7 +16,7 @@ type User struct {
 type UserStore int
 
 const (
-	// A local
+	// A local user, with password stored in the database.
 	UserStoreLocal UserStore = iota + 1
 )
 
