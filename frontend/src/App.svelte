@@ -43,7 +43,7 @@
 
 <div class="wrapper">
   <header>
-    <img src="/android-chrome-192x192.png" alt="Logo" />
+    <img src="/logo.svg" alt="Logo" />
     <h1>Skiver - Ski's the limit</h1>
     {#if $db.login.ok}
       Welcome, {$db.login.userName}
