@@ -22,6 +22,10 @@ type Msg struct {
 	Contents interface{} `json:"contents,omitempty"`
 }
 
+func NewPubSubChannel() PubSub {
+	return PubSub{make(chan Msg)}
+}
+
 func NewWsHandler(l logger.AppLogger, sendChannel chan Msg, options WsOptions) http.HandlerFunc {
 	if options.WriteTimeout == 0 {
 		options.WriteTimeout = 30 * time.Second
@@ -185,4 +189,16 @@ func (c *Client) write(kind int, j []byte) error {
 		return err
 	}
 	return nil
+}
+
+type PubSub struct {
+	Ch chan Msg
+}
+
+func (ps *PubSub) Publish(kind, variant string, content interface{}) {
+	ps.Ch <- Msg{
+		Kind:     kind,
+		Variant:  variant,
+		Contents: content,
+	}
 }

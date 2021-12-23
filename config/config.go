@@ -17,6 +17,7 @@ type Config struct {
 	LogLevel  string    `cfg:"log-level" default:"info" description:"Log-level to use. Can be trace,debug,info,warn(ing),error or panic"`
 	LogFormat string    `cfg:"log-format" default:"human" description:"Format of the logs. Can be human or json"`
 	Api       ApiConfig `cfg:"api" description:"Used with the api-server"`
+	SelfCheck bool      `cfg:"selv-check" default:"true" description:"Enables a self check to check resources."`
 }
 
 type ApiConfig struct {

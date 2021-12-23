@@ -67,28 +67,6 @@ func init() {
 	}
 }
 
-type ApiConfig struct {
-	Address      string
-	RedirectPort int
-	Port         int
-	CertFile     string
-	CertKey      string
-	DBLocation   string
-	logger.LogConfig
-}
-
-type PubSub struct {
-	ch chan handlers.Msg
-}
-
-func (ps *PubSub) Publish(kind, variant string, content interface{}) {
-	ps.ch <- handlers.Msg{
-		Kind:     kind,
-		Variant:  variant,
-		Contents: content,
-	}
-}
-
 func getDefaultDBLocation() string {
 	if s, err := os.Stat("./skiver.bbolt"); err == nil && !s.IsDir() {
 		return "./skiver.bbolt"
@@ -136,7 +114,7 @@ func main() {
 		Str("gitHash", GitHash).
 		Str("db", cfg.DBLocation).
 		Msg("Starting")
-	pubsub := PubSub{make(chan handlers.Msg)}
+	pubsub := handlers.NewPubSubChannel()
 	// IMPORTANT: database publishes changes, but for performance-reasons, it should not be used until the listener (ws) is started.
 	db, err := bboltStorage.NewBbolt(l, cfg.DBLocation, &pubsub)
 	if err != nil {
@@ -155,12 +133,14 @@ func main() {
 			return models.Validate(v)
 		},
 	}
-	go utils.SelfCheck(utils.SelfCheckLimit{
-		MemoryMB:   1000,
-		GoRoutines: 10000,
-		Streaks:    5,
-		Interval:   time.Second * 15,
-	}, logger.GetLogger("self-check"), 0)
+	if config.SelfCheck {
+		go utils.SelfCheck(utils.SelfCheckLimit{
+			MemoryMB:   1000,
+			GoRoutines: 10000,
+			Streaks:    5,
+			Interval:   time.Second * 15,
+		}, logger.GetLogger("self-check"), 0)
+	}
 
 	address := net.JoinHostPort(cfg.Address, strconv.Itoa(cfg.Port))
 	handler := http.NewServeMux()
@@ -181,10 +161,11 @@ func main() {
 	handler.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	handler.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 	// TODO: consider using a buffered channel.
-	handler.Handle("/ws/", handlers.NewWsHandler(logger.GetLoggerWithLevel("ws", "debug"), pubsub.ch, handlers.WsOptions{}))
+	handler.Handle("/ws/", handlers.NewWsHandler(logger.GetLoggerWithLevel("ws", "debug"), pubsub.Ch, handlers.WsOptions{}))
 
 	types.SeedUsers(&db, nil, pw.Hash)
 	types.SeedLocales(&db, nil)
+	handler.Handle("/api/ping", handlers.PingHandler(handler))
 
 	handler.Handle("/api/",
 		gziphandler.GzipHandler(
@@ -246,7 +227,6 @@ var (
 		AllowOrigin: "_any_",
 		MaxAge:      24 * time.Hour,
 	}
-	pingByte          = []byte{}
 	pwsalt            = "devsalt-123-123-123-123"
 	maxBodySize int64 = 1_000_000 // 1MB
 )
@@ -266,10 +246,6 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 		ctx.L.Fatal().Err(err).Msg("Failed to set up userSessions")
 	}
 	return func(rw http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "ping" {
-			rw.Write(pingByte)
-			return
-		}
 		h := rw.Header()
 		switch accessControl.AllowOrigin {
 		case "_any_":
