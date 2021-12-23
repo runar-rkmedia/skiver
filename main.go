@@ -38,6 +38,8 @@ import (
 	"github.com/runar-rkmedia/skiver/types"
 )
 
+// TODO: update to use debug.BuildInfo or see https://github.com/carlmjohnson/versioninfo/
+
 var (
 	//go:embed swagger.yml
 	swaggerYml string
@@ -254,7 +256,15 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 	if pwsalt == "devsalt-123-123-123-123-123" {
 		ctx.L.Warn().Msg("Password-salt not set")
 	}
-	userSessions := localuser.NewUserSessionInMemory(localuser.UserSessionOptions{TTL: time.Hour}, uuid.NewString)
+
+	p, ok := ctx.DB.(localuser.Persistor)
+	if !ok {
+		ctx.L.Warn().Str("type", fmt.Sprintf("%T", ctx.DB)).Msg("DB does not implement the localUser.Persistor-interface")
+	}
+	userSessions, err := localuser.NewUserSessionInMemory(localuser.UserSessionOptions{TTL: time.Hour}, uuid.NewString, p)
+	if err != nil {
+		ctx.L.Fatal().Err(err).Msg("Failed to set up userSessions")
+	}
 	return func(rw http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "ping" {
 			rw.Write(pingByte)
@@ -284,6 +294,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 		isPut := r.Method == http.MethodPut
 		path := r.URL.Path
 		paths := strings.Split(strings.TrimSuffix(path, "/"), "/")
+		// TODO: use http.MaxBytesHandler instead of this check
 		if r.ContentLength > maxBodySize {
 			rc.WriteErr(fmt.Errorf("max body size reached"), requestContext.CodeErrRequestEntityTooLarge)
 			return
@@ -298,11 +309,9 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 			}
 		}
 		// Check login
-		var session *localuser.Session
+		var session *types.Session
 		if cookie, err := r.Cookie("token"); err == nil {
-			fmt.Println("cooki???e", cookie, err)
 			sess, err := userSessions.GetSession(cookie.Value)
-			fmt.Println(sess, err)
 			if err == nil {
 				expiresD := sess.Expires.Sub(time.Now())
 				rw.Header().Add("session-expires", sess.Expires.String())
@@ -310,9 +319,6 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 				rw.Header().Add("session-expires-in-seconds", strconv.Itoa(int(expiresD.Seconds())))
 				session = &sess
 			}
-		} else {
-			fmt.Println("cookie", cookie, err)
-
 		}
 
 		switch paths[0] {
@@ -342,7 +348,6 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 			}
 		case "login":
 			if isGet {
-				fmt.Println("sesssss", session)
 				if session == nil {
 					rc.WriteError("Not logged in", requestContext.CodeErrAuthenticationRequired)
 					return
@@ -397,7 +402,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 			}
 			userAgent := r.UserAgent() + ";" + rc.RemoteIP
 
-			var session localuser.Session
+			var session types.Session
 			sessions := userSessions.SessionsForUser(user.ID)
 
 			now := time.Now()
@@ -434,12 +439,13 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher) http.Ha
 			rw.Header().Add("session-expires-in", expiresD.String())
 			rw.Header().Add("session-expires-in-seconds", strconv.Itoa(int(expiresD.Seconds())))
 			http.SetCookie(rw, cookie)
-			rc.WriteOutput(types.LoginResponse{
+			r := types.LoginResponse{
 				User:      session.User,
 				Ok:        true,
 				Expires:   session.Expires,
 				ExpiresIn: expiresD.String(),
-			}, http.StatusOK)
+			}
+			rc.WriteOutput(r, http.StatusOK)
 			return
 
 		}

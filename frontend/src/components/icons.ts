@@ -19,6 +19,7 @@ export const iconMap = {
   play: 'fa-play',
   toggleOn: 'fa-toggle-on',
   toggleOff: 'fa-toggle-off',
+  signIn: 'fa-sign-in-alt',
 } as const
 
 export type Icon = keyof typeof iconMap

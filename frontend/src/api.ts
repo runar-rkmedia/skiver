@@ -1,6 +1,12 @@
 import { ApiFetchOptions, fetchApi, methods, wsSubscribe } from './apiFetcher'
 import createStore from './store'
-import { objectKeys } from 'simplytyped'
+import type { AnyFunc } from 'simplytyped'
+import { parseDate } from 'dates';
+import { isPast } from 'date-fns';
+export function objectKeys<T extends object>(obj: T) {
+  return Object.keys(obj) as Array<keyof T>;
+}
+
 
 /**
  * Typedefintions are created by running `yarn gen`.
@@ -10,7 +16,7 @@ import { objectKeys } from 'simplytyped'
 
 export type DB = {
   project: Record<string, ApiDef.Project>
-  locale: Record<string, ApiDef.LoginResponse>
+  locale: Record<string, ApiDef.Locale>
   login: ApiDef.LoginResponse
   serverInfo: ApiDef.ServerInfo
   responseStates: Pick<Record<keyof DB, { loading: boolean, error?: ApiDef.ApiError }>, 'project' | 'locale' | 'login'>
@@ -28,7 +34,11 @@ export const api = {
   login: {
     get: () => fetchApi<ApiDef.LoginResponse>(
       'login',
-      (login) => db.update(s => ({ ...s, login })),
+      (login) => {
+
+        localStorage.setItem('login-response', JSON.stringify(login))
+        return db.update(s => ({ ...s, login }))
+      },
       { method: "GET" }),
     post: async (args: ApiDef.LoginInput) => {
       db.update(s => (
@@ -44,7 +54,10 @@ export const api = {
         }))
       const [res, err] = await fetchApi<ApiDef.LoginResponse>(
         'login',
-        (login) => db.update(s => ({ ...s, login })),
+        (login) => {
+          localStorage.setItem('login-response', JSON.stringify(login))
+          return db.update(s => ({ ...s, login }))
+        },
         { method: "POST", body: args })
       db.update(s => (
         {
@@ -63,9 +76,64 @@ export const api = {
   }
 } as const
 
+const tryOrNull = <T extends AnyFunc>(f: T, onErr?: (err: Error) => void): null | ReturnType<T> => {
+  try {
+    return f()
+  } catch (err) {
+    onErr?.(err)
+    return null
+  }
+}
+
+const tryJsonParse = <T extends any>(s: string | null): null | T => {
+  if (!s) {
+    return null
+  }
+  return tryOrNull(() => JSON.parse(s))
+}
+
+const initialLoginResponse = (): ApiDef.LoginResponse => {
+
+  const r = {
+    ok: false,
+    userName: '',
+    createdAt: '',
+    updatedAt: '',
+    id: '',
+  }
+
+  const l = tryJsonParse<ApiDef.LoginResponse>(localStorage.getItem('login-response'))
+  console.log('jabber', l)
+  if (!l) {
+    return r
+  }
+  if (!l.ok) {
+    return l
+  }
+  l.ok = false
+  if (!l.expires) {
+    return l
+  }
+  const ex = parseDate(l.expires)
+  if (!ex || isPast(ex)) {
+    return l
+  }
+  console.log("jibberv, ", l)
+
+  l.ok = true
+  return l
+}
+
 export const db = createStore<DB, null>({
   initialValue: objectKeys(api).reduce((r, k) => {
-    r[k] = {}
+    switch (k) {
+      case 'login':
+        r[k] = initialLoginResponse()
+        break
+      default:
+        r[k] = {}
+    }
+    console.log("init", r)
     return r
   }, {
     responseStates: objectKeys(api).reduce((r, k) => ({ ...r, [k]: { loading: false } }), {})

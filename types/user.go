@@ -33,3 +33,11 @@ type LoginResponse struct {
 	Expires   time.Time `json:"expires"`
 	ExpiresIn string    `json:"expires_in"`
 }
+
+type Session struct {
+	Token     string
+	User      User
+	UserAgent string
+	Issued    time.Time
+	Expires   time.Time
+}

@@ -7,6 +7,8 @@
 
   import ServerInfo from "./components/ServerInfo.svelte";
   import { onMount } from "svelte";
+  let username = $db.login.userName;
+  let password: "";
   onMount(() => {
     const loadingEl = document.getElementById("loading");
     if (loadingEl) {
@@ -34,8 +36,6 @@
       didRunInital = true;
     }
   }
-  let username: "";
-  let password: "";
 
   const dbWarnSizeGB = 0.5;
   const dbWarnSize = dbWarnSizeGB * 1e9;
@@ -73,12 +73,12 @@
 
           <label>
             Password
-            <input name="password" bind:value={password} />
+            <input name="password" type="password" bind:value={password} />
           </label>
           <Button
             preventDefault={false}
             color="primary"
-            icon="play"
+            icon="signIn"
             type="submit">Login</Button
           >
         </form>
@@ -98,8 +98,52 @@
       </Alert>
     {/if}
     {#if $state.tab === "locale"}
-      <h2>Schedules</h2>
-      <paper> Hello </paper>
+      <h2>Locales</h2>
+      <paper>
+        <EntityList
+          error={$db.responseStates.locale.error?.error}
+          loading={$db.responseStates.locale.loading}
+        >
+          {#each Object.values($db.locale)
+            .filter((e) => {
+              if (!$state.showDeleted) {
+                return !e.deleted;
+              }
+              return true;
+            })
+            .sort((a, b) => {
+              const A = a.createdAt;
+              const B = b.createdAt;
+              if (A > B) {
+                return 1;
+              }
+              if (A < B) {
+                return -1;
+              }
+
+              return 0;
+            })
+            .reverse() as v}
+            <ListItem
+              deleteDisabled={true}
+              editDisabled={true}
+              ID={v.id}
+              deleted={!!v.deleted}
+            >
+              <svelte:fragment slot="header">
+                {v.title}
+              </svelte:fragment>
+              <svelte:fragment slot="description">
+                Created: {formatDate(v.createdAt)}
+
+                {#if v.updatedAt}
+                  Updated: {formatDate(v.updatedAt)}
+                {/if}
+              </svelte:fragment>
+            </ListItem>
+          {/each}
+        </EntityList>
+      </paper>
     {:else if $state.tab === "project"}
       <EntityList
         error={$db.responseStates.project.error?.error}

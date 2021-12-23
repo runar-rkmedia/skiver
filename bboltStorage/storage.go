@@ -36,7 +36,7 @@ func NewBbolt(l logger.AppLogger, path string, pubsub PubSubPublisher) (bb BBolt
 	bb.pubsub = pubsub
 	bb.Marshaller = Gob{}
 	err = bb.Update(func(t *bolt.Tx) error {
-		buckets := [][]byte{BucketUsers, BucketLocales, BucketTranslations, BucketProjects}
+		buckets := [][]byte{BucketUsers, BucketLocales, BucketTranslations, BucketProjects, BucketSessions}
 		for i := 0; i < len(buckets); i++ {
 			_, err := t.CreateBucketIfNotExists(buckets[i])
 			if err != nil {
@@ -150,6 +150,7 @@ type BBolter struct {
 }
 
 var (
+	BucketSessions     = []byte("sessions")
 	BucketUsers        = []byte("users")
 	BucketLocales      = []byte("locales")
 	BucketTranslations = []byte("translations")

@@ -1,8 +1,8 @@
 import { Updater, writable } from 'svelte/store'
-import merge from 'lodash.merge'
-import debounce from 'lodash.debounce'
-import cloneDeep from 'lodash.clonedeep'
-import deepEqual from 'lodash.isequal'
+// TODO: try to remove these lodash-functions
+import merge from 'merge'
+import debounce from './util/debounce'
+import deepEqual from './util/isEqual'
 
 const parseStrOrObject = <T extends {}>(s: string | T | null | undefined) => {
   if (!s) {
@@ -17,96 +17,6 @@ const parseStrOrObject = <T extends {}>(s: string | T | null | undefined) => {
   } catch (err) {
     return [null, `failed to parse string into object '${s}': ${err}'`] as const
   }
-}
-
-type Redaction = RegExp | string | ((k: string, v: unknown) => boolean)
-export const redactionString = '**REDACTED**' as const
-
-export function isRedacted(s: string, redactionStr: string = redactionString) {
-  return s === redactionStr
-}
-
-function reduceNullable<T>(obj: T) {
-  const o = cloneDeep(obj)
-  return _reduceNullable(obj)
-}
-
-function isNull(v: any) {
-  return v === null
-}
-function _reduceNullable<T>(obj: T) {
-  if (Array.isArray(obj)) {
-    for (let i = obj.length - 1; i >= 0; i--) {
-      if (isNull(obj)) {
-        obj.splice(i, 1)
-        continue
-      }
-      if (typeof obj[i] === 'object') {
-        obj[i] = _reduceNullable(obj[i])
-        continue
-      }
-    }
-  }
-  return
-}
-
-const redactor: typeof _redacter = <T extends {}>(
-  obj,
-  redaction,
-  replacement
-) => {
-  return _redacter<T>(cloneDeep(obj), redaction, replacement)
-}
-const _redacter = <T extends {}>(
-  obj: T,
-  redaction: Array<Redaction>,
-  replacement: string = redactionString
-) => {
-  if (!redaction || !redaction.length) {
-    return obj
-  }
-  if (typeof obj !== 'object') {
-    return obj
-  }
-  for (const key of Object.keys(obj)) {
-    if (!obj[key] || obj[key] === replacement) {
-      continue
-    }
-    if (typeof obj[key] === 'string') {
-      for (const r of redaction) {
-        switch (typeof r) {
-          case 'object':
-            if ('test' in r) {
-              if (!r.test(key)) {
-                continue
-              }
-            } else {
-              throw new Error('received an unrecognized type of redaction')
-            }
-            break
-          case 'function':
-            if (!r(key, obj[key])) {
-              continue
-            }
-            break
-          case 'string':
-            if (key !== r) {
-              continue
-            }
-            break
-
-          default:
-            break
-        }
-        obj[key] = replacement
-      }
-      continue
-    }
-    if (typeof obj[key] === 'object') {
-      obj[key] = _redacter(obj[key], redaction)
-    }
-  }
-  return obj
 }
 
 export type StoreState<V = null, VK extends string = string> = {
@@ -128,9 +38,7 @@ function createStore<T extends {}, V = null, VK extends string = string>({
   initialValue,
   validator,
 }: {
-  storage?: (AppStorage<T> | { key: string }) & {
-    redactKeys?: Array<Redaction>
-  }
+  storage?: (AppStorage<T> | { key: string })
   validator?: (
     t: Store<T, V>
   ) => [null, null] | [V, null] | [null, Partial<Record<VK, string>>]
@@ -150,9 +58,6 @@ function createStore<T extends {}, V = null, VK extends string = string>({
     : null
 
   if (storage) {
-    if (_storage && _storage?.redactKeys === undefined) {
-      _storage.redactKeys = [/secret/i, /password/i]
-    }
     const str = storage.getItem(storage.key)
     const [parsed, err] = parseStrOrObject<T>(str)
     if (err) {
@@ -184,16 +89,12 @@ function createStore<T extends {}, V = null, VK extends string = string>({
     if (!storage || !_storage?.key) {
       return
     }
-    if (_storage.redactKeys && !!value) {
-      value = redactor(value, _storage.redactKeys)
-    }
     storage?.setItem(_storage.key, value)
   }
   const saveToStorage =
     !!storage &&
     debounce(_saveToStorageNow, 2000, {
       leading: true,
-      maxWait: 5000,
     })
 
   function didChange(existing) {
