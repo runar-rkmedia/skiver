@@ -10,7 +10,7 @@
   --color-primary-300: var(--color-indigo-500);
   --color-primary-700: var(--color-indigo-500);
   --color-danger-300: var(--color-orange-300);
-  --color-danger:  var(--color-orange-500);
+  --color-danger: var(--color-orange-500);
   --color-danger-700: var(--color-orange-700);
 }
 .color-error {
@@ -233,7 +233,7 @@ table {
 }
 
 label .required::after {
-  content: " (Required)";
+  content: ' (Required)';
   opacity: 0.7;
 }
 
@@ -244,14 +244,14 @@ table tr:nth-child(odd) {
   background-color: var(--color-grey-300);
 }
 
-input:invalid, input[aria-invalid]
-textarea:invalid, textarea[aria-invalid]
-select:invalid, select[aria-invalid]
-  {
+input:invalid,
+input[aria-invalid] textarea:invalid,
+textarea[aria-invalid] select:invalid,
+select[aria-invalid] {
   color: var(--color-error-icon);
 }
 .validation-error-msg {
-  color: var(--color-error-icon)
+  color: var(--color-error-icon);
 }
 .input-button {
   position: relative;
@@ -264,11 +264,10 @@ select:invalid, select[aria-invalid]
 }
 .input-button button:last-of-type {
   position: absolute;
-  right:0;
+  right: 0;
   top: 0;
   height: 100%;
   border-bottom-right-radius: var(--radius-md);
   border-top-right-radius: var(--radius-md);
   border: 1px solid var(--color-black);
-
 }

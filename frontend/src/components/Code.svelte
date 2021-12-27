@@ -10,6 +10,7 @@
   bind:value={code}
   {noFormatSelector}
   config={{ readOnly: true, mode: language }}
-  initialLanguage={language}>
+  initialLanguage={language}
+>
   <slot name="title" slot="title" />
 </Editor>

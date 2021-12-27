@@ -2,7 +2,7 @@ import createStore from './store'
 
 export const state = createStore({
   initialValue: {
-    tab: '',
+    tab: 'project',
     showDeleted: false,
     serverStats: false,
     /* With this set, the editor will not do any conversion when saving/restoring, only syntax-highlighting*/

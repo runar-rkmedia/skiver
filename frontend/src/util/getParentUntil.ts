@@ -1,4 +1,3 @@
-
 function getParentUntil<Elem extends Element>(
   el: Element,
   mustBe: string | ((el: Element) => boolean)

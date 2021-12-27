@@ -24,7 +24,8 @@
         return
       }
       $state.collapse[key] = show
-    }}>
+    }}
+  >
     <slot name="title" class="title" />
     <div class="icon">
       {#if show}

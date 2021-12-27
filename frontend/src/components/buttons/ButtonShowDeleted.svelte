@@ -11,7 +11,8 @@
     color="secondary"
     active={$state.showDeleted}
     disabled={!$state.showDeleted && !deletedCount}
-    on:click={() => ($state.showDeleted = !$state.showDeleted)}>
+    on:click={() => ($state.showDeleted = !$state.showDeleted)}
+  >
     Show deleted ({deletedCount})
   </Button>
 {/if}

@@ -30,7 +30,8 @@
     bind:value
     bind:noFormatSelector
     bind:initialLanguage
-    bind:config />
+    bind:config
+  />
 {:else}
   <div class="spinner"><Spinner /></div>
 {/if}

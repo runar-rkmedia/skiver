@@ -125,14 +125,16 @@
     <Button
       color="primary"
       toggle={$state.editorRawFormat}
-      on:click={() => ($state.editorRawFormat = !$state.editorRawFormat)}>
+      on:click={() => ($state.editorRawFormat = !$state.editorRawFormat)}
+    >
       Raw
     </Button>
     {#each langs as l}
       <Button
         active={$state.codeLanguage === l}
         color="secondary"
-        on:click={() => setFormat(l)}>{l}</Button>
+        on:click={() => setFormat(l)}>{l}</Button
+      >
     {/each}
   </div>
 {/if}

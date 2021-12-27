@@ -1,7 +1,10 @@
 import formatterYaml from 'yaml'
 import formatterToml from 'toml-js'
 
-export function convertStringToCodeFormat(code: string | {}, format: string): readonly [string, null] | readonly [null, string] {
+export function convertStringToCodeFormat(
+  code: string | {},
+  format: string
+): readonly [string, null] | readonly [null, string] {
   if (!code) {
     return ['', null] as const
   }
@@ -22,7 +25,10 @@ export function convertStringToCodeFormat(code: string | {}, format: string): re
     switch (format) {
       case 'yaml':
       case 'yml':
-        return [formatterYaml.stringify(obj, { sortMapEntries: true }), null] as const
+        return [
+          formatterYaml.stringify(obj, { sortMapEntries: true }),
+          null,
+        ] as const
       case 'toml':
         return [formatterToml.dump(obj), null] as const
       case 'json':
@@ -38,9 +44,12 @@ export function convertStringToCodeFormat(code: string | {}, format: string): re
   return [null, 'unhandled']
 }
 
-const parseStringCode = (s: string): readonly [code: {}, kind: 'yaml' | 'toml' | 'json', error: null] | readonly [code: null, kind: null, error: string] => {
+const parseStringCode = (
+  s: string
+):
+  | readonly [code: {}, kind: 'yaml' | 'toml' | 'json', error: null]
+  | readonly [code: null, kind: null, error: string] => {
   try {
-
     if (s.startsWith('{') || s.startsWith('[')) {
       // smells like JSON
       return [JSON.parse(s), 'json', null]

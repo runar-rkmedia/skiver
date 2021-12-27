@@ -1,12 +1,12 @@
-import { ApiFetchOptions, fetchApi, methods, wsSubscribe } from './apiFetcher'
+import { fetchApi, methods, wsSubscribe } from './apiFetcher'
+import type { ApiFetchOptions } from './apiFetcher'
 import createStore from './store'
 import type { AnyFunc } from 'simplytyped'
-import { parseDate } from 'dates';
-import { isPast } from 'date-fns';
+import { parseDate } from 'dates'
+import { isPast } from 'date-fns'
 export function objectKeys<T extends object>(obj: T) {
-  return Object.keys(obj) as Array<keyof T>;
+  return Object.keys(obj) as Array<keyof T>
 }
-
 
 /**
  * Typedefintions are created by running `yarn gen`.
@@ -19,7 +19,10 @@ export type DB = {
   locale: Record<string, ApiDef.Locale>
   login: ApiDef.LoginResponse
   serverInfo: ApiDef.ServerInfo
-  responseStates: Pick<Record<keyof DB, { loading: boolean, error?: ApiDef.ApiError }>, 'project' | 'locale' | 'login'>
+  responseStates: Pick<
+    Record<keyof DB, { loading: boolean; error?: ApiDef.ApiError }>,
+    'project' | 'locale' | 'login'
+  >
 }
 
 export const api = {
@@ -32,51 +35,54 @@ export const api = {
   project: CrudFactory<ApiDef.ProjectInput, 'project'>('project'),
   locale: CrudFactory<ApiDef.LocaleInput, 'locale'>('locale'),
   login: {
-    get: () => fetchApi<ApiDef.LoginResponse>(
-      'login',
-      (login) => {
-
-        localStorage.setItem('login-response', JSON.stringify(login))
-        return db.update(s => ({ ...s, login }))
-      },
-      { method: "GET" }),
+    get: () =>
+      fetchApi<ApiDef.LoginResponse>(
+        'login',
+        (login) => {
+          localStorage.setItem('login-response', JSON.stringify(login))
+          return db.update((s) => ({ ...s, login }))
+        },
+        { method: 'GET' }
+      ),
     post: async (args: ApiDef.LoginInput) => {
-      db.update(s => (
-        {
-          ...s,
-          responseStates: {
-            ...s.responseStates,
-            login: {
-              ...s.responseStates.login,
-              loading: true
-            }
-          }
-        }))
+      db.update((s) => ({
+        ...s,
+        responseStates: {
+          ...s.responseStates,
+          login: {
+            ...s.responseStates.login,
+            loading: true,
+          },
+        },
+      }))
       const [res, err] = await fetchApi<ApiDef.LoginResponse>(
         'login',
         (login) => {
           localStorage.setItem('login-response', JSON.stringify(login))
-          return db.update(s => ({ ...s, login }))
+          return db.update((s) => ({ ...s, login }))
         },
-        { method: "POST", body: args })
-      db.update(s => (
-        {
-          ...s,
-          responseStates: {
-            ...s.responseStates,
-            login: {
-              loading: false,
-              ...res,
-              ...!!err && { error: err }
-            }
-          }
-        }))
+        { method: 'POST', body: args }
+      )
+      db.update((s) => ({
+        ...s,
+        responseStates: {
+          ...s.responseStates,
+          login: {
+            loading: false,
+            ...res,
+            ...(!!err && { error: err }),
+          },
+        },
+      }))
       return [res, err]
     },
-  }
+  },
 } as const
 
-const tryOrNull = <T extends AnyFunc>(f: T, onErr?: (err: Error) => void): null | ReturnType<T> => {
+const tryOrNull = <T extends AnyFunc>(
+  f: T,
+  onErr?: (err: Error) => void
+): null | ReturnType<T> => {
   try {
     return f()
   } catch (err) {
@@ -93,7 +99,6 @@ const tryJsonParse = <T extends any>(s: string | null): null | T => {
 }
 
 const initialLoginResponse = (): ApiDef.LoginResponse => {
-
   const r = {
     ok: false,
     userName: '',
@@ -102,8 +107,9 @@ const initialLoginResponse = (): ApiDef.LoginResponse => {
     id: '',
   }
 
-  const l = tryJsonParse<ApiDef.LoginResponse>(localStorage.getItem('login-response'))
-  console.log('jabber', l)
+  const l = tryJsonParse<ApiDef.LoginResponse>(
+    localStorage.getItem('login-response')
+  )
   if (!l) {
     return r
   }
@@ -118,28 +124,31 @@ const initialLoginResponse = (): ApiDef.LoginResponse => {
   if (!ex || isPast(ex)) {
     return l
   }
-  console.log("jibberv, ", l)
 
   l.ok = true
   return l
 }
 
 export const db = createStore<DB, null>({
-  initialValue: objectKeys(api).reduce((r, k) => {
-    switch (k) {
-      case 'login':
-        r[k] = initialLoginResponse()
-        break
-      default:
-        r[k] = {}
-    }
-    console.log("init", r)
-    return r
-  }, {
-    responseStates: objectKeys(api).reduce((r, k) => ({ ...r, [k]: { loading: false } }), {})
-  } as DB),
+  initialValue: objectKeys(api).reduce(
+    (r, k) => {
+      switch (k) {
+        case 'login':
+          r[k] = initialLoginResponse()
+          break
+        default:
+          r[k] = {}
+      }
+      return r
+    },
+    {
+      responseStates: objectKeys(api).reduce(
+        (r, k) => ({ ...r, [k]: { loading: false } }),
+        {}
+      ),
+    } as DB
+  ),
 })
-
 
 wsSubscribe({
   onMessage: (msg) => {
@@ -148,7 +157,6 @@ wsSubscribe({
     }
     if (typeof msg.contents !== 'object') {
       return
-
     }
 
     if (msg.contents.id) {
@@ -156,7 +164,6 @@ wsSubscribe({
     }
   },
   autoReconnect: true,
-
 })
 
 const mergeMap = <K extends DBKeyValue, V extends DB[K]>(key: K, value: V) => {
@@ -179,7 +186,6 @@ const mergeMap = <K extends DBKeyValue, V extends DB[K]>(key: K, value: V) => {
   })
 }
 
-
 // Keys in db that are of type Record<string, T>
 type DBKeyValue = keyof Omit<DB, 'serverInfo' | 'responseStates' | 'login'>
 
@@ -188,7 +194,6 @@ const replaceField = <K extends DBKeyValue, V extends DB[K]['s']>(
   value: V,
   id: string
 ) => {
-
   if (!key) {
     console.error('key is required in replaceField')
     return
@@ -235,7 +240,7 @@ function CrudFactory<Payload extends {}, K extends DBKeyValue>(
 
 function apiGetListFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
   return async (options?: ApiFetchOptions) => {
-    db.update(s => {
+    db.update((s) => {
       return {
         ...s,
         responseStates: {
@@ -243,8 +248,8 @@ function apiGetListFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
           [storeKey]: {
             ...s.responseStates?.[storeKey],
             loading: true,
-          }
-        }
+          },
+        },
       }
     })
     const res = await fetchApi<DB[K]>(
@@ -252,11 +257,11 @@ function apiGetListFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
       (e) => mergeMap(storeKey, e),
       options
     )
-    db.update(s => {
+    db.update((s) => {
       return {
         ...s,
-        ...(!res[1] && !!res[0].data && {
-
+        ...(!res[1] &&
+          !!res[0].data && {
           [storeKey]: { ...s[storeKey], ...res[0].data },
         }),
         responseStates: {
@@ -265,8 +270,8 @@ function apiGetListFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
             ...s.responseStates?.[storeKey],
             loading: false,
             error: res[1],
-          }
-        }
+          },
+        },
       }
     })
     return res

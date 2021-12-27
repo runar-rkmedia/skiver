@@ -1,54 +1,52 @@
 <svelte:options immutable={true} />
 
 <script lang="ts">
-  import "tippy.js/dist/tippy.css"; // Tooltips popover
-  import { api, db } from "./api";
-  import { scale } from "svelte/transition";
+  import 'tippy.js/dist/tippy.css' // Tooltips popover
+  import { api, db } from './api'
+  import { state } from './state'
+  import { scale } from 'svelte/transition'
 
-  import ServerInfo from "./components/ServerInfo.svelte";
-  import { onMount } from "svelte";
-  let username = $db.login.userName;
-  let password: "";
+  import ServerInfo from './components/ServerInfo.svelte'
+  import { onMount } from 'svelte'
+  let username = $db.login.userName
+  let password: ''
   onMount(() => {
-    const loadingEl = document.getElementById("loading");
+    const loadingEl = document.getElementById('loading')
     if (loadingEl) {
-      loadingEl.remove();
+      loadingEl.remove()
     }
-    api.login.get().then((r) => {
-      console.log("login", r);
-    });
-  });
+    api.login.get()
+  })
 
-  import Tabs from "./components/Tabs.svelte";
-  import Alert from "./components/Alert.svelte";
-  import { state } from "./state";
-  import Button from "./components/Button.svelte";
-  import Spinner from "components/Spinner.svelte";
-  import EntityList from "components/EntityList.svelte";
-  import ListItem from "components/ListItem.svelte";
-  import formatDate from "dates";
-  let didRunInital = false;
+  import Tabs from './components/Tabs.svelte'
+  import Alert from './components/Alert.svelte'
+  import Button from './components/Button.svelte'
+  import Spinner from 'components/Spinner.svelte'
+  import PageContent from 'PageContent.svelte'
+  let didRunInital = false
   $: {
     if (!didRunInital && $db.login.ok) {
-      api.serverInfo();
-      api.locale.list();
-      api.project.list();
-      didRunInital = true;
+      api.serverInfo()
+      api.locale.list()
+      api.project.list()
+      didRunInital = true
     }
   }
 
-  const dbWarnSizeGB = 0.5;
-  const dbWarnSize = dbWarnSizeGB * 1e9;
+  const dbWarnSizeGB = 0.5
+  const dbWarnSize = dbWarnSizeGB * 1e9
 </script>
 
 <div class="wrapper">
   <header>
     <img src="/logo.svg" alt="Logo" />
     <h1>Skiver - Ski's the limit</h1>
-    {#if $db.login.ok}
-      Welcome, {$db.login.userName}
-    {/if}
     <Tabs bind:value={$state.tab} />
+    {#if $db.login.ok}
+      <div class="user-welcome">
+        Welcome, {$db.login.userName}
+      </div>
+    {/if}
   </header>
   <div />
 
@@ -56,16 +54,20 @@
     <div class="login" transition:scale>
       <paper>
         <h2>Login</h2>
-        {#if $db.responseStates.login.loading}
+        {#if $db.responseStates.login.loading}pa
           <Spinner />
         {/if}
         {#if $db.responseStates.login?.error}
           <Alert kind="error">{$db.responseStates.login.error.error}</Alert>
         {/if}
         <form
-          on:submit|preventDefault={() =>
-            api.login.post({ username, password })}
-        >
+          on:submit|preventDefault={() => {
+            if (!username || !password) {
+              return
+            }
+
+            api.login.post({ username, password })
+          }}>
           <label>
             Username
             <input name="text" bind:value={username} />
@@ -79,8 +81,9 @@
             preventDefault={false}
             color="primary"
             icon="signIn"
-            type="submit">Login</Button
-          >
+            type="submit">
+            Login
+          </Button>
         </form>
       </paper>
     </div>
@@ -97,116 +100,19 @@
         <p>It is adviced to clean the database</p>
       </Alert>
     {/if}
-    {#if $state.tab === "locale"}
-      <h2>Locales</h2>
-      <paper>
-        <EntityList
-          error={$db.responseStates.locale.error?.error}
-          loading={$db.responseStates.locale.loading}
-        >
-          {#each Object.values($db.locale)
-            .filter((e) => {
-              if (!$state.showDeleted) {
-                return !e.deleted;
-              }
-              return true;
-            })
-            .sort((a, b) => {
-              const A = a.createdAt;
-              const B = b.createdAt;
-              if (A > B) {
-                return 1;
-              }
-              if (A < B) {
-                return -1;
-              }
-
-              return 0;
-            })
-            .reverse() as v}
-            <ListItem
-              deleteDisabled={true}
-              editDisabled={true}
-              ID={v.id}
-              deleted={!!v.deleted}
-            >
-              <svelte:fragment slot="header">
-                {v.title}
-              </svelte:fragment>
-              <svelte:fragment slot="description">
-                Created: {formatDate(v.createdAt)}
-
-                {#if v.updatedAt}
-                  Updated: {formatDate(v.updatedAt)}
-                {/if}
-              </svelte:fragment>
-            </ListItem>
-          {/each}
-        </EntityList>
-      </paper>
-    {:else if $state.tab === "project"}
-      <EntityList
-        error={$db.responseStates.project.error?.error}
-        loading={$db.responseStates.project.loading}
-      >
-        {#each Object.values($db.project)
-          .filter((e) => {
-            if (!$state.showDeleted) {
-              return !e.deleted;
-            }
-            return true;
-          })
-          .sort((a, b) => {
-            const A = a.createdAt;
-            const B = b.createdAt;
-            if (A > B) {
-              return 1;
-            }
-            if (A < B) {
-              return -1;
-            }
-
-            return 0;
-          })
-          .reverse() as v}
-          <ListItem
-            deleteDisabled={true}
-            editDisabled={true}
-            ID={v.id}
-            deleted={!!v.deleted}
-          >
-            <svelte:fragment slot="header">
-              {v.title}
-            </svelte:fragment>
-            <svelte:fragment slot="description">
-              Created: {formatDate(v.createdAt)}
-
-              {#if v.updatedAt}
-                Updated: {formatDate(v.updatedAt)}
-              {/if}
-            </svelte:fragment>
-          </ListItem>
-        {/each}
-      </EntityList>
-    {/if}
+    <PageContent />
   </main>
-  {#if $state.serverStats}
-    <iframe
-      title="Server Statistics"
-      id="statsviz"
-      height="600"
-      width="100%"
-      src="https://localhost/debug/statsviz/"
-    />
-
-    <a href="https://localhost/debug/statsviz/">Statwiz statistics</a>
-  {/if}
   <footer>
     <ServerInfo />
   </footer>
 </div>
 
 <style>
+  .user-welcome {
+    margin-left: auto;
+    margin-block: auto;
+    padding: var(--size-4);
+  }
   .login {
     position: fixed;
     top: 0;
@@ -232,9 +138,6 @@
     width: 100%;
     z-index: 1;
   }
-  main {
-    margin-block-end: var(--size-12);
-  }
   .wrapper {
     background-color: var(--color-blue-300);
     display: flex;
@@ -252,7 +155,8 @@
     align-self: center;
   }
   main {
-    margin-inline: var(--size-4);
+    margin-block-start: var(--size-2);
+    padding-inline: var(--size-4);
   }
   img {
     height: 100px;

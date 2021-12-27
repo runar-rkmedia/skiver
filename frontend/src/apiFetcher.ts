@@ -12,7 +12,9 @@ export const methods = {
 } as const
 
 export const baseUrl = `${window.location.protocol}//${window.location.host}/api`
-export const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/`
+export const wsUrl = `${
+  window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+}//${window.location.host}/ws/`
 
 export type ApiFetchOptions = {
   /** if set, will run the updater-function even on errors */
@@ -31,7 +33,12 @@ export type ApiFetchOptions = {
 export async function fetchApi<T extends {}>(
   subPath: string,
   updater: (data: T) => void,
-  { method = methods.GET, body, jmespath, runUpdaterOnErr }: ApiFetchOptions = {}
+  {
+    method = methods.GET,
+    body,
+    jmespath,
+    runUpdaterOnErr,
+  }: ApiFetchOptions = {}
 ) {
   const sub = subPath.replace(/^\/?/, '/').replace(/\/?$/, '/')
   const opts: RequestInit = {
@@ -58,8 +65,7 @@ export async function fetchApi<T extends {}>(
     if (contentType.includes(contentTypes.json)) {
       const JSON = await response.json()
       if (JSON && !jmespath) {
-        if (response.status < 400 || runUpdaterOnErr)
-          updater(JSON)
+        if (response.status < 400 || runUpdaterOnErr) updater(JSON)
       }
       if (response.status >= 400) {
         return [result, JSON as ApiResponses.ApiError] as const
@@ -96,47 +102,39 @@ export function deserializeDate(dateStr: string) {
 let wsDisconnects = 0
 let wsFails = 0
 export const wsSubscribe = (options: {
-  onMessage: (msg: WsMessage) => void,
-  onClose?: () => void,
+  onMessage: (msg: WsMessage) => void
+  onClose?: () => void
   autoReconnect: boolean
 }) => {
-  const {
-    onMessage,
-    onClose,
-    autoReconnect,
-  } = options
-  if (!window["WebSocket"]) {
-    console.error("Your browser does not support WebSocket")
+  const { onMessage, onClose, autoReconnect } = options
+  if (!window['WebSocket']) {
+    console.error('Your browser does not support WebSocket')
     return
   }
   try {
-
-    const conn = new WebSocket(wsUrl);
-    conn.onerror = function(evt) {
+    const conn = new WebSocket(wsUrl)
+    conn.onerror = function (evt) {
       console.error('[ws] connection error: ', evt)
     }
-    conn.onclose = function(evt) {
+    conn.onclose = function (evt) {
       console.debug('[ws]: connection closed', evt)
       onClose?.()
       wsDisconnects++
       if (autoReconnect) {
-        setTimeout(
-          () => wsSubscribe(options), 1000 * (wsDisconnects + wsFails)
-        )
+        setTimeout(() => wsSubscribe(options), 1000 * (wsDisconnects + wsFails))
       }
-    };
-    conn.onmessage = function(evt) {
+    }
+    conn.onmessage = function (evt) {
       try {
         const json = JSON.parse(evt.data)
         onMessage(json)
       } catch (err) {
         console.error('Failed to parse json-message\n', err)
       }
-    };
+    }
   } catch (err) {
     console.error('Failed in wsSubscribe ', err)
     wsFails++
-
   }
 }
 
@@ -146,7 +144,6 @@ type Ws<K extends string, V extends string, T> = {
   contents: T
 }
 
-
 type WsCreateProject = Ws<'project', 'create', ApiDef.Project>
 type WsUpdateProject = Ws<'project', 'update', ApiDef.Project>
 type WsDeleteProject = Ws<'project', 'soft-delete', ApiDef.Project>
@@ -155,14 +152,10 @@ type WsCreateLocale = Ws<'locale', 'create', ApiDef.Locale>
 type WsUpdateLocale = Ws<'locale', 'update', ApiDef.Locale>
 type WsDeleteLocale = Ws<'locale', 'soft-delete', ApiDef.Locale>
 
-
-
 type WsMessage =
   | WsCreateProject
   | WsUpdateProject
   | WsDeleteProject
-
   | WsCreateLocale
   | WsUpdateLocale
   | WsDeleteLocale
-

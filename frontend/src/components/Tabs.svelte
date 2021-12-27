@@ -1,19 +1,24 @@
 <script lang="ts">
-  import type { api } from "../api";
-  import Icon from "./Icon.svelte";
+  import { state } from 'state'
 
-  import Tab from "./Tab.svelte";
-  export let value = "request";
-  const onClick = (s: keyof typeof api) => (e: MouseEvent) => (value = s);
+  import Icon from './Icon.svelte'
+
+  import Tab from './Tab.svelte'
 </script>
 
 <nav>
-  <Tab active={value === "project"} on:click={onClick("project")}>
-    <Icon icon={"gEndpoint"} color="tertiary" />
+  <Tab
+    active={$state.tab === 'project'}
+    on:click={() => ($state.tab = 'project')}
+  >
+    <Icon icon={'gEndpoint'} color="tertiary" />
     Projects
   </Tab>
-  <Tab active={value === "locale"} on:click={onClick("locale")}>
-    <Icon icon={"gRequest"} color="tertiary" />
+  <Tab
+    active={$state.tab === 'locale'}
+    on:click={() => ($state.tab = 'locale')}
+  >
+    <Icon icon={'gRequest'} color="tertiary" />
     Locales
   </Tab>
 </nav>
@@ -24,7 +29,7 @@
     position: relative;
   }
   nav::after {
-    content: "";
+    content: '';
     width: 1px;
 
     position: absolute;

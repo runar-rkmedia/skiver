@@ -1,4 +1,5 @@
-import { Updater, writable } from 'svelte/store'
+import { writable } from 'svelte/store'
+import type { Updater } from 'svelte/store'
 // TODO: try to remove these lodash-functions
 import merge from 'merge'
 import debounce from './util/debounce'
@@ -38,7 +39,7 @@ function createStore<T extends {}, V = null, VK extends string = string>({
   initialValue,
   validator,
 }: {
-  storage?: (AppStorage<T> | { key: string })
+  storage?: AppStorage<T> | { key: string }
   validator?: (
     t: Store<T, V>
   ) => [null, null] | [V, null] | [null, Partial<Record<VK, string>>]
@@ -123,7 +124,6 @@ function createStore<T extends {}, V = null, VK extends string = string>({
         }
       }
       ns = validate(ns)
-
 
       if (saveToStorage) {
         storeState ? _saveToStorageNow(ns) : saveToStorage(ns)
