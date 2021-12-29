@@ -36,16 +36,14 @@
         color={'secondary'}
         disabled={deleted || editDisabled}
         icon="edit"
-        on:click={() => onEdit?.(ID)}>Edit</Button
-      >
+        on:click={() => onEdit?.(ID)}>Edit</Button>
     {/if}
     {#if onDelete}
       <Button
         color={'danger'}
         disabled={deleteDisabled}
         icon="delete"
-        on:click={() => onDelete?.(ID)}
-      >
+        on:click={() => onDelete?.(ID)}>
         {#if deleted}
           Undelete
         {:else}

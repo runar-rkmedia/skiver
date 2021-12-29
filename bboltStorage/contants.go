@@ -11,7 +11,10 @@ type PubType string
 type PubVerb string
 
 const (
-	PubTypeUser PubType = "user"
+	PubTypeUser        PubType = "user"
+	PubTypeTranslation PubType = "translation"
+	PubTypeLocale      PubType = "locale"
+	PubTypeProject     PubType = "project"
 
 	PubVerbCreate PubVerb = "create"
 	PubVerbUpdate PubVerb = "update"

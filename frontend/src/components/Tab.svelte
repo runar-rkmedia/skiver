@@ -1,28 +1,27 @@
 <script lang="ts">
   export let active: boolean
   export let disabled: boolean = false
+  export let href: string
 </script>
 
-<li class:active><button {disabled} class="" on:click><slot /></button></li>
+<li class:active><a {href} {disabled} class=""><slot /></a></li>
 
 <style>
-  .active button {
+  .active a {
     background-color: hsla(240, 60%, 80%, 20%);
   }
-  button:hover:not(:disabled) {
+  a:hover:not(:disabled) {
     background-color: hsla(240, 60%, 80%, 30%);
   }
-  .active button:hover:not(:disabled) {
+  .active a:hover:not(:disabled) {
     background-color: hsla(240, 60%, 80%, 40%);
   }
-  li {
-    all: initial;
-  }
-  button:disabled {
+  a:disabled {
     cursor: unset;
     opacity: 0.5;
   }
-  button {
+  a {
+    display: block;
     font-weight: bold;
     cursor: pointer;
     font-family: revert;
@@ -33,5 +32,9 @@
     /* background-color: var(--color-grey-700); */
     padding-inline: 12px;
     height: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
   }
 </style>

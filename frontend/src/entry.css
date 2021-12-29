@@ -40,6 +40,11 @@ body {
   margin: 0;
 }
 
+li {
+  all: initial;
+  font-family: var(--font-sans);
+}
+
 html,
 body {
   height: 100%;

@@ -3,7 +3,6 @@
 <script lang="ts">
   import 'tippy.js/dist/tippy.css' // Tooltips popover
   import { api, db } from './api'
-  import { state } from './state'
   import { scale } from 'svelte/transition'
 
   import ServerInfo from './components/ServerInfo.svelte'
@@ -29,6 +28,7 @@
       api.serverInfo()
       api.locale.list()
       api.project.list()
+      api.translation.list()
       didRunInital = true
     }
   }
@@ -39,9 +39,13 @@
 
 <div class="wrapper">
   <header>
-    <img src="/logo.svg" alt="Logo" />
-    <h1>Skiver - Ski's the limit</h1>
-    <Tabs bind:value={$state.tab} />
+    <a href="#/">
+      <img src="/logo.svg" alt="Logo" />
+    </a>
+    <a href="#/">
+      <h1>Skiver - Ski's the limit</h1>
+    </a>
+    <Tabs />
     {#if $db.login.ok}
       <div class="user-welcome">
         Welcome, {$db.login.userName}
@@ -104,10 +108,18 @@
   </main>
   <footer>
     <ServerInfo />
+    <a href="/docs" target="skiver-swagger">Docs</a>
   </footer>
 </div>
 
 <style>
+  header a {
+    color: unset;
+    text-decoration: unset;
+  }
+  footer a {
+    color: unset;
+  }
   .user-welcome {
     margin-left: auto;
     margin-block: auto;

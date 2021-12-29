@@ -16,7 +16,7 @@ var (
 		AllowOrigin: "_any_",
 		MaxAge:      24 * time.Hour,
 	}
-	accessControlMaxAgeString = fmt.Sprint("%.f", accessControl.MaxAge.Seconds())
+	accessControlMaxAgeString = fmt.Sprintf("%.f", accessControl.MaxAge.Seconds())
 )
 
 func AddAccessControl(r *http.Request, rw http.ResponseWriter) {

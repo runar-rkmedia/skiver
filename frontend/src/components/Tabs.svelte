@@ -1,25 +1,21 @@
 <script lang="ts">
-  import { state } from 'state'
-
+  import router from 'util/router'
   import Icon from './Icon.svelte'
-
   import Tab from './Tab.svelte'
 </script>
 
 <nav>
-  <Tab
-    active={$state.tab === 'project'}
-    on:click={() => ($state.tab = 'project')}
-  >
-    <Icon icon={'gEndpoint'} color="tertiary" />
-    Projects
+  <Tab href="#project/" active={$router.hash.startsWith('#project/')}>
+    <div>
+      <Icon icon={'gEndpoint'} color="tertiary" />
+      Projects
+    </div>
   </Tab>
-  <Tab
-    active={$state.tab === 'locale'}
-    on:click={() => ($state.tab = 'locale')}
-  >
-    <Icon icon={'gRequest'} color="tertiary" />
-    Locales
+  <Tab href="#locale/" active={$router.hash.startsWith('#locale/')}>
+    <div>
+      <Icon icon={'gRequest'} color="tertiary" />
+      Locales
+    </div>
   </Tab>
 </nav>
 

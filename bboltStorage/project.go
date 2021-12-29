@@ -36,7 +36,7 @@ func (b *BBolter) CreateProject(project types.Project) (types.Project, error) {
 		return project, err
 	}
 
-	b.PublishChange(PubTypeUser, PubVerbCreate, project)
+	b.PublishChange(PubTypeProject, PubVerbCreate, project)
 	return project, err
 }
 

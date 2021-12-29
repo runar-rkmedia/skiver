@@ -36,7 +36,7 @@ func (b *BBolter) CreateLocale(locale types.Locale) (types.Locale, error) {
 		return locale, err
 	}
 
-	b.PublishChange(PubTypeUser, PubVerbCreate, locale)
+	b.PublishChange(PubTypeLocale, PubVerbCreate, locale)
 	return locale, err
 }
 func (bb *BBolter) GetLocales() (map[string]types.Locale, error) {

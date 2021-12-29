@@ -17,6 +17,7 @@ export function objectKeys<T extends object>(obj: T) {
 export type DB = {
   project: Record<string, ApiDef.Project>
   locale: Record<string, ApiDef.Locale>
+  translation: Record<string, ApiDef.Translation>
   login: ApiDef.LoginResponse
   serverInfo: ApiDef.ServerInfo
   responseStates: Pick<
@@ -32,6 +33,7 @@ export const api = {
       (e) => db.update((s) => ({ ...s, serverInfo: e })),
       options
     ),
+  translation: CrudFactory<ApiDef.TranslationInput, 'translation'>('translation'),
   project: CrudFactory<ApiDef.ProjectInput, 'project'>('project'),
   locale: CrudFactory<ApiDef.LocaleInput, 'locale'>('locale'),
   login: {
@@ -290,12 +292,18 @@ function apiCreateFactory<Payload extends {}, K extends DBKeyValue>(
   subPath: string,
   storeKey: K
 ) {
-  return (body: Payload, options?: ApiFetchOptions) =>
-    fetchApi<DB[K]['s']>(subPath, (e) => replaceField(storeKey, e, e.id), {
+  return async (body: Payload, options?: ApiFetchOptions) => {
+
+    db.update(s => ({ ...s, responseStates: { ...s.responseStates, [storeKey]: { loading: true } } }))
+    const result = await fetchApi<DB[K]['s']>(subPath, (e) => replaceField(storeKey, e, e.id), {
       method: methods.POST,
       body,
       ...options,
     })
+    db.update(s => ({ ...s, responseStates: { ...s.responseStates, [storeKey]: { loading: false, error: result[1] } } }))
+
+    return result
+  }
 }
 
 function apiUpdateFactory<Payload extends {}, K extends DBKeyValue>(

@@ -19,6 +19,10 @@ type Storage interface {
 	GetProject(ID string) (*Project, error)
 	CreateProject(locale Project) (Project, error)
 	GetProjects() (map[string]Project, error)
+
+	GetTranslation(ID string) (*Translation, error)
+	CreateTranslation(locale Translation) (Translation, error)
+	GetTranslations() (map[string]Translation, error)
 }
 
 type Entity struct {

@@ -222,6 +222,35 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				rc.WriteAuto(locale, err, requestContext.CodeErrCreateProject)
 				return
 			}
+		case "translation":
+			if isGet {
+				translations, err := ctx.DB.GetTranslations()
+				rc.WriteAuto(translations, err, requestContext.CodeErrTranslation)
+				return
+			}
+			if isPost {
+				var j models.TranslationInput
+				if err := rc.ValidateBytes(body, &j); err != nil {
+					return
+				}
+
+				t := types.Translation{
+					// TranslationInput: j,
+					ProjectID:   j.ProjectID,
+					Prefix:      j.Prefix,
+					Key:         j.Key,
+					Aliases:     j.Aliases,
+					Context:     j.Context,
+					Tag:         j.Tag,
+					Description: j.Description,
+					Title:       j.Title,
+					LocaleID:    j.LocaleID,
+					Value:       j.Value,
+				}
+				translation, err := ctx.DB.CreateTranslation(t)
+				rc.WriteAuto(translation, err, requestContext.CodeErrCreateTranslation)
+				return
+			}
 		case "locale":
 			if isGet {
 				locales, err := ctx.DB.GetLocales()
