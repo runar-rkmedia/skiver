@@ -103,11 +103,13 @@ label {
 }
 
 input,
+textarea,
 select {
   font-size: 1.2rem;
   padding: var(--size-2);
   border-radius: var(--radius-md);
 }
+textarea:focus,
 input:focus,
 select:focus {
   box-shadow: var(--elevation-4);
@@ -245,8 +247,12 @@ label .required::after {
 table * {
   text-align: left;
 }
-table tr:nth-child(odd) {
+table tr:nth-child(even) {
   background-color: var(--color-grey-300);
+}
+table th {
+  background-color: var(--color-grey-700);
+  color: var(--color-grey-100);
 }
 
 input:invalid,

@@ -6,28 +6,8 @@ package types
 // swagger:model Project
 type Project struct {
 	Entity
-	ProjectInput
-}
-
-type ProjectInput struct {
-	// Required: true
-	// Max Length: 400
-	// Min Length: 2
-	// example: My Great Project
-	Title string `json:"title"`
-	// Max Length: 8000
-	// example: Project-description
-	Description string `json:"description"`
-	// If present, any translations with tags matching will also be included in the exported translations
-	// If the project contains conflicting translations, the project has presedence.
-	// example: ["actions", "general"]
+	Title        string   `json:"title"`
+	Description  string   `json:"description"`
 	IncludedTags []string `json:"included_tags"`
-}
-
-// swagger:parameters createProject
-type projectInput struct {
-
-	// required:true
-	// in:body
-	Body ProjectInput
+	CategoryIDs  []string `json:"category_ids"`
 }

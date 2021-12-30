@@ -9,7 +9,7 @@ import (
 
 func (b *BBolter) GetUser(userId string) (types.User, error) {
 	var u types.User
-	err := b.GetItem(BucketUsers, userId, &u)
+	err := b.GetItem(BucketUser, userId, &u)
 	return u, err
 }
 
@@ -30,7 +30,7 @@ func (b *BBolter) CreateUser(user types.User) (types.User, error) {
 	user.Entity = b.NewEntity()
 
 	err := b.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(BucketUsers)
+		bucket := tx.Bucket(BucketUser)
 		existing := bucket.Get([]byte(user.ID))
 		if existing != nil {
 			return fmt.Errorf("there already exists a user with this ID")
@@ -50,7 +50,7 @@ func (b *BBolter) CreateUser(user types.User) (types.User, error) {
 }
 func (bb *BBolter) GetUserByUserName(userName string) (types.User, error) {
 	var u types.User
-	err := bb.Iterate(BucketUsers, func(key, b []byte) bool {
+	err := bb.Iterate(BucketUser, func(key, b []byte) bool {
 		var uu types.User
 		err := bb.Unmarshal(b, &uu)
 		if err != nil {

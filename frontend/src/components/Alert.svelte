@@ -11,13 +11,12 @@
   <div class="wrapper">
     <button
       class={`btn-reset circle ${kind}`}
-      on:click|preventDefault={() => (collapse = !collapse)}
-    >
+      on:click|preventDefault={() => (collapse = !collapse)}>
       <Icon icon={kind} class="kind" color="inherit" />
     </button>
   </div>
 {:else}
-  <div transition:slide class={`alert ${kind}`}>
+  <div transition:slide|local class={`alert ${kind}`}>
     <div class="alert-icon">
       <Icon icon={kind} class="kind" />
     </div>

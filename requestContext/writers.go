@@ -3,8 +3,6 @@ package requestContext
 import (
 	"net/http"
 	"strings"
-
-	"github.com/runar-rkmedia/skiver/models"
 )
 
 type OutputKind = int
@@ -26,12 +24,14 @@ func WriteErr(err error, code ErrorCodes, r *http.Request, rw http.ResponseWrite
 	return WriteError(err.Error(), code, r, rw, err)
 }
 func WriteError(msg string, code ErrorCodes, r *http.Request, rw http.ResponseWriter, details ...interface{}) error {
-	ae := models.APIError{Error: msg, Code: string(code)}
+	ae := APIError{Error: Error{Message: msg, Code: code}}
 	if details != nil && details[0] != nil {
 		ae.Details = details[0]
 	}
 	statusCode := http.StatusBadGateway
 	switch code {
+	case CodeErrAuthenticationRequired:
+		statusCode = http.StatusUnauthorized
 	case CodeErrMethodNotAllowed:
 		statusCode = http.StatusMethodNotAllowed
 	case CodeErrRequestEntityTooLarge:

@@ -9,26 +9,18 @@ import (
 
 func (b *BBolter) GetTranslation(ID string) (*types.Translation, error) {
 	var u types.Translation
-	err := b.GetItem(BucketTranslations, ID, &u)
+	err := b.GetItem(BucketTranslation, ID, &u)
 	return &u, err
 }
 
 func (b *BBolter) CreateTranslation(translation types.Translation) (types.Translation, error) {
-	if translation.ProjectID == "" {
-		return translation, fmt.Errorf("Missing ProjectID: %w", ErrMissingIdArg)
+	if translation.CategoryID == "" {
+		return translation, fmt.Errorf("Missing CategoryID: %w", ErrMissingIdArg)
 	}
-	if translation.LocaleID == "" {
-		return translation, fmt.Errorf("Missing LocaleID: %w", ErrMissingIdArg)
-	}
-	if p, err := b.GetProject(translation.ProjectID); err != nil {
-		return translation, fmt.Errorf("Failed to lookup project-id: %w", err)
-	} else if p == nil {
-		return translation, fmt.Errorf("Did not find project with id %s: %w", translation.ProjectID, ErrNotFound)
-	}
-	if p, err := b.GetLocale(translation.LocaleID); err != nil {
-		return translation, fmt.Errorf("Failed to lookup locale-id: %w", err)
+	if p, err := b.GetCategory(translation.CategoryID); err != nil {
+		return translation, fmt.Errorf("Failed to lookup category-id: %w", err)
 	} else if p.ID == "" {
-		return translation, fmt.Errorf("Did not find locale with id %s: %w", translation.LocaleID, ErrNotFound)
+		return translation, fmt.Errorf("Did not find category with id %s: %w", translation.CategoryID, ErrNotFound)
 	}
 	existing, err := b.GetTranslationFilter(translation)
 	if err != ErrNotFound {
@@ -37,15 +29,13 @@ func (b *BBolter) CreateTranslation(translation types.Translation) (types.Transl
 	translation.Entity = b.NewEntity()
 
 	err = b.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(BucketTranslations)
+		bucket := tx.Bucket(BucketTranslation)
 		existing := bucket.Get([]byte(translation.ID))
 		if existing != nil {
 			return fmt.Errorf("there already exists a translation with this ID")
 		}
-		fmt.Println(translation)
 		bytes, err := b.Marshal(translation)
 		if err != nil {
-			fmt.Println("tttttt", err)
 			return err
 		}
 		return bucket.Put([]byte(translation.ID), bytes)
@@ -60,7 +50,7 @@ func (b *BBolter) CreateTranslation(translation types.Translation) (types.Transl
 
 func (bb *BBolter) GetTranslations() (map[string]types.Translation, error) {
 	us := make(map[string]types.Translation)
-	err := bb.Iterate(BucketTranslations, func(key, b []byte) bool {
+	err := bb.Iterate(BucketTranslation, func(key, b []byte) bool {
 		var u types.Translation
 		bb.Unmarshal(b, &u)
 		us[string(key)] = u
@@ -74,7 +64,7 @@ func (bb *BBolter) GetTranslations() (map[string]types.Translation, error) {
 
 func (bb *BBolter) GetTranslationFilter(filter ...types.Translation) (*types.Translation, error) {
 	var u types.Translation
-	err := bb.Iterate(BucketTranslations, func(key, b []byte) bool {
+	err := bb.Iterate(BucketTranslation, func(key, b []byte) bool {
 		var uu types.Translation
 		err := bb.Unmarshal(b, &uu)
 		if err != nil {
@@ -82,16 +72,10 @@ func (bb *BBolter) GetTranslationFilter(filter ...types.Translation) (*types.Tra
 			return false
 		}
 		for _, f := range filter {
-			if f.ProjectID != "" && f.ProjectID != uu.ProjectID {
-				continue
-			}
-			if f.Prefix != "" && f.Prefix != uu.Prefix {
+			if f.CategoryID != "" && f.CategoryID != uu.CategoryID {
 				continue
 			}
 			if f.Key != "" && f.Key != uu.Key {
-				continue
-			}
-			if f.LocaleID != "" && f.LocaleID != uu.LocaleID {
 				continue
 			}
 			u = uu

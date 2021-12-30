@@ -4,8 +4,18 @@ import "fmt"
 
 type ErrorCodes string
 type Error struct {
-	Code    ErrorCodes
-	Message string
+	Code    ErrorCodes `json:"code,omitempty"`
+	Message string     `json:"error,omitempty"`
+}
+type APIError struct {
+	Details interface{} `json:"details,omitempty"`
+	Error
+}
+
+// swagger:response
+type apiError struct {
+	// in:body
+	Body APIError
 }
 
 func (e Error) Error() string {
@@ -40,14 +50,18 @@ const (
 	CodeErrAuthenticationRequired ErrorCodes = "Error: Authentication required"
 	CodeErrAuthoriziationFailed   ErrorCodes = "Error: Authorization failed"
 
-	CodeErrLocale      ErrorCodes = "Error: Locale error"
-	CodeErrProject     ErrorCodes = "Error: Project error"
-	CodeErrTranslation ErrorCodes = "Error: Translation error"
+	CodeErrLocale           ErrorCodes = "Error: Locale error"
+	CodeErrProject          ErrorCodes = "Error: Project error"
+	CodeErrTranslation      ErrorCodes = "Error: Translation error"
+	CodeErrCategory         ErrorCodes = "Error: Category error"
+	CodeErrTranslationValue ErrorCodes = "Error: TranslationValue error"
 
 	CodeErrNotFoundLocale ErrorCodes = "Error: Locale not found"
 	CodeErrNotFoundUser   ErrorCodes = "Error: User not found"
 
-	CodeErrDBCreateLocale    ErrorCodes = "Error: Database Create Locale"
-	CodeErrCreateProject     ErrorCodes = "Error: Database Create Project"
-	CodeErrCreateTranslation ErrorCodes = "Error: Database Create Translation"
+	CodeErrDBCreateLocale         ErrorCodes = "Error: Database Create Locale"
+	CodeErrCreateProject          ErrorCodes = "Error: Database Create Project"
+	CodeErrCreateTranslation      ErrorCodes = "Error: Database Create Translation"
+	CodeErrCreateCategory         ErrorCodes = "Error: Database Create Category"
+	CodeErrCreateTranslationValue ErrorCodes = "Error: Database Create TranslationValue"
 )

@@ -11,16 +11,46 @@ components:
 security:
   - cookieAuth: []
 definitions:
-  ApiError:
-    properties:
-      code:
-        type: string
-      error:
-        type: string
-      details:
-        type: object
+  ProjectInput:
     type: object
-
+    required:
+      - title
+    properties:
+      title:
+        type: string
+        minLength: 1
+        maxLength: 400
+      description:
+        type: string
+        minLength: 1
+        maxLength: 8000
+  TranslationInput:
+    type: object
+    required:
+      - category_id
+      - key
+    properties:
+      category_id:
+        type: string
+        minLength: 3
+        maxLength: 100
+      key:
+        type: string
+        minLength: 1
+        maxLength: 400
+      context:
+        type: string
+        minLength: 1
+        maxLength: 400
+      title:
+        type: string
+        minLength: 1
+        maxLength: 400
+      description:
+        type: string
+        minLength: 1
+        maxLength: 8000
+        
   LocaleInput:
     type: object
     required: 
@@ -53,6 +83,48 @@ definitions:
         maxLength: 12
 
 
+  TranslationValueInput:
+    properties:
+      translation_id:
+        maxLength: 100
+        minLength: 1
+        type: string
+      locale_id:
+        maxLength: 100
+        minLength: 1
+        type: string
+      value:
+        maxLength: 8000
+        minLength: 0
+        type: string
+    type: object
+    required:
+      - translation_id
+      - locale_id
+      - value
+  CategoryInput:
+    properties:
+      key:
+        maxLength: 100
+        minLength: 1
+        type: string
+      project_id:
+        maxLength: 100
+        minLength: 1
+        type: string
+      title:
+        maxLength: 400
+        minLength: 3
+        type: string
+      description:
+        maxLength: 8000
+        minLength: 3
+        type: string
+    type: object
+    required:
+      - key
+      - project_id
+      - title
   LoginInput:
     properties:
       password:
@@ -98,7 +170,7 @@ paths:
       operationId: getProject
       responses:
         "200":
-          $ref: '#/responses/ProjectResponse'
+          $ref: '#/responses/ProjectsResponse'
         "500":
           $ref: '#/responses/apiError'
       tags:
@@ -108,11 +180,32 @@ paths:
       operationId: createProject
       responses:
         "200":
-          $ref: '#/responses/ProjectsResponse'
+          $ref: '#/responses/ProjectResponse'
         "500":
           $ref: '#/responses/apiError'
       tags:
       - project
+  /api/category/:
+    get:
+      summary: List categories
+      operationId: getcategory
+      responses:
+        "200":
+          $ref: '#/responses/CategoryResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - category
+    post:
+      summary: Create a new category
+      operationId: createCategory
+      responses:
+        "200":
+          $ref: '#/responses/CategoryResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - category
   /api/translation/:
     get:
       summary: List translations
@@ -134,6 +227,27 @@ paths:
           $ref: '#/responses/apiError'
       tags:
       - translation
+  /api/translation-value/:
+    get:
+      summary: List translation-values
+      operationId: getTranslationValue
+      responses:
+        "200":
+          $ref: '#/responses/TranslationValuesResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - translationValue
+    post:
+      summary: Create a new translation-value for a locale
+      operationId: createTranslationValue
+      responses:
+        "200":
+          $ref: '#/responses/TranslationValueResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - translationValue
   /api/login/:
     get:
       summary: Get login-information
@@ -236,6 +350,17 @@ responses:
       items:
         $ref: '#/definitions/Project'
       type: array
+  CategoryResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/Category'
+      type: object
+  CategoriesResponse:
+    description: ""
+    schema:
+      items:
+        $ref: '#/definitions/Category'
+      type: array
   TranslationResponse:
     description: ""
     schema:
@@ -246,6 +371,17 @@ responses:
     schema:
       items:
         $ref: '#/definitions/Translation'
+      type: array
+  TranslationValueResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/TranslationValue'
+      type: object
+  TranslationValuesResponse:
+    description: ""
+    schema:
+      items:
+        $ref: '#/definitions/TranslationValue'
       type: array
 schemes:
 - http

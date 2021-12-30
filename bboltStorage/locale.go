@@ -9,7 +9,7 @@ import (
 
 func (b *BBolter) GetLocale(ID string) (types.Locale, error) {
 	var u types.Locale
-	err := b.GetItem(BucketLocales, ID, &u)
+	err := b.GetItem(BucketLocale, ID, &u)
 	return u, err
 }
 
@@ -21,7 +21,7 @@ func (b *BBolter) CreateLocale(locale types.Locale) (types.Locale, error) {
 	locale.Entity = b.NewEntity()
 
 	err = b.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(BucketLocales)
+		bucket := tx.Bucket(BucketLocale)
 		existing := bucket.Get([]byte(locale.ID))
 		if existing != nil {
 			return fmt.Errorf("there already exists a locale with this ID")
@@ -41,7 +41,7 @@ func (b *BBolter) CreateLocale(locale types.Locale) (types.Locale, error) {
 }
 func (bb *BBolter) GetLocales() (map[string]types.Locale, error) {
 	us := make(map[string]types.Locale)
-	err := bb.Iterate(BucketLocales, func(key, b []byte) bool {
+	err := bb.Iterate(BucketLocale, func(key, b []byte) bool {
 		var u types.Locale
 		bb.Unmarshal(b, &u)
 		us[string(key)] = u
@@ -54,7 +54,7 @@ func (bb *BBolter) GetLocales() (map[string]types.Locale, error) {
 }
 func (bb *BBolter) GetLocaleFilter(filter ...types.Locale) (types.Locale, error) {
 	var u types.Locale
-	err := bb.Iterate(BucketLocales, func(key, b []byte) bool {
+	err := bb.Iterate(BucketLocale, func(key, b []byte) bool {
 		var uu types.Locale
 		err := bb.Unmarshal(b, &uu)
 		if err != nil {

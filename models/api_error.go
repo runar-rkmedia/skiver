@@ -8,32 +8,82 @@ package models
 import (
 	"context"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 )
 
-// APIError Api error
+// APIError API error
 //
-// swagger:model ApiError
+// swagger:model APIError
 type APIError struct {
-
-	// code
-	Code string `json:"code,omitempty"`
 
 	// details
 	Details interface{} `json:"details,omitempty"`
 
-	// error
-	Error string `json:"error,omitempty"`
+	// message
+	Message string `json:"error,omitempty"`
+
+	// code
+	Code ErrorCodes `json:"code,omitempty"`
 }
 
-// Validate validates this Api error
+// Validate validates this API error
 func (m *APIError) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.validateCode(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
 	return nil
 }
 
-// ContextValidate validates this Api error based on context it is used
+func (m *APIError) validateCode(formats strfmt.Registry) error {
+	if swag.IsZero(m.Code) { // not required
+		return nil
+	}
+
+	if err := m.Code.Validate(formats); err != nil {
+		if ve, ok := err.(*errors.Validation); ok {
+			return ve.ValidateName("code")
+		} else if ce, ok := err.(*errors.CompositeError); ok {
+			return ce.ValidateName("code")
+		}
+		return err
+	}
+
+	return nil
+}
+
+// ContextValidate validate this API error based on the context it is used
 func (m *APIError) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.contextValidateCode(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *APIError) contextValidateCode(ctx context.Context, formats strfmt.Registry) error {
+
+	if err := m.Code.ContextValidate(ctx, formats); err != nil {
+		if ve, ok := err.(*errors.Validation); ok {
+			return ve.ValidateName("code")
+		} else if ce, ok := err.(*errors.CompositeError); ok {
+			return ce.ValidateName("code")
+		}
+		return err
+	}
+
 	return nil
 }
 

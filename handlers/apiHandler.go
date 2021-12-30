@@ -212,11 +212,8 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				}
 
 				l := types.Project{
-					ProjectInput: types.ProjectInput{
-						Title:        *j.Title,
-						Description:  j.Description,
-						IncludedTags: j.IncludedTags,
-					},
+					Title:       *j.Title,
+					Description: j.Description,
 				}
 				locale, err := ctx.DB.CreateProject(l)
 				rc.WriteAuto(locale, err, requestContext.CodeErrCreateProject)
@@ -236,19 +233,58 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 
 				t := types.Translation{
 					// TranslationInput: j,
-					ProjectID:   j.ProjectID,
-					Prefix:      j.Prefix,
-					Key:         j.Key,
-					Aliases:     j.Aliases,
+					CategoryID:  *j.CategoryID,
+					Key:         *j.Key,
 					Context:     j.Context,
-					Tag:         j.Tag,
 					Description: j.Description,
 					Title:       j.Title,
-					LocaleID:    j.LocaleID,
-					Value:       j.Value,
 				}
 				translation, err := ctx.DB.CreateTranslation(t)
 				rc.WriteAuto(translation, err, requestContext.CodeErrCreateTranslation)
+				return
+			}
+		case "category":
+			if isGet {
+				categories, err := ctx.DB.GetCategories()
+				rc.WriteAuto(categories, err, requestContext.CodeErrCategory)
+				return
+			}
+			if isPost {
+				var j models.CategoryInput
+				if err := rc.ValidateBytes(body, &j); err != nil {
+					return
+				}
+
+				c := types.Category{
+					// TranslationInput: j,
+					ProjectID:   *j.ProjectID,
+					Key:         *j.Key,
+					Description: j.Description,
+					Title:       *j.Title,
+				}
+				category, err := ctx.DB.CreateCategory(c)
+				rc.WriteAuto(category, err, requestContext.CodeErrCategory)
+				return
+			}
+		case "translationValue":
+			if isGet {
+				tvs, err := ctx.DB.GetTranslationValues()
+				rc.WriteAuto(tvs, err, requestContext.CodeErrCategory)
+				return
+			}
+			if isPost {
+				var j models.TranslationValueInput
+				if err := rc.ValidateBytes(body, &j); err != nil {
+					return
+				}
+
+				tv := types.TranslationValue{
+					LocaleID:      *j.LocaleID,
+					TranslationID: *j.TranslationID,
+					Value:         *j.Value,
+				}
+				translationValue, err := ctx.DB.CreateTranslationValue(tv)
+				rc.WriteAuto(translationValue, err, requestContext.CodeErrCreateTranslationValue)
 				return
 			}
 		case "locale":

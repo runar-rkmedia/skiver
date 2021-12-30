@@ -1,6 +1,9 @@
 export const iconMap = {
   edit: 'fa-edit',
   code: 'fa-code',
+  create: 'fa-plus',
+  cancel: 'fa-ban',
+  submit: 'fa-paper-plane',
   collapseUp: 'fa-angle-up',
   collapseDown: 'fa-angle-down',
   closeCross: 'fa-times',

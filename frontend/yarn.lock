@@ -466,6 +466,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dot-prop@npm:^6.0.1":
+  version: 6.0.1
+  resolution: "dot-prop@npm:6.0.1"
+  dependencies:
+    is-obj: ^2.0.0
+  checksum: 0f47600a4b93e1dc37261da4e6909652c008832a5d3684b5bf9a9a0d3f4c67ea949a86dceed9b72f5733ed8e8e6383cc5958df3bbd0799ee317fd181f2ece700
+  languageName: node
+  linkType: hard
+
 "dtsgenerator@npm:^3.13.2":
   version: 3.13.2
   resolution: "dtsgenerator@npm:3.13.2"
@@ -841,6 +850,7 @@ fsevents@~2.3.2:
     prettier-plugin-svelte: ^2.5.1
     sass: ^1.45.1
     simplytyped: ^3.3.0
+    sort-on: ^5.0.0
     svelte: ^3.44.3
     svelte-preprocess: ^4.10.1
     svelte-preprocess-sass: ^2.0.1
@@ -1019,6 +1029,13 @@ fsevents@~2.3.2:
   version: 7.0.0
   resolution: "is-number@npm:7.0.0"
   checksum: 456ac6f8e0f3111ed34668a624e45315201dff921e5ac181f8ec24923b99e9f32ca1a194912dc79d539c97d33dba17dc635202ff0b2cf98326f608323276d27a
+  languageName: node
+  linkType: hard
+
+"is-obj@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "is-obj@npm:2.0.0"
+  checksum: c9916ac8f4621962a42f5e80e7ffdb1d79a3fab7456ceaeea394cd9e0858d04f985a9ace45be44433bf605673c8be8810540fe4cc7f4266fc7526ced95af5a08
   languageName: node
   linkType: hard
 
@@ -1574,6 +1591,15 @@ fsevents@~2.3.2:
   bin:
     sorcery: bin/index.js
   checksum: e23fc06336c6e47274bd5e23849f8a7a40071d06a6fe1105f2557eb8613563b4c867230fd5f7b143e86a9bf45f62279e39ce68545482821d7b51b185133f2bc9
+  languageName: node
+  linkType: hard
+
+"sort-on@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "sort-on@npm:5.0.0"
+  dependencies:
+    dot-prop: ^6.0.1
+  checksum: eeec3feb178d64c3d78182d4275d79b20bdc753253517d2e2f502b80402d421c1e23a1fa68c182cfaa16ab402c2abe198bf3b3835970c74338e13f812afbd2b2
   languageName: node
   linkType: hard
 

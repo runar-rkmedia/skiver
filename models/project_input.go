@@ -20,20 +20,14 @@ import (
 type ProjectInput struct {
 
 	// description
-	// Example: Project-description
 	// Max Length: 8000
+	// Min Length: 1
 	Description string `json:"description,omitempty"`
 
-	// If present, any translations with tags matching will also be included in the exported translations
-	// If the project contains conflicting translations, the project has presedence.
-	// Example: ["actions","general"]
-	IncludedTags []string `json:"included_tags"`
-
 	// title
-	// Example: My Great Project
 	// Required: true
 	// Max Length: 400
-	// Min Length: 2
+	// Min Length: 1
 	Title *string `json:"title"`
 }
 
@@ -60,6 +54,10 @@ func (m *ProjectInput) validateDescription(formats strfmt.Registry) error {
 		return nil
 	}
 
+	if err := validate.MinLength("description", "body", m.Description, 1); err != nil {
+		return err
+	}
+
 	if err := validate.MaxLength("description", "body", m.Description, 8000); err != nil {
 		return err
 	}
@@ -73,7 +71,7 @@ func (m *ProjectInput) validateTitle(formats strfmt.Registry) error {
 		return err
 	}
 
-	if err := validate.MinLength("title", "body", *m.Title, 2); err != nil {
+	if err := validate.MinLength("title", "body", *m.Title, 1); err != nil {
 		return err
 	}
 

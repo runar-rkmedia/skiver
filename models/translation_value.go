@@ -14,16 +14,10 @@ import (
 	"github.com/go-openapi/validate"
 )
 
-// Translations translations
+// TranslationValue translation value
 //
-// swagger:model Translations
-type Translations struct {
-
-	// aliases
-	Aliases []string `json:"aliases"`
-
-	// Used as a variation for the key
-	Context string `json:"context,omitempty"`
+// swagger:model TranslationValue
+type TranslationValue struct {
 
 	// Time of which the entity was created in the database
 	// Required: true
@@ -38,33 +32,15 @@ type Translations struct {
 	// Format: date-time
 	Deleted strfmt.DateTime `json:"deleted,omitempty"`
 
-	// Description for the key, its use and where the key is used.
-	Description string `json:"description,omitempty"`
-
 	// Unique identifier of the entity
 	// Required: true
 	ID *string `json:"id"`
 
-	// Final part of the identifiying key.
-	// With the example-input, the complete generated key would be store.product.description
-	// Example: description
-	Key string `json:"key,omitempty"`
-
 	// locale ID
 	LocaleID string `json:"locale_id,omitempty"`
 
-	// Can be a dot-separated path-like string
-	// Example: store.products
-	Prefix string `json:"prefix,omitempty"`
-
-	// project ID
-	ProjectID string `json:"project,omitempty"`
-
-	// tag
-	Tag []string `json:"tags"`
-
-	// Title with short description of the key
-	Title string `json:"title,omitempty"`
+	// Translation ID
+	TranslationID string `json:"translation_id,omitempty"`
 
 	// Time of which the entity was updated, if any
 	// Format: date-time
@@ -76,16 +52,10 @@ type Translations struct {
 	// The pre-interpolated value to use  with translations
 	// Example: The {{productName}} fires up to {{count}} bullets of {{subject}}.
 	Value string `json:"value,omitempty"`
-
-	// Variables used within the translation.
-	// This helps with giving translators more context,
-	// The value for the translation will be used in examples.
-	// Example: {"count":3,"productName":"X-Buster","subject":"compressed solar energy"}
-	Variables map[string]interface{} `json:"variables,omitempty"`
 }
 
-// Validate validates this translations
-func (m *Translations) Validate(formats strfmt.Registry) error {
+// Validate validates this translation value
+func (m *TranslationValue) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateCreatedAt(formats); err != nil {
@@ -110,7 +80,7 @@ func (m *Translations) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Translations) validateCreatedAt(formats strfmt.Registry) error {
+func (m *TranslationValue) validateCreatedAt(formats strfmt.Registry) error {
 
 	if err := validate.Required("createdAt", "body", m.CreatedAt); err != nil {
 		return err
@@ -123,7 +93,7 @@ func (m *Translations) validateCreatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Translations) validateDeleted(formats strfmt.Registry) error {
+func (m *TranslationValue) validateDeleted(formats strfmt.Registry) error {
 	if swag.IsZero(m.Deleted) { // not required
 		return nil
 	}
@@ -135,7 +105,7 @@ func (m *Translations) validateDeleted(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Translations) validateID(formats strfmt.Registry) error {
+func (m *TranslationValue) validateID(formats strfmt.Registry) error {
 
 	if err := validate.Required("id", "body", m.ID); err != nil {
 		return err
@@ -144,7 +114,7 @@ func (m *Translations) validateID(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Translations) validateUpdatedAt(formats strfmt.Registry) error {
+func (m *TranslationValue) validateUpdatedAt(formats strfmt.Registry) error {
 	if swag.IsZero(m.UpdatedAt) { // not required
 		return nil
 	}
@@ -156,13 +126,13 @@ func (m *Translations) validateUpdatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this translations based on context it is used
-func (m *Translations) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+// ContextValidate validates this translation value based on context it is used
+func (m *TranslationValue) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	return nil
 }
 
 // MarshalBinary interface implementation
-func (m *Translations) MarshalBinary() ([]byte, error) {
+func (m *TranslationValue) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -170,8 +140,8 @@ func (m *Translations) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *Translations) UnmarshalBinary(b []byte) error {
-	var res Translations
+func (m *TranslationValue) UnmarshalBinary(b []byte) error {
+	var res TranslationValue
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

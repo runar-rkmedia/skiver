@@ -12,7 +12,7 @@ func (bb *BBolter) GetSessions() (sess map[string]types.Session, err error) {
 	sess = make(map[string]types.Session)
 	var toEvict [][]byte
 	now := time.Now()
-	err = bb.Iterate(BucketSessions, func(key, b []byte) bool {
+	err = bb.Iterate(BucketSession, func(key, b []byte) bool {
 		var j types.Session
 		err := bb.Unmarshal(b, &j)
 		if err != nil {
@@ -35,7 +35,7 @@ func (bb *BBolter) GetSessions() (sess map[string]types.Session, err error) {
 	}
 	if len(toEvict) > 0 {
 		err = bb.Update(func(tx *bbolt.Tx) error {
-			bucket := tx.Bucket(BucketSessions)
+			bucket := tx.Bucket(BucketSession)
 			for i := 0; i < len(toEvict); i++ {
 				bucket.Delete(toEvict[i])
 			}
@@ -50,7 +50,7 @@ func (bb *BBolter) CreateSession(key string, session types.Session) (types.Sessi
 		if err != nil {
 			return fmt.Errorf("failed to marshal session: %w", err)
 		}
-		bucket := tx.Bucket(BucketSessions)
+		bucket := tx.Bucket(BucketSession)
 		return bucket.Put([]byte(key), b)
 	})
 	if err != nil {
@@ -60,7 +60,7 @@ func (bb *BBolter) CreateSession(key string, session types.Session) (types.Sessi
 }
 func (bb *BBolter) EvictSession(key string) error {
 	err := bb.Update(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket(BucketSessions)
+		bucket := tx.Bucket(BucketSession)
 		return bucket.Delete([]byte(key))
 	})
 	if err != nil {

@@ -4,14 +4,88 @@ consumes:
 - text/vnd.yaml
 - application/toml
 definitions:
-  ApiError:
+  APIError:
     properties:
       code:
-        type: string
+        $ref: '#/definitions/ErrorCodes'
       details:
         type: object
+        x-go-name: Details
       error:
         type: string
+        x-go-name: Message
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/requestContext
+  Category:
+    properties:
+      createdAt:
+        description: Time of which the entity was created in the database
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      createdBy:
+        description: User id refering to the user who created the item
+        type: string
+        x-go-name: CreatedBy
+      deleted:
+        description: |-
+          If set, the item is considered deleted. The item will normally not get deleted from the database,
+          but it may if cleanup is required.
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      description:
+        type: string
+        x-go-name: Description
+      id:
+        description: Unique identifier of the entity
+        type: string
+        x-go-name: ID
+      key:
+        type: string
+        x-go-name: Key
+      project_id:
+        type: string
+        x-go-name: ProjectID
+      title:
+        type: string
+        x-go-name: Title
+      updatedAt:
+        description: Time of which the entity was updated, if any
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updatedBy:
+        description: User id refering to who created the item
+        type: string
+        x-go-name: UpdatedBy
+    required:
+    - createdAt
+    - id
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
+  CategoryInput:
+    properties:
+      description:
+        maxLength: 8000
+        minLength: 3
+        type: string
+      key:
+        maxLength: 100
+        minLength: 1
+        type: string
+      project_id:
+        maxLength: 100
+        minLength: 1
+        type: string
+      title:
+        maxLength: 400
+        minLength: 3
+        type: string
+    required:
+    - key
+    - project_id
+    - title
     type: object
   Entity:
     properties:
@@ -49,6 +123,9 @@ definitions:
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
+  ErrorCodes:
+    type: string
+    x-go-package: github.com/runar-rkmedia/skiver/requestContext
   Locale:
     description: |-
       # See https://en.wikipedia.org/wiki/Language_code for more information
@@ -219,6 +296,11 @@ definitions:
     x-go-package: github.com/runar-rkmedia/skiver/types
   Project:
     properties:
+      category_ids:
+        items:
+          type: string
+        type: array
+        x-go-name: CategoryIDs
       createdAt:
         description: Time of which the entity was created in the database
         format: date-time
@@ -236,8 +318,6 @@ definitions:
         type: string
         x-go-name: Deleted
       description:
-        example: Project-description
-        maxLength: 8000
         type: string
         x-go-name: Description
       id:
@@ -245,20 +325,11 @@ definitions:
         type: string
         x-go-name: ID
       included_tags:
-        description: |-
-          If present, any translations with tags matching will also be included in the exported translations
-          If the project contains conflicting translations, the project has presedence.
-        example:
-        - actions
-        - general
         items:
           type: string
         type: array
         x-go-name: IncludedTags
       title:
-        example: My Great Project
-        maxLength: 400
-        minLength: 2
         type: string
         x-go-name: Title
       updatedAt:
@@ -273,37 +344,21 @@ definitions:
     required:
     - createdAt
     - id
-    - title
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
   ProjectInput:
     properties:
       description:
-        example: Project-description
         maxLength: 8000
+        minLength: 1
         type: string
-        x-go-name: Description
-      included_tags:
-        description: |-
-          If present, any translations with tags matching will also be included in the exported translations
-          If the project contains conflicting translations, the project has presedence.
-        example:
-        - actions
-        - general
-        items:
-          type: string
-        type: array
-        x-go-name: IncludedTags
       title:
-        example: My Great Project
         maxLength: 400
-        minLength: 2
+        minLength: 1
         type: string
-        x-go-name: Title
     required:
     - title
     type: object
-    x-go-package: github.com/runar-rkmedia/skiver/types
   ServerInfo:
     properties:
       BuildDate:
@@ -335,8 +390,10 @@ definitions:
           type: string
         type: array
         x-go-name: Aliases
+      category:
+        type: string
+        x-go-name: CategoryID
       context:
-        description: Used as a variation for the key
         type: string
         x-go-name: Context
       createdAt:
@@ -356,7 +413,6 @@ definitions:
         type: string
         x-go-name: Deleted
       description:
-        description: Description for the key, its use and where the key is used.
         type: string
         x-go-name: Description
       id:
@@ -364,32 +420,94 @@ definitions:
         type: string
         x-go-name: ID
       key:
-        description: |-
-          Final part of the identifiying key.
-          With the example-input, the complete generated key would be store.product.description
-        example: description
         type: string
         x-go-name: Key
-      locale_id:
+      parent_translation:
         type: string
-        x-go-name: LocaleID
-      prefix:
-        description: Can be a dot-separated path-like string
-        example: store.products
-        type: string
-        x-go-name: Prefix
-      project:
-        type: string
-        x-go-name: ProjectID
+        x-go-name: ParentTranslationID
       tags:
         items:
           type: string
         type: array
         x-go-name: Tag
       title:
-        description: Title with short description of the key
         type: string
         x-go-name: Title
+      updatedAt:
+        description: Time of which the entity was updated, if any
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updatedBy:
+        description: User id refering to who created the item
+        type: string
+        x-go-name: UpdatedBy
+      variables:
+        additionalProperties:
+          type: object
+        type: object
+        x-go-name: Variables
+    required:
+    - createdAt
+    - id
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
+  TranslationInput:
+    properties:
+      category_id:
+        maxLength: 100
+        minLength: 3
+        type: string
+      context:
+        maxLength: 400
+        minLength: 1
+        type: string
+      description:
+        maxLength: 8000
+        minLength: 1
+        type: string
+      key:
+        maxLength: 400
+        minLength: 1
+        type: string
+      title:
+        maxLength: 400
+        minLength: 1
+        type: string
+    required:
+    - category_id
+    - key
+    type: object
+  TranslationValue:
+    properties:
+      createdAt:
+        description: Time of which the entity was created in the database
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      createdBy:
+        description: User id refering to the user who created the item
+        type: string
+        x-go-name: CreatedBy
+      deleted:
+        description: |-
+          If set, the item is considered deleted. The item will normally not get deleted from the database,
+          but it may if cleanup is required.
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      id:
+        description: Unique identifier of the entity
+        type: string
+        x-go-name: ID
+      locale_id:
+        description: locale ID
+        type: string
+        x-go-name: LocaleID
+      translation_id:
+        description: Translation ID
+        type: string
+        x-go-name: TranslationID
       updatedAt:
         description: Time of which the entity was updated, if any
         format: date-time
@@ -404,87 +522,30 @@ definitions:
         example: The {{productName}} fires up to {{count}} bullets of {{subject}}.
         type: string
         x-go-name: Value
-      variables:
-        additionalProperties:
-          type: object
-        description: |-
-          Variables used within the translation.
-          This helps with giving translators more context,
-          The value for the translation will be used in examples.
-        example:
-          count: 3
-          productName: X-Buster
-          subject: compressed solar energy
-        type: object
-        x-go-name: Variables
     required:
     - createdAt
     - id
     type: object
-    x-go-name: Translations
     x-go-package: github.com/runar-rkmedia/skiver/types
-  TranslationInput:
+  TranslationValueInput:
     properties:
-      aliases:
-        items:
-          type: string
-        type: array
-        x-go-name: Aliases
-      context:
-        description: Used as a variation for the key
-        type: string
-        x-go-name: Context
-      description:
-        description: Description for the key, its use and where the key is used.
-        type: string
-        x-go-name: Description
-      key:
-        description: |-
-          Final part of the identifiying key.
-          With the example-input, the complete generated key would be store.product.description
-        example: description
-        type: string
-        x-go-name: Key
       locale_id:
+        maxLength: 100
+        minLength: 1
         type: string
-        x-go-name: LocaleID
-      prefix:
-        description: Can be a dot-separated path-like string
-        example: store.products
+      translation_id:
+        maxLength: 100
+        minLength: 1
         type: string
-        x-go-name: Prefix
-      project:
-        type: string
-        x-go-name: ProjectID
-      tags:
-        items:
-          type: string
-        type: array
-        x-go-name: Tag
-      title:
-        description: Title with short description of the key
-        type: string
-        x-go-name: Title
       value:
-        description: The pre-interpolated value to use  with translations
-        example: The {{productName}} fires up to {{count}} bullets of {{subject}}.
+        maxLength: 8000
+        minLength: 0
         type: string
-        x-go-name: Value
-      variables:
-        additionalProperties:
-          type: object
-        description: |-
-          Variables used within the translation.
-          This helps with giving translators more context,
-          The value for the translation will be used in examples.
-        example:
-          count: 3
-          productName: X-Buster
-          subject: compressed solar energy
-        type: object
-        x-go-name: Variables
+    required:
+    - translation_id
+    - locale_id
+    - value
     type: object
-    x-go-package: github.com/runar-rkmedia/skiver/types
 host: localhost
 info:
   description: |-
@@ -497,6 +558,27 @@ info:
   title: Skiver API.
   version: 0.0.1
 paths:
+  /api/category/:
+    get:
+      operationId: getcategory
+      responses:
+        "200":
+          $ref: '#/responses/CategoryResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: List categories
+      tags:
+      - category
+    post:
+      operationId: createCategory
+      responses:
+        "200":
+          $ref: '#/responses/CategoryResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Create a new category
+      tags:
+      - category
   /api/locale/:
     get:
       operationId: getLocale
@@ -561,7 +643,7 @@ paths:
       operationId: getProject
       responses:
         "200":
-          $ref: '#/responses/ProjectResponse'
+          $ref: '#/responses/ProjectsResponse'
         "500":
           $ref: '#/responses/apiError'
       summary: List projects
@@ -569,15 +651,9 @@ paths:
       - project
     post:
       operationId: createProject
-      parameters:
-      - in: body
-        name: Body
-        required: true
-        schema:
-          $ref: '#/definitions/ProjectInput'
       responses:
         "200":
-          $ref: '#/responses/ProjectsResponse'
+          $ref: '#/responses/ProjectResponse'
         "500":
           $ref: '#/responses/apiError'
       summary: Create a new project
@@ -594,6 +670,27 @@ paths:
       summary: Information about the server
       tags:
       - server
+  /api/translation-value/:
+    get:
+      operationId: getTranslationValue
+      responses:
+        "200":
+          $ref: '#/responses/TranslationValuesResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: List translation-values
+      tags:
+      - translationValue
+    post:
+      operationId: createTranslationValue
+      responses:
+        "200":
+          $ref: '#/responses/TranslationValueResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Create a new translation-value for a locale
+      tags:
+      - translationValue
   /api/translation/:
     get:
       operationId: getTranslation
@@ -607,12 +704,6 @@ paths:
       - translation
     post:
       operationId: createTranslation
-      parameters:
-      - in: body
-        name: Body
-        required: true
-        schema:
-          $ref: '#/definitions/TranslationInput'
       responses:
         "200":
           $ref: '#/responses/TranslationResponse'
@@ -626,6 +717,17 @@ produces:
 - text/vnd.yaml
 - application/toml
 responses:
+  CategoriesResponse:
+    description: ""
+    schema:
+      items:
+        $ref: '#/definitions/Category'
+      type: array
+  CategoryResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/Category'
+      type: object
   LocalesResponse:
     description: ""
     schema:
@@ -648,6 +750,17 @@ responses:
     schema:
       $ref: '#/definitions/Translation'
       type: object
+  TranslationValueResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/TranslationValue'
+      type: object
+  TranslationValuesResponse:
+    description: ""
+    schema:
+      items:
+        $ref: '#/definitions/TranslationValue'
+      type: array
   TranslationsResponse:
     description: ""
     schema:
@@ -655,9 +768,9 @@ responses:
         $ref: '#/definitions/Translation'
       type: array
   apiError:
-    description: Consistant error-codes
+    description: ""
     schema:
-      $ref: '#/definitions/ApiError'
+      $ref: '#/definitions/APIError'
   localeResponse:
     description: Locale represents a language, dialect etc.
     schema:
@@ -673,6 +786,11 @@ responses:
       items:
         $ref: '#/definitions/ServerInfo'
       type: array
+  translationValueResponse:
+    description: TranslationValue is the direct translated value of a TranslationKey
+      for a Locale
+    schema:
+      $ref: '#/definitions/TranslationValue'
 schemes:
 - http
 security:

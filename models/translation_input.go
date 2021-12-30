@@ -8,8 +8,10 @@ package models
 import (
 	"context"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+	"github.com/go-openapi/validate"
 )
 
 // TranslationInput translation input
@@ -17,49 +19,143 @@ import (
 // swagger:model TranslationInput
 type TranslationInput struct {
 
-	// aliases
-	Aliases []string `json:"aliases"`
+	// category id
+	// Required: true
+	// Max Length: 100
+	// Min Length: 3
+	CategoryID *string `json:"category_id"`
 
-	// Used as a variation for the key
+	// context
+	// Max Length: 400
+	// Min Length: 1
 	Context string `json:"context,omitempty"`
 
-	// Description for the key, its use and where the key is used.
+	// description
+	// Max Length: 8000
+	// Min Length: 1
 	Description string `json:"description,omitempty"`
 
-	// Final part of the identifiying key.
-	// With the example-input, the complete generated key would be store.product.description
-	// Example: description
-	Key string `json:"key,omitempty"`
+	// key
+	// Required: true
+	// Max Length: 400
+	// Min Length: 1
+	Key *string `json:"key"`
 
-	// locale ID
-	LocaleID string `json:"locale_id,omitempty"`
-
-	// Can be a dot-separated path-like string
-	// Example: store.products
-	Prefix string `json:"prefix,omitempty"`
-
-	// project ID
-	ProjectID string `json:"project,omitempty"`
-
-	// tag
-	Tag []string `json:"tags"`
-
-	// Title with short description of the key
+	// title
+	// Max Length: 400
+	// Min Length: 1
 	Title string `json:"title,omitempty"`
-
-	// The pre-interpolated value to use  with translations
-	// Example: The {{productName}} fires up to {{count}} bullets of {{subject}}.
-	Value string `json:"value,omitempty"`
-
-	// Variables used within the translation.
-	// This helps with giving translators more context,
-	// The value for the translation will be used in examples.
-	// Example: {"count":3,"productName":"X-Buster","subject":"compressed solar energy"}
-	Variables map[string]interface{} `json:"variables,omitempty"`
 }
 
 // Validate validates this translation input
 func (m *TranslationInput) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.validateCategoryID(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateContext(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateDescription(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateKey(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTitle(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *TranslationInput) validateCategoryID(formats strfmt.Registry) error {
+
+	if err := validate.Required("category_id", "body", m.CategoryID); err != nil {
+		return err
+	}
+
+	if err := validate.MinLength("category_id", "body", *m.CategoryID, 3); err != nil {
+		return err
+	}
+
+	if err := validate.MaxLength("category_id", "body", *m.CategoryID, 100); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *TranslationInput) validateContext(formats strfmt.Registry) error {
+	if swag.IsZero(m.Context) { // not required
+		return nil
+	}
+
+	if err := validate.MinLength("context", "body", m.Context, 1); err != nil {
+		return err
+	}
+
+	if err := validate.MaxLength("context", "body", m.Context, 400); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *TranslationInput) validateDescription(formats strfmt.Registry) error {
+	if swag.IsZero(m.Description) { // not required
+		return nil
+	}
+
+	if err := validate.MinLength("description", "body", m.Description, 1); err != nil {
+		return err
+	}
+
+	if err := validate.MaxLength("description", "body", m.Description, 8000); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *TranslationInput) validateKey(formats strfmt.Registry) error {
+
+	if err := validate.Required("key", "body", m.Key); err != nil {
+		return err
+	}
+
+	if err := validate.MinLength("key", "body", *m.Key, 1); err != nil {
+		return err
+	}
+
+	if err := validate.MaxLength("key", "body", *m.Key, 400); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *TranslationInput) validateTitle(formats strfmt.Registry) error {
+	if swag.IsZero(m.Title) { // not required
+		return nil
+	}
+
+	if err := validate.MinLength("title", "body", m.Title, 1); err != nil {
+		return err
+	}
+
+	if err := validate.MaxLength("title", "body", m.Title, 400); err != nil {
+		return err
+	}
+
 	return nil
 }
 

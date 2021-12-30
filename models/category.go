@@ -14,13 +14,10 @@ import (
 	"github.com/go-openapi/validate"
 )
 
-// Project project
+// Category category
 //
-// swagger:model Project
-type Project struct {
-
-	// category i ds
-	CategoryIDs []string `json:"category_ids"`
+// swagger:model Category
+type Category struct {
 
 	// Time of which the entity was created in the database
 	// Required: true
@@ -42,8 +39,11 @@ type Project struct {
 	// Required: true
 	ID *string `json:"id"`
 
-	// included tags
-	IncludedTags []string `json:"included_tags"`
+	// key
+	Key string `json:"key,omitempty"`
+
+	// project ID
+	ProjectID string `json:"project_id,omitempty"`
 
 	// title
 	Title string `json:"title,omitempty"`
@@ -56,8 +56,8 @@ type Project struct {
 	UpdatedBy string `json:"updatedBy,omitempty"`
 }
 
-// Validate validates this project
-func (m *Project) Validate(formats strfmt.Registry) error {
+// Validate validates this category
+func (m *Category) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateCreatedAt(formats); err != nil {
@@ -82,7 +82,7 @@ func (m *Project) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateCreatedAt(formats strfmt.Registry) error {
+func (m *Category) validateCreatedAt(formats strfmt.Registry) error {
 
 	if err := validate.Required("createdAt", "body", m.CreatedAt); err != nil {
 		return err
@@ -95,7 +95,7 @@ func (m *Project) validateCreatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateDeleted(formats strfmt.Registry) error {
+func (m *Category) validateDeleted(formats strfmt.Registry) error {
 	if swag.IsZero(m.Deleted) { // not required
 		return nil
 	}
@@ -107,7 +107,7 @@ func (m *Project) validateDeleted(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateID(formats strfmt.Registry) error {
+func (m *Category) validateID(formats strfmt.Registry) error {
 
 	if err := validate.Required("id", "body", m.ID); err != nil {
 		return err
@@ -116,7 +116,7 @@ func (m *Project) validateID(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateUpdatedAt(formats strfmt.Registry) error {
+func (m *Category) validateUpdatedAt(formats strfmt.Registry) error {
 	if swag.IsZero(m.UpdatedAt) { // not required
 		return nil
 	}
@@ -128,13 +128,13 @@ func (m *Project) validateUpdatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this project based on context it is used
-func (m *Project) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+// ContextValidate validates this category based on context it is used
+func (m *Category) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	return nil
 }
 
 // MarshalBinary interface implementation
-func (m *Project) MarshalBinary() ([]byte, error) {
+func (m *Category) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -142,8 +142,8 @@ func (m *Project) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *Project) UnmarshalBinary(b []byte) error {
-	var res Project
+func (m *Category) UnmarshalBinary(b []byte) error {
+	var res Category
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

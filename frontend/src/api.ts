@@ -4,6 +4,7 @@ import createStore from './store'
 import type { AnyFunc } from 'simplytyped'
 import { parseDate } from 'dates'
 import { isPast } from 'date-fns'
+import { derived } from 'svelte/store'
 export function objectKeys<T extends object>(obj: T) {
   return Object.keys(obj) as Array<keyof T>
 }
@@ -16,15 +17,18 @@ export function objectKeys<T extends object>(obj: T) {
 
 export type DB = {
   project: Record<string, ApiDef.Project>
+  category: Record<string, ApiDef.Category>
+  translationValue: Record<string, ApiDef.TranslationValue>
   locale: Record<string, ApiDef.Locale>
   translation: Record<string, ApiDef.Translation>
   login: ApiDef.LoginResponse
   serverInfo: ApiDef.ServerInfo
   responseStates: Pick<
-    Record<keyof DB, { loading: boolean; error?: ApiDef.ApiError }>,
+    Record<keyof DB, { loading: boolean; error?: ApiDef.APIError }>,
     'project' | 'locale' | 'login'
   >
 }
+
 
 export const api = {
   serverInfo: (options?: ApiFetchOptions) =>
@@ -35,6 +39,8 @@ export const api = {
     ),
   translation: CrudFactory<ApiDef.TranslationInput, 'translation'>('translation'),
   project: CrudFactory<ApiDef.ProjectInput, 'project'>('project'),
+  category: CrudFactory<ApiDef.CategoryInput, 'category'>('category'),
+  translationValue: CrudFactory<ApiDef.TranslationValueInput, 'translationValue'>('translationValue'),
   locale: CrudFactory<ApiDef.LocaleInput, 'locale'>('locale'),
   login: {
     get: () =>
@@ -152,6 +158,47 @@ export const db = createStore<DB, null>({
   ),
 })
 
+type ExtendedTranslationValue = ApiDef.TranslationValue
+type ExtendedTranslation = ApiDef.Translation & { values: Record<string, ExtendedTranslationValue> }
+type ExtendedCategory = ApiDef.Category & { translations: Record<string, ExtendedTranslation> }
+type ExtendedProject = ApiDef.Project & { categories: Record<string, ExtendedCategory> }
+
+export const projects = derived(db, ($db) => Object.values($db.project).reduce(
+  (r, project: ExtendedProject) => {
+    project.categories = Object.values($db.category).reduce(
+      (rc, c: ExtendedCategory) => {
+        if (c.project_id !== project.id) {
+          return rc
+        }
+        c.translations = Object.values($db.translation).reduce(
+          (rt, t: ExtendedTranslation) => {
+            if (t.category !== c.id) {
+              return rt
+            }
+            t.values = Object.values($db.translationValue).reduce(
+              (rtv, tv) => {
+                if (tv.translation_id !== t.id) {
+                  return rtv
+                }
+                // NOTE: translations are indexed by their locale-id, not their id.
+                rtv[tv.locale_id!] = tv
+                return rtv
+              }, {}
+            )
+            rt[t.id] = t
+            return rt
+          }, {}
+        )
+        rc[c.id] = c
+
+        return rc
+      }, {}
+    )
+    r[project.id] = project
+    return r
+  }, {} as Record<string, ExtendedProject>
+))
+
 wsSubscribe({
   onMessage: (msg) => {
     if (!msg.contents) {
@@ -248,7 +295,7 @@ function apiGetListFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
         responseStates: {
           ...s.responseStates,
           [storeKey]: {
-            ...s.responseStates?.[storeKey],
+            ...s.responseStates?.[storeKey as any],
             loading: true,
           },
         },
@@ -259,6 +306,7 @@ function apiGetListFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
       (e) => mergeMap(storeKey, e),
       options
     )
+    checkError(res[1])
     db.update((s) => {
       return {
         ...s,
@@ -269,7 +317,7 @@ function apiGetListFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
         responseStates: {
           ...s.responseStates,
           [storeKey]: {
-            ...s.responseStates?.[storeKey],
+            ...s.responseStates?.[storeKey as any],
             loading: false,
             error: res[1],
           },
@@ -279,6 +327,22 @@ function apiGetListFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
     return res
   }
 }
+const checkError = (apiError?: ApiDef.APIError | null) => {
+  console.log('checkErr')
+  if (!apiError) {
+    return apiError
+  }
+  if (apiError.code?.includes("Authentication required")) {
+    db.update(s => {
+      const login = { ...s.login, ok: false }
+      localStorage.setItem('login-response', JSON.stringify(login))
+      return {
+        ...s, login
+      }
+    })
+  }
+  return apiError
+}
 
 function apiGetFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
   return (id: string, options?: ApiFetchOptions) =>
@@ -286,7 +350,7 @@ function apiGetFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
       subPath + id,
       (e: any) => replaceField(storeKey, e, e.id),
       options
-    )
+    ).then(r => { checkError(r[1]); return r })
 }
 function apiCreateFactory<Payload extends {}, K extends DBKeyValue>(
   subPath: string,
@@ -300,6 +364,7 @@ function apiCreateFactory<Payload extends {}, K extends DBKeyValue>(
       body,
       ...options,
     })
+    checkError(result[1])
     db.update(s => ({ ...s, responseStates: { ...s.responseStates, [storeKey]: { loading: false, error: result[1] } } }))
 
     return result
@@ -322,7 +387,7 @@ function apiUpdateFactory<Payload extends {}, K extends DBKeyValue>(
         body,
         ...options,
       }
-    )
+    ).then(r => { checkError(r[1]); return r })
 }
 
 function apiDeleteFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
@@ -337,5 +402,5 @@ function apiDeleteFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
         method: methods.DELETE,
         ...options,
       }
-    )
+    ).then(r => { checkError(r[1]); return r })
 }

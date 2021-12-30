@@ -19,7 +19,6 @@
 
 <!-- Display any errors... -->
 {#each Object.entries(errs) as [_, [k, v]]}
-  {k}: {JSON.stringify(v.error)}
   <Alert kind="error">
     <h4 slot="title">{k}</h4>
     <h5>{v.error.code}</h5>
@@ -48,5 +47,3 @@
 {:else}
   Not found
 {/if}
-
-<hr />

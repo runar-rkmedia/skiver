@@ -12,7 +12,13 @@
 {/if}
 <ButtonShowDeleted {deletedCount} />
 <ul>
-  <slot />
+  <slot>
+    {#if loading}
+      <Spinner active={true} />
+    {:else}
+      No items to see here
+    {/if}
+  </slot>
 </ul>
 
 <style>

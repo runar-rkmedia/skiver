@@ -14,13 +14,19 @@ import (
 	"github.com/go-openapi/validate"
 )
 
-// Project project
+// Translation translation
 //
-// swagger:model Project
-type Project struct {
+// swagger:model Translation
+type Translation struct {
 
-	// category i ds
-	CategoryIDs []string `json:"category_ids"`
+	// aliases
+	Aliases []string `json:"aliases"`
+
+	// category ID
+	CategoryID string `json:"category,omitempty"`
+
+	// context
+	Context string `json:"context,omitempty"`
 
 	// Time of which the entity was created in the database
 	// Required: true
@@ -42,8 +48,14 @@ type Project struct {
 	// Required: true
 	ID *string `json:"id"`
 
-	// included tags
-	IncludedTags []string `json:"included_tags"`
+	// key
+	Key string `json:"key,omitempty"`
+
+	// parent translation ID
+	ParentTranslationID string `json:"parent_translation,omitempty"`
+
+	// tag
+	Tag []string `json:"tags"`
 
 	// title
 	Title string `json:"title,omitempty"`
@@ -54,10 +66,13 @@ type Project struct {
 
 	// User id refering to who created the item
 	UpdatedBy string `json:"updatedBy,omitempty"`
+
+	// variables
+	Variables map[string]interface{} `json:"variables,omitempty"`
 }
 
-// Validate validates this project
-func (m *Project) Validate(formats strfmt.Registry) error {
+// Validate validates this translation
+func (m *Translation) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateCreatedAt(formats); err != nil {
@@ -82,7 +97,7 @@ func (m *Project) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateCreatedAt(formats strfmt.Registry) error {
+func (m *Translation) validateCreatedAt(formats strfmt.Registry) error {
 
 	if err := validate.Required("createdAt", "body", m.CreatedAt); err != nil {
 		return err
@@ -95,7 +110,7 @@ func (m *Project) validateCreatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateDeleted(formats strfmt.Registry) error {
+func (m *Translation) validateDeleted(formats strfmt.Registry) error {
 	if swag.IsZero(m.Deleted) { // not required
 		return nil
 	}
@@ -107,7 +122,7 @@ func (m *Project) validateDeleted(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateID(formats strfmt.Registry) error {
+func (m *Translation) validateID(formats strfmt.Registry) error {
 
 	if err := validate.Required("id", "body", m.ID); err != nil {
 		return err
@@ -116,7 +131,7 @@ func (m *Project) validateID(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateUpdatedAt(formats strfmt.Registry) error {
+func (m *Translation) validateUpdatedAt(formats strfmt.Registry) error {
 	if swag.IsZero(m.UpdatedAt) { // not required
 		return nil
 	}
@@ -128,13 +143,13 @@ func (m *Project) validateUpdatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this project based on context it is used
-func (m *Project) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+// ContextValidate validates this translation based on context it is used
+func (m *Translation) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	return nil
 }
 
 // MarshalBinary interface implementation
-func (m *Project) MarshalBinary() ([]byte, error) {
+func (m *Translation) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -142,8 +157,8 @@ func (m *Project) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *Project) UnmarshalBinary(b []byte) error {
-	var res Project
+func (m *Translation) UnmarshalBinary(b []byte) error {
+	var res Translation
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

@@ -1,25 +1,31 @@
 <script lagn="ts">
   import EntityList from '../components/EntityList.svelte'
   import ListItem from '../components/ListItem.svelte'
-  import { db } from '../api'
+  import { api, db } from '../api'
   import { state } from '../state'
   import formatDate from '../dates'
   import Tip from '../components/Tip.svelte'
+  import Button from 'components/Button.svelte'
+  $: projects = Object.values($db.project)
+
+  function createProject() {
+    api.project.create($state.createProject)
+  }
 </script>
 
 <h2>Project</h2>
+<Tip key="about-project">
+  <p>A project is a typically an application, like a webapp or similar.</p>
+  <p>
+    By default, each project is seperated from eachother, but they can
+    optionally use resources from other projects.
+  </p>
+</Tip>
 <paper>
-  <Tip key="about-project">
-    <p>A project is a typically an application, like a webapp or similar.</p>
-    <p>
-      By default, each project is seperated from eachother, but they can
-      optionally use resources from other projects.
-    </p>
-  </Tip>
   <EntityList
     error={$db.responseStates.project.error?.error}
     loading={$db.responseStates.project.loading}>
-    {#each Object.values($db.project)
+    {#each projects
       .filter((e) => {
         if (!$state.showDeleted) {
           return !e.deleted
@@ -50,6 +56,7 @@
           </a>
         </svelte:fragment>
         <svelte:fragment slot="description">
+          {v.description}
           Created: {formatDate(v.createdAt)}
 
           {#if v.updatedAt}
@@ -57,6 +64,26 @@
           {/if}
         </svelte:fragment>
       </ListItem>
+    {:else}
+      {#if $db.responseStates.project.loading}
+        Gathering...
+      {:else}
+        No projects created yet
+      {/if}
     {/each}
   </EntityList>
+</paper>
+<paper>
+  <form>
+    <label>
+      Title
+      <input bind:value={$state.createProject.title} />
+    </label>
+    <label>
+      Description
+      <input bind:value={$state.createProject.description} />
+    </label>
+    <Button on:click={createProject} icon="edit" type="submit" color="primary"
+      >Create Project</Button>
+  </form>
 </paper>

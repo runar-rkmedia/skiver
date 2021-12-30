@@ -9,7 +9,7 @@ import (
 
 func (b *BBolter) GetProject(ID string) (*types.Project, error) {
 	var u types.Project
-	err := b.GetItem(BucketProjects, ID, &u)
+	err := b.GetItem(BucketProject, ID, &u)
 	return &u, err
 }
 
@@ -21,7 +21,7 @@ func (b *BBolter) CreateProject(project types.Project) (types.Project, error) {
 	project.Entity = b.NewEntity()
 
 	err = b.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(BucketProjects)
+		bucket := tx.Bucket(BucketProject)
 		existing := bucket.Get([]byte(project.ID))
 		if existing != nil {
 			return fmt.Errorf("there already exists a project with this ID")
@@ -42,7 +42,7 @@ func (b *BBolter) CreateProject(project types.Project) (types.Project, error) {
 
 func (bb *BBolter) GetProjects() (map[string]types.Project, error) {
 	us := make(map[string]types.Project)
-	err := bb.Iterate(BucketProjects, func(key, b []byte) bool {
+	err := bb.Iterate(BucketProject, func(key, b []byte) bool {
 		var u types.Project
 		bb.Unmarshal(b, &u)
 		us[string(key)] = u
@@ -56,7 +56,7 @@ func (bb *BBolter) GetProjects() (map[string]types.Project, error) {
 
 func (bb *BBolter) GetProjectFilter(filter ...types.Project) (*types.Project, error) {
 	var u types.Project
-	err := bb.Iterate(BucketProjects, func(key, b []byte) bool {
+	err := bb.Iterate(BucketProject, func(key, b []byte) bool {
 		var uu types.Project
 		err := bb.Unmarshal(b, &uu)
 		if err != nil {

@@ -23,6 +23,15 @@ type Storage interface {
 	GetTranslation(ID string) (*Translation, error)
 	CreateTranslation(locale Translation) (Translation, error)
 	GetTranslations() (map[string]Translation, error)
+
+	// These must be added
+	GetCategory(ID string) (*Category, error)
+	CreateCategory(category Category) (Category, error)
+	GetCategories() (map[string]Category, error)
+
+	GetTranslationValue(ID string) (*TranslationValue, error)
+	CreateTranslationValue(locale TranslationValue) (TranslationValue, error)
+	GetTranslationValues() (map[string]TranslationValue, error)
 }
 
 type Entity struct {

@@ -3,7 +3,7 @@
 <script lang="ts">
   import 'tippy.js/dist/tippy.css' // Tooltips popover
   import { api, db } from './api'
-  import { scale } from 'svelte/transition'
+  import { scale, fly } from 'svelte/transition'
 
   import ServerInfo from './components/ServerInfo.svelte'
   import { onMount } from 'svelte'
@@ -22,12 +22,15 @@
   import Button from './components/Button.svelte'
   import Spinner from 'components/Spinner.svelte'
   import PageContent from 'PageContent.svelte'
+  import { state } from 'state'
   let didRunInital = false
   $: {
     if (!didRunInital && $db.login.ok) {
       api.serverInfo()
       api.locale.list()
       api.project.list()
+      api.category.list()
+      api.translationValue.list()
       api.translation.list()
       didRunInital = true
     }
@@ -36,6 +39,17 @@
   const dbWarnSizeGB = 0.5
   const dbWarnSize = dbWarnSizeGB * 1e9
 </script>
+
+<div class="toasts">
+  {#each Object.values($state.toasts) as toast}
+    <div class="toast" transition:fly|local>
+      <Alert kind={toast.kind}>
+        <svelte:fragment slot="title">{toast.title}</svelte:fragment>
+        {toast.message}
+      </Alert>
+    </div>
+  {/each}
+</div>
 
 <div class="wrapper">
   <header>
@@ -55,7 +69,7 @@
   <div />
 
   {#if !$db.login.ok}
-    <div class="login" transition:scale>
+    <div class="login" transition:scale|local>
       <paper>
         <h2>Login</h2>
         {#if $db.responseStates.login.loading}pa
@@ -74,7 +88,8 @@
           }}>
           <label>
             Username
-            <input name="text" bind:value={username} />
+            <!-- svelte-ignore a11y-autofocus -->
+            <input name="text" bind:value={username} autofocus={true} />
           </label>
 
           <label>
@@ -113,6 +128,15 @@
 </div>
 
 <style>
+  .toasts {
+    position: fixed;
+    top: var(--size-4);
+    right: var(--size-4);
+    z-index: 100;
+  }
+  .toast {
+    box-shadow: var(--elevation-4);
+  }
   header a {
     color: unset;
     text-decoration: unset;
