@@ -31,6 +31,7 @@ import (
 	"github.com/runar-rkmedia/skiver/localuser"
 	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/requestContext"
+	"github.com/runar-rkmedia/skiver/translator"
 	"github.com/runar-rkmedia/skiver/types"
 )
 
@@ -114,6 +115,20 @@ func main() {
 		Str("gitHash", GitHash).
 		Str("db", cfg.DBLocation).
 		Msg("Starting")
+	if len(config.TranslatorServices) > 1 {
+		l.Fatal().Msg("currently, only a single translator-service can be used.")
+	}
+	if len(config.TranslatorServices) > 0 {
+		o := config.TranslatorServices[0]
+		_, err := translator.NewTranslator(translator.TranslatorOptions{
+			Kind:     o.Kind,
+			ApiToken: o.ApiToken,
+			Endpoint: o.Endpoint,
+		})
+		if err != nil {
+			l.Fatal().Err(err).Msg("failed to set up translator-services")
+		}
+	}
 	pubsub := handlers.NewPubSubChannel()
 	// IMPORTANT: database publishes changes, but for performance-reasons, it should not be used until the listener (ws) is started.
 	db, err := bboltStorage.NewBbolt(l, cfg.DBLocation, &pubsub)

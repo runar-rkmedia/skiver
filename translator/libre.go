@@ -90,6 +90,5 @@ func (t *Translator) Translate(text, from, to string) (string, error) {
 
 	var j struct{ TranslatedText string }
 	_, err := SimpleRequest(t.Client, http.MethodPost, t.Url+"translate", &input, &j)
-	fmt.Println(j.TranslatedText)
 	return j.TranslatedText, err
 }
