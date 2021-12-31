@@ -6,7 +6,7 @@ function debounce<T extends AnyFunc>(
   { leading }: { leading?: boolean }
 ): T {
   let timeout: any
-  return function() {
+  return function () {
     var context = this,
       args = arguments
     clearTimeout(timeout)
@@ -15,7 +15,7 @@ function debounce<T extends AnyFunc>(
       func.apply(context, args)
       called = true
     }
-    timeout = setTimeout(function() {
+    timeout = setTimeout(function () {
       timeout = null
       if (called) {
         return

@@ -24,7 +24,8 @@
 <paper>
   <EntityList
     error={$db.responseStates.project.error?.error}
-    loading={$db.responseStates.project.loading}>
+    loading={$db.responseStates.project.loading}
+  >
     {#each projects
       .filter((e) => {
         if (!$state.showDeleted) {
@@ -49,7 +50,8 @@
         deleteDisabled={true}
         editDisabled={true}
         ID={v.id}
-        deleted={!!v.deleted}>
+        deleted={!!v.deleted}
+      >
         <svelte:fragment slot="header">
           <a href={'#project/' + v.id}>
             {v.title}
@@ -84,6 +86,7 @@
       <input bind:value={$state.createProject.description} />
     </label>
     <Button on:click={createProject} icon="edit" type="submit" color="primary"
-      >Create Project</Button>
+      >Create Project</Button
+    >
   </form>
 </paper>

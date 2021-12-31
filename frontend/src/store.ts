@@ -51,11 +51,11 @@ function createStore<T extends {}, V = null, VK extends string = string>({
 
   const storage: AppStorage<T> | null = _storage?.key
     ? {
-      getItem: (key) => localStorage.getItem(key),
-      // TODO: throttle saving
-      setItem: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
-      ..._storage,
-    }
+        getItem: (key) => localStorage.getItem(key),
+        // TODO: throttle saving
+        setItem: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+        ..._storage,
+      }
     : null
 
   if (storage) {

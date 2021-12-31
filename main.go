@@ -260,9 +260,6 @@ func main() {
 			db:         &db,
 		}
 		events.AddSubscriber("translation-hook", &hook)
-		// NOCOMMIT:
-		tv, _ := db.GetTranslationValue("G2tD7KA7R")
-		events.Publish(string(bboltStorage.PubTypeTranslationValue), string(bboltStorage.PubVerbCreate), *tv)
 	}
 	pubsub := handlers.NewPubSubChannel()
 	events.AddSubscriber("msg", &pubsub)

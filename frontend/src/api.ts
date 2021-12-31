@@ -29,7 +29,6 @@ export type DB = {
   >
 }
 
-
 export const api = {
   serverInfo: (options?: ApiFetchOptions) =>
     fetchApi<ApiDef.ServerInfo>(
@@ -37,10 +36,15 @@ export const api = {
       (e) => db.update((s) => ({ ...s, serverInfo: e })),
       options
     ),
-  translation: CrudFactory<ApiDef.TranslationInput, 'translation'>('translation'),
+  translation: CrudFactory<ApiDef.TranslationInput, 'translation'>(
+    'translation'
+  ),
   project: CrudFactory<ApiDef.ProjectInput, 'project'>('project'),
   category: CrudFactory<ApiDef.CategoryInput, 'category'>('category'),
-  translationValue: CrudFactory<ApiDef.TranslationValueInput, 'translationValue'>('translationValue'),
+  translationValue: CrudFactory<
+    ApiDef.TranslationValueInput,
+    'translationValue'
+  >('translationValue'),
   locale: CrudFactory<ApiDef.LocaleInput, 'locale'>('locale'),
   login: {
     get: () =>
@@ -159,12 +163,18 @@ export const db = createStore<DB, null>({
 })
 
 type ExtendedTranslationValue = ApiDef.TranslationValue
-type ExtendedTranslation = ApiDef.Translation & { values: Record<string, ExtendedTranslationValue> }
-type ExtendedCategory = ApiDef.Category & { translations: Record<string, ExtendedTranslation> }
-type ExtendedProject = ApiDef.Project & { categories: Record<string, ExtendedCategory> }
+type ExtendedTranslation = ApiDef.Translation & {
+  values: Record<string, ExtendedTranslationValue>
+}
+type ExtendedCategory = ApiDef.Category & {
+  translations: Record<string, ExtendedTranslation>
+}
+type ExtendedProject = ApiDef.Project & {
+  categories: Record<string, ExtendedCategory>
+}
 
-export const projects = derived(db, ($db) => Object.values($db.project).reduce(
-  (r, project: ExtendedProject) => {
+export const projects = derived(db, ($db) =>
+  Object.values($db.project).reduce((r, project: ExtendedProject) => {
     project.categories = Object.values($db.category).reduce(
       (rc, c: ExtendedCategory) => {
         if (c.project_id !== project.id) {
@@ -175,29 +185,29 @@ export const projects = derived(db, ($db) => Object.values($db.project).reduce(
             if (t.category !== c.id) {
               return rt
             }
-            t.values = Object.values($db.translationValue).reduce(
-              (rtv, tv) => {
-                if (tv.translation_id !== t.id) {
-                  return rtv
-                }
-                // NOTE: translations are indexed by their locale-id, not their id.
-                rtv[tv.locale_id!] = tv
+            t.values = Object.values($db.translationValue).reduce((rtv, tv) => {
+              if (tv.translation_id !== t.id) {
                 return rtv
-              }, {}
-            )
+              }
+              // NOTE: translations are indexed by their locale-id, not their id.
+              rtv[tv.locale_id!] = tv
+              return rtv
+            }, {})
             rt[t.id] = t
             return rt
-          }, {}
+          },
+          {}
         )
         rc[c.id] = c
 
         return rc
-      }, {}
+      },
+      {}
     )
     r[project.id] = project
     return r
-  }, {} as Record<string, ExtendedProject>
-))
+  }, {} as Record<string, ExtendedProject>)
+)
 
 wsSubscribe({
   onMessage: (msg) => {
@@ -312,8 +322,8 @@ function apiGetListFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
         ...s,
         ...(!res[1] &&
           !!res[0].data && {
-          [storeKey]: { ...s[storeKey], ...res[0].data },
-        }),
+            [storeKey]: { ...s[storeKey], ...res[0].data },
+          }),
         responseStates: {
           ...s.responseStates,
           [storeKey]: {
@@ -332,12 +342,13 @@ const checkError = (apiError?: ApiDef.APIError | null) => {
   if (!apiError) {
     return apiError
   }
-  if (apiError.code?.includes("Authentication required")) {
-    db.update(s => {
+  if (apiError.code?.includes('Authentication required')) {
+    db.update((s) => {
       const login = { ...s.login, ok: false }
       localStorage.setItem('login-response', JSON.stringify(login))
       return {
-        ...s, login
+        ...s,
+        login,
       }
     })
   }
@@ -350,22 +361,37 @@ function apiGetFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
       subPath + id,
       (e: any) => replaceField(storeKey, e, e.id),
       options
-    ).then(r => { checkError(r[1]); return r })
+    ).then((r) => {
+      checkError(r[1])
+      return r
+    })
 }
 function apiCreateFactory<Payload extends {}, K extends DBKeyValue>(
   subPath: string,
   storeKey: K
 ) {
   return async (body: Payload, options?: ApiFetchOptions) => {
-
-    db.update(s => ({ ...s, responseStates: { ...s.responseStates, [storeKey]: { loading: true } } }))
-    const result = await fetchApi<DB[K]['s']>(subPath, (e) => replaceField(storeKey, e, e.id), {
-      method: methods.POST,
-      body,
-      ...options,
-    })
+    db.update((s) => ({
+      ...s,
+      responseStates: { ...s.responseStates, [storeKey]: { loading: true } },
+    }))
+    const result = await fetchApi<DB[K]['s']>(
+      subPath,
+      (e) => replaceField(storeKey, e, e.id),
+      {
+        method: methods.POST,
+        body,
+        ...options,
+      }
+    )
     checkError(result[1])
-    db.update(s => ({ ...s, responseStates: { ...s.responseStates, [storeKey]: { loading: false, error: result[1] } } }))
+    db.update((s) => ({
+      ...s,
+      responseStates: {
+        ...s.responseStates,
+        [storeKey]: { loading: false, error: result[1] },
+      },
+    }))
 
     return result
   }
@@ -387,7 +413,10 @@ function apiUpdateFactory<Payload extends {}, K extends DBKeyValue>(
         body,
         ...options,
       }
-    ).then(r => { checkError(r[1]); return r })
+    ).then((r) => {
+      checkError(r[1])
+      return r
+    })
 }
 
 function apiDeleteFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
@@ -402,5 +431,8 @@ function apiDeleteFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
         method: methods.DELETE,
         ...options,
       }
-    ).then(r => { checkError(r[1]); return r })
+    ).then((r) => {
+      checkError(r[1])
+      return r
+    })
 }

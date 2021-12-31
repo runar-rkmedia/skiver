@@ -123,7 +123,8 @@
                 type="checkbox"
                 name="locale-ids"
                 value={locale.id}
-                bind:group={$state.projectSettings[projectID].localeIds} />
+                bind:group={$state.projectSettings[projectID].localeIds}
+              />
 
               {locale.title}
             </label>
@@ -147,7 +148,8 @@
       icon={'create'}
       on:click={() => {
         visibleForm = 'category'
-      }}>Create category</Button>
+      }}>Create category</Button
+    >
     {#if visibleForm === 'category'}
       <paper>
         <form id="category-form">
@@ -159,22 +161,26 @@
             <label for="category-description">Description</label>
             <textarea
               id="category-description"
-              bind:value={$state.createCategory.description} />
+              bind:value={$state.createCategory.description}
+            />
           </small>
           <Button
             color="primary"
             type="submit"
             icon={'create'}
-            on:click={onCreateCategory}>
+            on:click={onCreateCategory}
+          >
             Create
           </Button>
           <Button
             color="secondary"
             icon={'toggleOff'}
-            on:click={() => (visibleForm = null)}>
+            on:click={() => (visibleForm = null)}
+          >
             Cancel
           </Button>
-        </form></paper>
+        </form></paper
+      >
     {/if}
     {#each sortOn(Object.values(project.categories), sortCategoryOn) as category}
       <paper class="category-item" transition fly local>
@@ -207,7 +213,8 @@
                   el.focus()
                   return true
                 })
-              }}>Create translation</Button>
+              }}>Create translation</Button
+            >
           </div>
         </div>
         {#if visibleForm === 'translation' && selectedCategory === category.id}
@@ -221,26 +228,30 @@
                 Title
                 <input
                   name="title"
-                  bind:value={$state.createTranslation.title} />
+                  bind:value={$state.createTranslation.title}
+                />
               </label>
               <label>
                 Description (Optional, but recommended)
                 <textarea
                   name="description"
                   rows="5"
-                  bind:value={$state.createTranslation.description} />
+                  bind:value={$state.createTranslation.description}
+                />
               </label>
               <label>
                 Context (Optional)
                 <input
                   name="prefix"
-                  bind:value={$state.createTranslation.context} />
+                  bind:value={$state.createTranslation.context}
+                />
               </label>
               <Button
                 color="primary"
                 type="submit"
                 icon={'create'}
-                on:click={onCreateTranslation}>
+                on:click={onCreateTranslation}
+              >
                 Create
               </Button>
               <Button
@@ -249,10 +260,12 @@
                 on:click={() => {
                   selectedCategory = ''
                   visibleForm = null
-                }}>
+                }}
+              >
                 Cancel
               </Button>
-            </form></paper>
+            </form></paper
+          >
         {/if}
         <div class="translations" key="={category.id}">
           {#each Object.values(category.translations) as translation}
@@ -284,15 +297,17 @@
                       class:missing={!translation.values?.[locale.id]?.value}
                       class:selected={visibleForm === 'translationValue' &&
                         selectedTranslation === translation.id &&
-                        selectedLocale === locale.id}>
+                        selectedLocale === locale.id}
+                    >
                       <td>{locale.title}</td>
                       <td>
                         {#if visibleForm === 'translationValue' && selectedTranslation === translation.id && selectedLocale === locale.id}
                           {#if translation.values?.[locale.id]?.source === 'system-translator'}
-                      <p>
-                            <Icon icon="warning" color="warning" />
-                            This value was auto-translated.</p>
-  {/if}
+                            <p>
+                              <Icon icon="warning" color="warning" />
+                              This value was auto-translated.
+                            </p>
+                          {/if}
                           <form>
                             <!-- svelte-ignore a11y-autofocus -->
                             <textarea
@@ -300,18 +315,21 @@
                               rows={5}
                               bind:value={$state.createTranslationValue.value}
                               type="text"
-                              name="value" />
+                              name="value"
+                            />
                             <Button
                               color="primary"
                               type="submit"
                               on:click={onCreateTranslationValue}
-                              icon={'submit'}>Submit</Button>
+                              icon={'submit'}>Submit</Button
+                            >
                             <Button
                               color="secondary"
                               on:click={() => {
                                 visibleForm = null
                               }}
-                              icon={'cancel'}>Cancel</Button>
+                              icon={'cancel'}>Cancel</Button
+                            >
                           </form>
                         {:else}
                           <div
@@ -325,10 +343,11 @@
                               if (value) {
                                 $state.createTranslationValue.value = value
                               }
-                            }}>
-                          {#if translation.values?.[locale.id]?.source === 'system-translator'}
-                            <Icon icon="warning" color="warning" />
-{/if}
+                            }}
+                          >
+                            {#if translation.values?.[locale.id]?.source === 'system-translator'}
+                              <Icon icon="warning" color="warning" />
+                            {/if}
                             <Icon icon="edit" color="primary" />
                             {translation.values?.[locale.id]?.value ||
                               '<no value>'}

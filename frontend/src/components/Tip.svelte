@@ -36,7 +36,8 @@
     on:click={() => {
       $state.seenHints[key] = [version, new Date()]
       read = false
-    }}>
+    }}
+  >
     <Icon icon={'success'} />
     Got it
   </Button>

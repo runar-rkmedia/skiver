@@ -11,10 +11,12 @@ export const state = createStore({
     createTranslation: {} as ApiDef.TranslationInput,
     createCategory: {} as ApiDef.CategoryInput,
     createProject: {} as ApiDef.ProjectInput,
-    projectSettings: {
-    } as Record<string, { localeIds: string[] }>,
+    projectSettings: {} as Record<string, { localeIds: string[] }>,
     createTranslationValue: {} as ApiDef.TranslationValueInput,
-    toasts: {} as Record<string, Toast & { created: Date, _timeout: NodeJS.Timeout }>
+    toasts: {} as Record<
+      string,
+      Toast & { created: Date; _timeout: NodeJS.Timeout }
+    >,
   },
   storage: {
     key: 'state',
@@ -30,8 +32,8 @@ type Toast = {
 
 function hashCode(s: string) {
   for (var i = 0, h = 0; i < s.length; i++)
-    h = Math.imul(31, h) + s.charCodeAt(i) | 0;
-  return h;
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0
+  return h
 }
 
 export function toast(t: Optional<Toast, 'timeout'>, key?: string) {
@@ -39,7 +41,7 @@ export function toast(t: Optional<Toast, 'timeout'>, key?: string) {
   if (!t.timeout || t.timeout <= 0) {
     t.timeout = 8000
   }
-  state.update(s => {
+  state.update((s) => {
     // If set previously, we clear the timeout, (and replace with our new one)
     const existing = s.toasts[id]
     if (existing?._timeout) {
@@ -53,17 +55,16 @@ export function toast(t: Optional<Toast, 'timeout'>, key?: string) {
           ...existing,
           ...t,
           created: new Date(),
-          _timeout: setTimeout(() => clearToast(id), t.timeout)
-        }
-      }
+          _timeout: setTimeout(() => clearToast(id), t.timeout),
+        },
+      },
     }
   })
 }
 
 function checkToasts() {
   const now = new Date().getTime()
-  state.update(s => {
-
+  state.update((s) => {
     const toasts = Object.entries(s.toasts)
     if (!toasts.length) {
       return s
@@ -71,25 +72,23 @@ function checkToasts() {
     console.log({ toasts })
     return {
       ...s,
-      toasts: toasts.reduce(
-        (r, [k, toast]) => {
-          if (!toast?.created) {
-            return r
-          }
-          if (toast.created.getTime() + toast.timeout < now) {
-            return r
-          }
-          r[k] = toast
+      toasts: toasts.reduce((r, [k, toast]) => {
+        if (!toast?.created) {
           return r
-        }, {}
-      )
+        }
+        if (toast.created.getTime() + toast.timeout < now) {
+          return r
+        }
+        r[k] = toast
+        return r
+      }, {}),
     }
   })
 }
 setTimeout(checkToasts, 1000)
 
 export function clearToast(key: string) {
-  state.update(s => {
+  state.update((s) => {
     const { [key]: _, ...toasts } = s.toasts
     if (!_) {
       return s

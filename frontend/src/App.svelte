@@ -85,7 +85,8 @@
             }
 
             api.login.post({ username, password })
-          }}>
+          }}
+        >
           <label>
             Username
             <!-- svelte-ignore a11y-autofocus -->
@@ -100,7 +101,8 @@
             preventDefault={false}
             color="primary"
             icon="signIn"
-            type="submit">
+            type="submit"
+          >
             Login
           </Button>
         </form>

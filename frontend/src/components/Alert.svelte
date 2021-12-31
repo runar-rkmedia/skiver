@@ -11,7 +11,8 @@
   <div class="wrapper">
     <button
       class={`btn-reset circle ${kind}`}
-      on:click|preventDefault={() => (collapse = !collapse)}>
+      on:click|preventDefault={() => (collapse = !collapse)}
+    >
       <Icon icon={kind} class="kind" color="inherit" />
     </button>
   </div>

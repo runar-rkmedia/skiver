@@ -10,7 +10,8 @@
 <paper>
   <EntityList
     error={$db.responseStates.locale.error?.error}
-    loading={$db.responseStates.locale.loading}>
+    loading={$db.responseStates.locale.loading}
+  >
     {#each Object.values($db.locale)
       .filter((e) => {
         if (!$state.showDeleted) {
@@ -35,7 +36,8 @@
         deleteDisabled={true}
         editDisabled={true}
         ID={v.id}
-        deleted={!!v.deleted}>
+        deleted={!!v.deleted}
+      >
         <svelte:fragment slot="header">
           {v.title}
         </svelte:fragment>
