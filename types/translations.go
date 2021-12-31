@@ -41,7 +41,16 @@ type TranslationValue struct {
 	LocaleID string `json:"locale_id,omitempty"`
 	// Translation ID
 	TranslationID string `json:"translation_id,omitempty"`
+	// Indicating from where the value was created from, usually user, but could be a tranlator-service, like Bing.
+	Source CreatorSource `json:"source,omitempty"`
 }
+
+type CreatorSource string
+
+var (
+	CreatorSourceUser       CreatorSource = "user"
+	CreatorSourceTranslator CreatorSource = "system-translator"
+)
 
 // Locale represents a language, dialect etc.
 // swagger:response

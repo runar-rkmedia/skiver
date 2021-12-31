@@ -156,7 +156,7 @@ func (cl *ClientList) Writer(ch chan Msg) {
 			for _, client := range cl.clients {
 				go func(c *Client) {
 
-					c.write(websocket.PingMessage, nil)
+					c.write(websocket.PingMessage, []byte("ping"))
 					wg.Done()
 				}(client)
 			}

@@ -3,6 +3,7 @@ package requestContext
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/runar-rkmedia/gabyoall/logger"
 	"github.com/runar-rkmedia/skiver/types"
@@ -36,9 +37,21 @@ func NewReqContext(context *Context, req *http.Request, rw http.ResponseWriter) 
 	if remoteIP == "" {
 		remoteIP = req.RemoteAddr
 	}
+	h := make(http.Header)
+	for k, v := range req.Header {
+		switch strings.ToLower(k) {
+		case "cookie", "authorization":
+			continue
+		}
+		for i := 0; i < len(v); i++ {
+
+			h.Add(k, v[i])
+		}
+
+	}
 	return ReqContext{
 		Context:     context,
-		L:           logger.With(context.L.With().Str("method", req.Method).Str("path", req.URL.Path).Interface("headers", req.Header).Logger()),
+		L:           logger.With(context.L.With().Str("method", req.Method).Str("path", req.URL.Path).Interface("headers", h).Logger()),
 		Req:         req,
 		Rw:          rw,
 		ContentKind: contentType(req.Header.Get("Content-Type")),

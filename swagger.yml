@@ -87,6 +87,9 @@ definitions:
     - project_id
     - title
     type: object
+  CreatorSource:
+    type: string
+    x-go-package: github.com/runar-rkmedia/skiver/types
   Entity:
     properties:
       createdAt:
@@ -504,6 +507,8 @@ definitions:
         description: locale ID
         type: string
         x-go-name: LocaleID
+      source:
+        $ref: '#/definitions/CreatorSource'
       translation_id:
         description: Translation ID
         type: string

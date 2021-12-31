@@ -43,6 +43,7 @@ declare namespace ApiDef {
         project_id: string;
         title: string;
     }
+    export type CreatorSource = string;
     export interface Entity {
         /**
          * Time of which the entity was created in the database
@@ -307,6 +308,7 @@ declare namespace ApiDef {
          * locale ID
          */
         locale_id?: string;
+        source?: CreatorSource;
         /**
          * Translation ID
          */

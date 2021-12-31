@@ -15,12 +15,14 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	_ "embed"
 	"net/http/pprof"
 
 	"github.com/NYTimes/gziphandler"
+	"github.com/ghodss/yaml"
 	swaggerMiddleware "github.com/go-openapi/runtime/middleware"
 	"github.com/runar-rkmedia/gabyoall/api/utils"
 	"github.com/runar-rkmedia/gabyoall/logger"
@@ -79,6 +81,123 @@ func getDefaultDBLocation() string {
 	return "./skiver.bbolt"
 }
 
+// After considerations, this naming is really bad. it is not actually publishing, but simply subscribing to changes.
+type PubSubPublisher interface {
+	Publish(kind, variant string, contents interface{})
+}
+
+type MultiPublisher struct {
+	publishers map[string]PubSubPublisher
+}
+
+func NewMultiPublisher() MultiPublisher {
+	return MultiPublisher{map[string]PubSubPublisher{}}
+}
+func (m *MultiPublisher) Publish(kind, variant string, contents interface{}) {
+	for _, v := range m.publishers {
+		go v.Publish(kind, variant, contents)
+	}
+}
+func (m *MultiPublisher) AddSubscriber(name string, publisher PubSubPublisher) error {
+	m.publishers[name] = publisher
+	return nil
+}
+
+type mockPublisher struct{}
+
+func (m *mockPublisher) Publish(kind, variant string, contents interface{}) {
+	b, _ := yaml.Marshal(contents)
+	fmt.Printf("\nmock publish: %s %s \n%s\n", kind, variant, string(b))
+}
+
+type Translator interface {
+	Translate(text, from, to string) (string, error)
+}
+type translationHook struct {
+	translator Translator
+	l          logger.AppLogger
+	db         types.Storage
+}
+
+func (m *translationHook) Publish(kind, variant string, contents interface{}) {
+
+	debug := m.l.HasDebug()
+	if kind == string(bboltStorage.PubTypeTranslationValue) && variant == string(bboltStorage.PubVerbCreate) {
+		tv, ok := contents.(types.TranslationValue)
+		if !ok {
+			m.l.Error().Interface("content", contents).Msg("Failed to convert contents to TranslationValue")
+			return
+		}
+		if tv.Source == types.CreatorSourceTranslator {
+			if debug {
+				m.l.Debug().Interface("content", contents).Msg("ingoring TranslationValue since it was sourced from me")
+			}
+			return
+		}
+		if strings.TrimSpace(tv.Value) == "" {
+			m.l.Error().Interface("content", contents).Msg("Received TranslationValue, but the value appeared to be empty")
+			return
+		}
+		locales, err := m.db.GetLocales()
+		if err != nil {
+			m.l.Error().Err(err).Msg("failed to lookup locales")
+			return
+		}
+		tvs, err := m.db.GetTranslationValuesFilter(0, types.TranslationValue{TranslationID: tv.TranslationID})
+		if err != nil {
+			m.l.Error().Err(err).Msg("failed to lookup translationvalues")
+			return
+		}
+		existingTranslations := map[string]string{}
+		for k, v := range tvs {
+			existingTranslations[v.LocaleID] = k
+		}
+		sourceLocale := locales[tv.LocaleID]
+		for _, l := range locales {
+			if l.ID == sourceLocale.ID {
+				if debug {
+					m.l.Debug().Interface("locale", l).Msg("Skipped locale, since it is the source-locale")
+				}
+				continue
+			}
+			if _, ok := existingTranslations[l.ID]; ok {
+				if debug {
+					m.l.Debug().Interface("locale", l).Msg("Skipped locale, since it is already translated")
+				}
+				continue
+			}
+			if sourceLocale.Iso639_1 == l.Iso639_1 {
+				if debug {
+					m.l.Debug().Interface("locale", l).Msg("skipping translation, since Iso639_1 is the same as the source")
+				}
+				continue
+
+			}
+			result, err := m.translator.Translate(tv.Value, sourceLocale.Iso639_1, l.Iso639_1)
+			if err != nil {
+				m.l.Error().Err(err).Msg("failed during translation")
+				continue
+			}
+			if result == "" {
+				m.l.Warn().Str("result", result).Msg("The translation returned a empty result")
+				continue
+			}
+			_, err = m.db.CreateTranslationValue(types.TranslationValue{
+				Value:         result,
+				LocaleID:      l.ID,
+				TranslationID: tv.TranslationID,
+				Source:        types.CreatorSourceTranslator,
+			})
+			if err != nil {
+				m.l.Error().Err(err).Msg("Failed to create translation-value")
+				continue
+			}
+
+		}
+
+	}
+}
+
 func main() {
 	err := cfg.InitConfig()
 	if err != nil {
@@ -108,6 +227,7 @@ func main() {
 		WithCaller: config.LogLevel == "debug" || GitHash == "",
 	})
 	l := logger.GetLogger("main")
+	events := NewMultiPublisher()
 	l.Info().
 		Str("version", Version).
 		Time("buildDate", BuildDate).
@@ -115,12 +235,18 @@ func main() {
 		Str("gitHash", GitHash).
 		Str("db", cfg.DBLocation).
 		Msg("Starting")
+	// IMPORTANT: database publishes changes, but for performance-reasons, it should not be used until the listener (ws) is started.
+	db, err := bboltStorage.NewBbolt(l, cfg.DBLocation, &events)
+	if err != nil {
+		l.Fatal().Err(err).Msg("Failed to initialize storage")
+	}
 	if len(config.TranslatorServices) > 1 {
 		l.Fatal().Msg("currently, only a single translator-service can be used.")
 	}
+	events.AddSubscriber("mock", &mockPublisher{})
 	if len(config.TranslatorServices) > 0 {
 		o := config.TranslatorServices[0]
-		_, err := translator.NewTranslator(translator.TranslatorOptions{
+		t, err := translator.NewTranslator(translator.TranslatorOptions{
 			Kind:     o.Kind,
 			ApiToken: o.ApiToken,
 			Endpoint: o.Endpoint,
@@ -128,13 +254,19 @@ func main() {
 		if err != nil {
 			l.Fatal().Err(err).Msg("failed to set up translator-services")
 		}
+		hook := translationHook{
+			translator: t,
+			l:          logger.GetLogger("translation-hook"),
+			db:         &db,
+		}
+		events.AddSubscriber("translation-hook", &hook)
+		// NOCOMMIT:
+		tv, _ := db.GetTranslationValue("G2tD7KA7R")
+		events.Publish(string(bboltStorage.PubTypeTranslationValue), string(bboltStorage.PubVerbCreate), *tv)
 	}
 	pubsub := handlers.NewPubSubChannel()
-	// IMPORTANT: database publishes changes, but for performance-reasons, it should not be used until the listener (ws) is started.
-	db, err := bboltStorage.NewBbolt(l, cfg.DBLocation, &pubsub)
-	if err != nil {
-		l.Fatal().Err(err).Msg("Failed to initialize storage")
-	}
+	events.AddSubscriber("msg", &pubsub)
+
 	pw := localuser.NewPwHasher([]byte(pwsalt))
 
 	ctx := requestContext.Context{

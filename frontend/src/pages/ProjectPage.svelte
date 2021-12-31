@@ -279,6 +279,8 @@
                   {#each locales as locale}
                     <tr
                       class="locale-item"
+                      class:auto-translate={translation.values?.[locale.id]
+                        ?.source === 'system-translator'}
                       class:missing={!translation.values?.[locale.id]?.value}
                       class:selected={visibleForm === 'translationValue' &&
                         selectedTranslation === translation.id &&
@@ -286,6 +288,11 @@
                       <td>{locale.title}</td>
                       <td>
                         {#if visibleForm === 'translationValue' && selectedTranslation === translation.id && selectedLocale === locale.id}
+                          {#if translation.values?.[locale.id]?.source === 'system-translator'}
+                      <p>
+                            <Icon icon="warning" color="warning" />
+                            This value was auto-translated.</p>
+  {/if}
                           <form>
                             <!-- svelte-ignore a11y-autofocus -->
                             <textarea
@@ -319,6 +326,9 @@
                                 $state.createTranslationValue.value = value
                               }
                             }}>
+                          {#if translation.values?.[locale.id]?.source === 'system-translator'}
+                            <Icon icon="warning" color="warning" />
+{/if}
                             <Icon icon="edit" color="primary" />
                             {translation.values?.[locale.id]?.value ||
                               '<no value>'}
@@ -377,9 +387,6 @@
   }
   #category-form {
     background-color: var(--color-green-300);
-  }
-  #category-form td {
-    padding-block: var(--size-4);
   }
   .category-item-header {
     display: grid;

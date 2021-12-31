@@ -30,8 +30,10 @@ type Storage interface {
 	GetCategories() (map[string]Category, error)
 
 	GetTranslationValue(ID string) (*TranslationValue, error)
-	CreateTranslationValue(locale TranslationValue) (TranslationValue, error)
+	CreateTranslationValue(translationValue TranslationValue) (TranslationValue, error)
 	GetTranslationValues() (map[string]TranslationValue, error)
+	GetTranslationValueFilter(filter ...TranslationValue) (*TranslationValue, error)
+	GetTranslationValuesFilter(max int, filter ...TranslationValue) (map[string]TranslationValue, error)
 }
 
 type Entity struct {

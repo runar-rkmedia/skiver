@@ -52,6 +52,9 @@ type TranslationValue struct {
 	// The pre-interpolated value to use  with translations
 	// Example: The {{productName}} fires up to {{count}} bullets of {{subject}}.
 	Value string `json:"value,omitempty"`
+
+	// source
+	Source CreatorSource `json:"source,omitempty"`
 }
 
 // Validate validates this translation value
@@ -71,6 +74,10 @@ func (m *TranslationValue) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateUpdatedAt(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateSource(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -126,8 +133,48 @@ func (m *TranslationValue) validateUpdatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this translation value based on context it is used
+func (m *TranslationValue) validateSource(formats strfmt.Registry) error {
+	if swag.IsZero(m.Source) { // not required
+		return nil
+	}
+
+	if err := m.Source.Validate(formats); err != nil {
+		if ve, ok := err.(*errors.Validation); ok {
+			return ve.ValidateName("source")
+		} else if ce, ok := err.(*errors.CompositeError); ok {
+			return ce.ValidateName("source")
+		}
+		return err
+	}
+
+	return nil
+}
+
+// ContextValidate validate this translation value based on the context it is used
 func (m *TranslationValue) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.contextValidateSource(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *TranslationValue) contextValidateSource(ctx context.Context, formats strfmt.Registry) error {
+
+	if err := m.Source.ContextValidate(ctx, formats); err != nil {
+		if ve, ok := err.(*errors.Validation); ok {
+			return ve.ValidateName("source")
+		} else if ce, ok := err.(*errors.CompositeError); ok {
+			return ce.ValidateName("source")
+		}
+		return err
+	}
+
 	return nil
 }
 

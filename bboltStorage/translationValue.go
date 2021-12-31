@@ -15,7 +15,10 @@ func (b *BBolter) GetTranslationValue(ID string) (*types.TranslationValue, error
 
 func (b *BBolter) CreateTranslationValue(tv types.TranslationValue) (types.TranslationValue, error) {
 	existing, err := b.GetTranslationValueFilter(tv)
-	if err != ErrNotFound {
+	if err != nil {
+		return types.TranslationValue{}, err
+	}
+	if existing != nil {
 		return *existing, fmt.Errorf("Already exists")
 	}
 	tv.Entity = b.NewEntity()
@@ -55,7 +58,19 @@ func (bb *BBolter) GetTranslationValues() (map[string]types.TranslationValue, er
 }
 
 func (bb *BBolter) GetTranslationValueFilter(filter ...types.TranslationValue) (*types.TranslationValue, error) {
-	var u types.TranslationValue
+
+	tvs, err := bb.GetTranslationValuesFilter(1, filter...)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range tvs {
+		return &v, err
+	}
+	return nil, err
+}
+func (bb *BBolter) GetTranslationValuesFilter(max int, filter ...types.TranslationValue) (map[string]types.TranslationValue, error) {
+	tvs := make(map[string]types.TranslationValue)
+	len := 0
 	err := bb.Iterate(BucketTranslationValue, func(key, b []byte) bool {
 		var uu types.TranslationValue
 		err := bb.Unmarshal(b, &uu)
@@ -70,13 +85,20 @@ func (bb *BBolter) GetTranslationValueFilter(filter ...types.TranslationValue) (
 			if f.TranslationID != "" && f.TranslationID != uu.TranslationID {
 				continue
 			}
-			u = uu
-			return true
+			tvs[uu.ID] = uu
+			len++
+			if max == 0 {
+				return false
+			}
+			return len >= max
 		}
 		return false
 	})
-	if err != nil {
-		return nil, err
+	if err == ErrNotFound {
+		err = nil
 	}
-	return &u, err
+	if err != nil {
+		return tvs, err
+	}
+	return tvs, err
 }
