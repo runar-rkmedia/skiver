@@ -65,6 +65,107 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 		}
 
 		switch paths[0] {
+		case "export":
+			if !isGet {
+				break
+			}
+			q, err := extractParams(r, "export/")
+			format := ""
+			localeKey := ""
+			var projects []string
+			var locales []string
+			flatten := true
+			for k, v := range q {
+				switch strings.ToLower(k) {
+				case "locale", "l":
+					locales = v
+				case "format", "f":
+					format = v[0]
+				case "project", "p":
+					projects = v
+				case "locale_key":
+					localeKey = v[0]
+				case "no_flatten":
+					flatten = false
+				}
+			}
+			if format == "" {
+				format = "i18n"
+			} else {
+
+				validFormats := []string{"i18n", "raw"}
+				valid := false
+				for _, v := range validFormats {
+					if format == v {
+						valid = true
+					}
+				}
+				if !valid {
+					rc.WriteErr(fmt.Errorf("invalid format: %s. Valid formats are: %s", format, validFormats), requestContext.CodeErrInputValidation)
+					return
+				}
+			}
+
+			ps, err := ctx.DB.GetProjects()
+			if err != nil {
+				rc.WriteErr(err, requestContext.CodeErrProject)
+				return
+			}
+			projectsLength := len(projects)
+			out := map[string]types.ExtendedProject{}
+			for _, v := range ps {
+				if projectsLength > 0 {
+					found := false
+					for _, pid := range projects {
+						if v.ID == pid || v.ShortName == pid {
+							found = true
+							break
+						}
+					}
+					if !found {
+						break
+					}
+				}
+				ep, err := v.Extend(ctx.DB)
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrProject)
+					return
+				}
+				out[v.ID] = ep
+			}
+			if format == "i18n" {
+				out := map[string]types.I18N{}
+				for _, p := range ps {
+					ep, err := p.Extend(ctx.DB)
+					if err != nil {
+						rc.WriteErr(err, requestContext.CodeErrProject)
+						return
+					}
+					i18n, err := types.ExportI18N(ep, types.ExportI18NOptions{
+						LocaleFilter: locales,
+						LocaleKey:    types.LocaleKey(localeKey)})
+					if err != nil {
+						rc.WriteErr(err, requestContext.CodeErrProject)
+						return
+					}
+					// If the user requested just a single project, we dont want to return a map
+					if flatten && projectsLength == 1 {
+						if len(locales) == 1 {
+							rc.WriteOutput(i18n[locales[0]], http.StatusOK)
+							return
+						}
+						rc.WriteOutput(i18n, http.StatusOK)
+						return
+					}
+					out[ep.ID] = i18n
+				}
+				rc.WriteOutput(out, http.StatusOK)
+				return
+			}
+			rc.WriteOutput(out, http.StatusOK)
+
+			return
+
 		case "swagger", "swagger.yaml", "swagger.yml":
 			rw.Header().Set("Content-Type", "text/vnd.yaml")
 			rw.Header().Set("Content-Disposition", `attachment; filename="swagger-skiver.yaml"`)

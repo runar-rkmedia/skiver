@@ -29,6 +29,7 @@ type Translation struct {
 	Tag                 []string               `json:"tags"`
 	Title               string                 `json:"title,omitempty"`
 	Variables           map[string]interface{} `json:"variables,omitempty"`
+	ValueIDs            []string               `json:"value_ids,omitempty"`
 }
 
 // swagger:model TranslationValue

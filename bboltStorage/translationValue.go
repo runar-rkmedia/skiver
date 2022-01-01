@@ -23,11 +23,33 @@ func (b *BBolter) CreateTranslationValue(tv types.TranslationValue) (types.Trans
 	}
 	tv.Entity = b.NewEntity()
 
+	var t types.Translation
 	err = b.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(BucketTranslationValue)
 		existing := bucket.Get([]byte(tv.ID))
 		if existing != nil {
 			return fmt.Errorf("there already exists a project with this ID")
+		}
+		{
+			// Add the Translation to the Category
+			bucketTranslation := tx.Bucket(BucketTranslation)
+			translation := bucketTranslation.Get([]byte(tv.TranslationID))
+			if translation == nil {
+				return fmt.Errorf("Failed to lookup translation-id: %w", err)
+			}
+			err := b.Unmarshal(translation, &t)
+			if err != nil {
+				return err
+			}
+			t.ValueIDs = append(t.ValueIDs, tv.ID)
+			bytes, err := b.Marshal(t)
+			if err != nil {
+				return err
+			}
+			err = bucketTranslation.Put([]byte(t.ID), bytes)
+			if err != nil {
+				return err
+			}
 		}
 		bytes, err := b.Marshal(tv)
 		if err != nil {
@@ -40,6 +62,7 @@ func (b *BBolter) CreateTranslationValue(tv types.TranslationValue) (types.Trans
 	}
 
 	b.PublishChange(PubTypeTranslationValue, PubVerbCreate, tv)
+	b.PublishChange(PubTypeTranslation, PubVerbUpdate, t)
 	return tv, err
 }
 

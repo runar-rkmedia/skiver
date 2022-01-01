@@ -6,6 +6,8 @@ export const state = createStore({
     showDeleted: false,
     serverStats: false,
     searchQuery: '',
+    categorySortOn: 'key' as keyof ApiDef.Category,
+    categorySortAsc: true,
     seenHints: {} as Record<string, [version: number, readAt: Date]>,
     collapse: {} as Record<string, boolean>,
     createTranslation: {} as ApiDef.TranslationInput,

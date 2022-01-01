@@ -2,6 +2,7 @@ package requestContext
 
 import (
 	"net/http"
+	"path"
 	"strings"
 )
 
@@ -50,6 +51,12 @@ func WriteError(msg string, code ErrorCodes, r *http.Request, rw http.ResponseWr
 
 // attempts to guess at what kind of output the user most likely wants
 func WantedOutputFormat(r *http.Request) OutputKind {
+	ext := path.Ext(r.URL.RawPath)
+	if ext != "" {
+		if o := contentType(strings.TrimPrefix(ext, ".")); o > 0 {
+			return o
+		}
+	}
 	if o := contentType(r.Header.Get("Accept")); o > 0 {
 		return o
 	}
@@ -57,7 +64,7 @@ func WantedOutputFormat(r *http.Request) OutputKind {
 	if o := contentType(r.Header.Get("Content-Type")); o > 0 {
 		return o
 	}
-	q := r.URL.Query().Get("format")
+	q := r.URL.Query().Get("out_format")
 	if o := contentType(q); o > 0 {
 		return o
 	}

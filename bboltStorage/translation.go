@@ -17,22 +17,39 @@ func (b *BBolter) CreateTranslation(translation types.Translation) (types.Transl
 	if translation.CategoryID == "" {
 		return translation, fmt.Errorf("Missing CategoryID: %w", ErrMissingIdArg)
 	}
-	if p, err := b.GetCategory(translation.CategoryID); err != nil {
-		return translation, fmt.Errorf("Failed to lookup category-id: %w", err)
-	} else if p.ID == "" {
-		return translation, fmt.Errorf("Did not find category with id %s: %w", translation.CategoryID, ErrNotFound)
-	}
 	existing, err := b.GetTranslationFilter(translation)
 	if err != ErrNotFound {
 		return *existing, fmt.Errorf("Already exists")
 	}
 	translation.Entity = b.NewEntity()
 
+	var c types.Category
 	err = b.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(BucketTranslation)
 		existing := bucket.Get([]byte(translation.ID))
 		if existing != nil {
 			return fmt.Errorf("there already exists a translation with this ID")
+		}
+		{
+			// Add the Translation to the Category
+			bucketCategory := tx.Bucket(BucketCategory)
+			category := bucketCategory.Get([]byte(translation.CategoryID))
+			if category == nil {
+				return fmt.Errorf("Failed to lookup category-id: %w", err)
+			}
+			err := b.Unmarshal(category, &c)
+			if err != nil {
+				return err
+			}
+			c.TranslationIDs = append(c.TranslationIDs, translation.ID)
+			bytes, err := b.Marshal(c)
+			if err != nil {
+				return err
+			}
+			err = bucketCategory.Put([]byte(c.ID), bytes)
+			if err != nil {
+				return err
+			}
 		}
 		bytes, err := b.Marshal(translation)
 		if err != nil {
@@ -45,6 +62,7 @@ func (b *BBolter) CreateTranslation(translation types.Translation) (types.Transl
 	}
 
 	b.PublishChange(PubTypeTranslation, PubVerbCreate, translation)
+	b.PublishChange(PubTypeCategory, PubVerbUpdate, b)
 	return translation, err
 }
 

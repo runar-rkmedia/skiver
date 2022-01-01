@@ -28,6 +28,7 @@ type TranslationInput struct {
 	// context
 	// Max Length: 400
 	// Min Length: 1
+	// Pattern: ^[^\s]*$
 	Context string `json:"context,omitempty"`
 
 	// description
@@ -39,6 +40,7 @@ type TranslationInput struct {
 	// Required: true
 	// Max Length: 400
 	// Min Length: 1
+	// Pattern: ^[^\s]*$
 	Key *string `json:"key"`
 
 	// title
@@ -107,6 +109,10 @@ func (m *TranslationInput) validateContext(formats strfmt.Registry) error {
 		return err
 	}
 
+	if err := validate.Pattern("context", "body", m.Context, `^[^\s]*$`); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -137,6 +143,10 @@ func (m *TranslationInput) validateKey(formats strfmt.Registry) error {
 	}
 
 	if err := validate.MaxLength("key", "body", *m.Key, 400); err != nil {
+		return err
+	}
+
+	if err := validate.Pattern("key", "body", *m.Key, `^[^\s]*$`); err != nil {
 		return err
 	}
 

@@ -48,6 +48,9 @@ type Category struct {
 	// title
 	Title string `json:"title,omitempty"`
 
+	// translation i ds
+	TranslationIDs []string `json:"translation_ids"`
+
 	// Time of which the entity was updated, if any
 	// Format: date-time
 	UpdatedAt strfmt.DateTime `json:"updatedAt,omitempty"`

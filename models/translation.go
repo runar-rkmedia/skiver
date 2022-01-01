@@ -67,6 +67,9 @@ type Translation struct {
 	// User id refering to who created the item
 	UpdatedBy string `json:"updatedBy,omitempty"`
 
+	// value i ds
+	ValueIDs []string `json:"value_ids"`
+
 	// variables
 	Variables map[string]interface{} `json:"variables,omitempty"`
 }

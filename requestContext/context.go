@@ -1,6 +1,7 @@
 package requestContext
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -77,6 +78,9 @@ func (rc ReqContext) WriteAuto(output interface{}, error error, errCode ErrorCod
 }
 func (rc ReqContext) WriteError(msg string, errCode ErrorCodes) {
 	WriteError(msg, errCode, rc.Req, rc.Rw)
+}
+func (rc ReqContext) WriteNotFound(errCode ErrorCodes) {
+	WriteErr(errors.New("Not found"), errCode, rc.Req, rc.Rw)
 }
 func (rc ReqContext) WriteErr(err error, errCode ErrorCodes) {
 	WriteErr(err, errCode, rc.Req, rc.Rw)

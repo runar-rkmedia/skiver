@@ -36,10 +36,12 @@ definitions:
         maxLength: 100
       key:
         type: string
+        pattern: ^[^\s]*$
         minLength: 1
         maxLength: 400
       context:
         type: string
+        pattern: ^[^\s]*$
         minLength: 1
         maxLength: 400
       title:
@@ -107,6 +109,7 @@ definitions:
       key:
         maxLength: 100
         minLength: 1
+        pattern: ^[^\s]*$
         type: string
       project_id:
         maxLength: 100
@@ -143,16 +146,105 @@ definitions:
       - password
 host: localhost
 info:
-  description: |-
+  description: >
     Api fo Skiver-api.
     <a href="https://insomnia.rest/run/?label=&uri=" target="_blank"><img src="https://insomnia.rest/images/run.svg" alt="Run in Insomnia"></a>
-    Title: "Skiver"
+
+    # About formatting
+
+    This api produces output in json, yaml and toml. Every api-route takes parameters for controlling which content-type should be produced.
+
+    In General, you can control this with these parameters:
+
+      - `Accept`-header
+      - Appending `.json`/`.yaml`/`.toml` to the path (not all routes supports this.)
+      - `out_format`-query-parameter
+      - `Content-Type`-header
+
   license:
     name: MIT
     url: http://opensource.org/licenses/MIT
   title: Skiver API.
   version: 0.0.1
 paths:
+  /api/export/:
+    get:
+      tags:
+        - export
+      summary: Returnes a snapshot of the set of translations.
+      description: >
+        For caching in browsers, proxy caching services etc. to work consistenly with parameters, the `?`-prefix for the query-parameters should be removed.
+       
+        Note that by default, output-maps are flattened when requesting only a single project/locale. Set the parameter `no_flatten` to override.
+
+      operationId: getExport
+      parameters:
+        - in: query
+          name: project
+          required: false
+          type: string
+          description: >
+            The parameter can be any of the Project's ID or ShortName.
+
+            The short-alias for this parameter is: `p`
+        - in: query
+          name: format
+          required: false
+          type: string
+          enum:
+            - raw
+            - i18n
+          description: >
+            Used to set the export-format.
+
+            ### `i18n`
+
+            The output is formatted to be i18n-compliant.
+            
+            ### `raw`
+
+            The output is not converted, and all data is outputted.
+
+            The short-alias for this parameter is: `f`
+        - in: query
+          name: no_flatten
+          required: false
+          type: boolean
+          description: >
+            Disables flattening of the outputet map
+        - in: query
+          name: locale_key
+          type: string
+          required: false
+          description: >
+            Used to set which key in output for the locale that should be used.
+            
+            The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+
+            The short-alias for this parameter is: `p`
+        - in: query
+          name: locale
+          type: string
+          required: false
+          description: >
+            The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+
+            By leaving out the parameters, all locales will be returned.
+            
+            The short-alias for this parameter is: `l`
+
+            **Future: By setting `locale_id=auto`, the server will infer the locale from the browsers headers.**
+            
+      responses:
+        "200":
+          description: "key-value i18n-type response."
+          schema:
+            type: object
+        "404":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
+
   /api/serverInfo/:
     get:
       summary: Information about the server

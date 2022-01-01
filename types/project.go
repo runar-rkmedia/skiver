@@ -6,8 +6,9 @@ package types
 // swagger:model Project
 type Project struct {
 	Entity
+	ShortName    string   `json:"short_name"`
 	Title        string   `json:"title"`
-	Description  string   `json:"description"`
-	IncludedTags []string `json:"included_tags"`
-	CategoryIDs  []string `json:"category_ids"`
+	Description  string   `json:"description,omitempty"`
+	IncludedTags []string `json:"included_tags,omitempty"`
+	CategoryIDs  []string `json:"category_ids,omitempty"`
 }

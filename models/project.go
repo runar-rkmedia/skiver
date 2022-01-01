@@ -45,6 +45,9 @@ type Project struct {
 	// included tags
 	IncludedTags []string `json:"included_tags"`
 
+	// short name
+	ShortName string `json:"short_name,omitempty"`
+
 	// title
 	Title string `json:"title,omitempty"`
 

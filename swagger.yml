@@ -50,6 +50,11 @@ definitions:
       title:
         type: string
         x-go-name: Title
+      translation_ids:
+        items:
+          type: string
+        type: array
+        x-go-name: TranslationIDs
       updatedAt:
         description: Time of which the entity was updated, if any
         format: date-time
@@ -73,6 +78,7 @@ definitions:
       key:
         maxLength: 100
         minLength: 1
+        pattern: ^[^\s]*$
         type: string
       project_id:
         maxLength: 100
@@ -332,6 +338,9 @@ definitions:
           type: string
         type: array
         x-go-name: IncludedTags
+      short_name:
+        type: string
+        x-go-name: ShortName
       title:
         type: string
         x-go-name: Title
@@ -445,6 +454,11 @@ definitions:
         description: User id refering to who created the item
         type: string
         x-go-name: UpdatedBy
+      value_ids:
+        items:
+          type: string
+        type: array
+        x-go-name: ValueIDs
       variables:
         additionalProperties:
           type: object
@@ -464,6 +478,7 @@ definitions:
       context:
         maxLength: 400
         minLength: 1
+        pattern: ^[^\s]*$
         type: string
       description:
         maxLength: 8000
@@ -472,6 +487,7 @@ definitions:
       key:
         maxLength: 400
         minLength: 1
+        pattern: ^[^\s]*$
         type: string
       title:
         maxLength: 400
@@ -553,10 +569,16 @@ definitions:
     type: object
 host: localhost
 info:
-  description: |-
-    Api fo Skiver-api.
-    <a href="https://insomnia.rest/run/?label=&uri=" target="_blank"><img src="https://insomnia.rest/images/run.svg" alt="Run in Insomnia"></a>
-    Title: "Skiver"
+  description: |
+    Api fo Skiver-api. <a href="https://insomnia.rest/run/?label=&uri=" target="_blank"><img src="https://insomnia.rest/images/run.svg" alt="Run in Insomnia"></a>
+    # About formatting
+    This api produces output in json, yaml and toml. Every api-route takes parameters for controlling which content-type should be produced.
+    In General, you can control this with these parameters:
+
+      - `Accept`-header
+      - Appending `.json`/`.yaml`/`.toml` to the path (not all routes supports this.)
+      - `out_format`-query-parameter
+      - `Content-Type`-header
   license:
     name: MIT
     url: http://opensource.org/licenses/MIT
@@ -584,6 +606,64 @@ paths:
       summary: Create a new category
       tags:
       - category
+  /api/export/:
+    get:
+      description: |
+        For caching in browsers, proxy caching services etc. to work consistenly with parameters, the `?`-prefix for the query-parameters should be removed.
+        Note that by default, output-maps are flattened when requesting only a single project/locale. Set the parameter `no_flatten` to override.
+      operationId: getExport
+      parameters:
+      - description: |
+          The parameter can be any of the Project's ID or ShortName.
+          The short-alias for this parameter is: `p`
+        in: query
+        name: project
+        type: string
+      - description: |
+          Used to set the export-format.
+          ### `i18n`
+          The output is formatted to be i18n-compliant.
+          ### `raw`
+          The output is not converted, and all data is outputted.
+          The short-alias for this parameter is: `f`
+        enum:
+        - raw
+        - i18n
+        in: query
+        name: format
+        type: string
+      - description: |
+          Disables flattening of the outputet map
+        in: query
+        name: no_flatten
+        type: boolean
+      - description: |
+          Used to set which key in output for the locale that should be used.
+          The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+          The short-alias for this parameter is: `p`
+        in: query
+        name: locale_key
+        type: string
+      - description: |
+          The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+          By leaving out the parameters, all locales will be returned.
+          The short-alias for this parameter is: `l`
+          **Future: By setting `locale_id=auto`, the server will infer the locale from the browsers headers.**
+        in: query
+        name: locale
+        type: string
+      responses:
+        "200":
+          description: key-value i18n-type response.
+          schema:
+            type: object
+        "404":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Returnes a snapshot of the set of translations.
+      tags:
+      - export
   /api/locale/:
     get:
       operationId: getLocale

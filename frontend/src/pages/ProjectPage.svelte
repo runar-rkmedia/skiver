@@ -8,6 +8,7 @@
   export let projectID: string
   import sortOn from 'sort-on'
   import Icon from 'components/Icon.svelte'
+  import id from 'date-fns/locale/id'
 
   $: project = $projects[projectID]
   $: {
@@ -21,7 +22,6 @@
     ? $state.projectSettings[projectID].localeIds.map((id) => $db.locale[id])
     : Object.values($db.locale || {})
   let visibleForm: null | 'translation' | 'category' | 'translationValue' = null
-  let sortCategoryOn: keyof ApiDef.Category = 'key'
   let selectedCategory = ''
   let selectedTranslation = ''
   let selectedLocale = ''
@@ -123,33 +123,39 @@
                 type="checkbox"
                 name="locale-ids"
                 value={locale.id}
-                bind:group={$state.projectSettings[projectID].localeIds}
-              />
+                bind:group={$state.projectSettings[projectID].localeIds} />
 
               {locale.title}
             </label>
           </div>
         {/each}
+        <!-- svelte-ignore a11y-missing-content -->
+        <a href={`/api/export/p=${project.shortName || project.id}`} >
+          Exported raw
+        </a>
       </Collapse>
     </paper>
   {/if}
   <div>
     <h2>Categories</h2>
     <label>
-      Sort by:
-      <select bind:value={sortCategoryOn}>
+      Sort by: {$state.sortCategoryOn}
+      <select bind:value={$state.sortCategoryOn}>
         {#each categorySortOptions as option}
           <option value={option}>{option}</option>
         {/each}
       </select>
+    </label>
+    <label>
+      <input bind:checked={$state.categorySortAsc} type="checkbox" />
+      Ascending
     </label>
     <Button
       color="secondary"
       icon={'create'}
       on:click={() => {
         visibleForm = 'category'
-      }}>Create category</Button
-    >
+      }}>Create category</Button>
     {#if visibleForm === 'category'}
       <paper>
         <form id="category-form">
@@ -161,28 +167,24 @@
             <label for="category-description">Description</label>
             <textarea
               id="category-description"
-              bind:value={$state.createCategory.description}
-            />
+              bind:value={$state.createCategory.description} />
           </small>
           <Button
             color="primary"
             type="submit"
             icon={'create'}
-            on:click={onCreateCategory}
-          >
+            on:click={onCreateCategory}>
             Create
           </Button>
           <Button
             color="secondary"
             icon={'toggleOff'}
-            on:click={() => (visibleForm = null)}
-          >
+            on:click={() => (visibleForm = null)}>
             Cancel
           </Button>
-        </form></paper
-      >
+        </form></paper>
     {/if}
-    {#each sortOn(Object.values(project.categories), sortCategoryOn) as category}
+    {#each sortOn(Object.values(project.categories), ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn) as category}
       <paper class="category-item" transition fly local>
         <div class="category-item-header" transition:fly|local>
           <h3>
@@ -213,8 +215,7 @@
                   el.focus()
                   return true
                 })
-              }}>Create translation</Button
-            >
+              }}>Create translation</Button>
           </div>
         </div>
         {#if visibleForm === 'translation' && selectedCategory === category.id}
@@ -228,30 +229,26 @@
                 Title
                 <input
                   name="title"
-                  bind:value={$state.createTranslation.title}
-                />
+                  bind:value={$state.createTranslation.title} />
               </label>
               <label>
                 Description (Optional, but recommended)
                 <textarea
                   name="description"
                   rows="5"
-                  bind:value={$state.createTranslation.description}
-                />
+                  bind:value={$state.createTranslation.description} />
               </label>
               <label>
                 Context (Optional)
                 <input
                   name="prefix"
-                  bind:value={$state.createTranslation.context}
-                />
+                  bind:value={$state.createTranslation.context} />
               </label>
               <Button
                 color="primary"
                 type="submit"
                 icon={'create'}
-                on:click={onCreateTranslation}
-              >
+                on:click={onCreateTranslation}>
                 Create
               </Button>
               <Button
@@ -260,15 +257,13 @@
                 on:click={() => {
                   selectedCategory = ''
                   visibleForm = null
-                }}
-              >
+                }}>
                 Cancel
               </Button>
-            </form></paper
-          >
+            </form></paper>
         {/if}
         <div class="translations" key="={category.id}">
-          {#each Object.values(category.translations) as translation}
+          {#each sortOn(Object.values(category.translations), ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn) as translation}
             <paper class="translation-item">
               <div>
                 <h4>
@@ -297,8 +292,7 @@
                       class:missing={!translation.values?.[locale.id]?.value}
                       class:selected={visibleForm === 'translationValue' &&
                         selectedTranslation === translation.id &&
-                        selectedLocale === locale.id}
-                    >
+                        selectedLocale === locale.id}>
                       <td>{locale.title}</td>
                       <td>
                         {#if visibleForm === 'translationValue' && selectedTranslation === translation.id && selectedLocale === locale.id}
@@ -315,25 +309,22 @@
                               rows={5}
                               bind:value={$state.createTranslationValue.value}
                               type="text"
-                              name="value"
-                            />
+                              name="value" />
                             <Button
                               color="primary"
                               type="submit"
                               on:click={onCreateTranslationValue}
-                              icon={'submit'}>Submit</Button
-                            >
+                              icon={'submit'}>Submit</Button>
                             <Button
                               color="secondary"
                               on:click={() => {
                                 visibleForm = null
                               }}
-                              icon={'cancel'}>Cancel</Button
-                            >
+                              icon={'cancel'}>Cancel</Button>
                           </form>
                         {:else}
                           <div
-                            class="click-to-edit"
+                            class="keep-whitespace click-to-edit"
                             on:click={() => {
                               visibleForm = 'translationValue'
                               selectedLocale = locale.id
@@ -343,8 +334,7 @@
                               if (value) {
                                 $state.createTranslationValue.value = value
                               }
-                            }}
-                          >
+                            }}>
                             {#if translation.values?.[locale.id]?.source === 'system-translator'}
                               <Icon icon="warning" color="warning" />
                             {/if}
@@ -417,5 +407,8 @@
   }
   .click-to-edit {
     cursor: pointer;
+  }
+  .keep-whitespace {
+    white-space: pre-line;
   }
 </style>
