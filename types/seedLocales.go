@@ -6,7 +6,7 @@ import (
 
 type localeSeeder interface {
 	CreateLocale(locale Locale) (Locale, error)
-	GetLocaleFilter(filter ...Locale) (Locale, error)
+	GetLocaleFilter(filter ...Locale) (*Locale, error)
 }
 
 func SeedLocales(db localeSeeder, locales []Locale) error {
@@ -48,8 +48,10 @@ func SeedLocales(db localeSeeder, locales []Locale) error {
 			},
 		}
 	}
-	if v, err := db.GetLocaleFilter(locales[0]); v.IETF != "" {
+	if v, err := db.GetLocaleFilter(locales[0]); err != nil {
 		return fmt.Errorf("error occured while checking for locale: %w", err)
+	} else if v != nil {
+		return nil
 	}
 	for i := 0; i < len(locales); i++ {
 		if locales[i].CreatedBy == "" {

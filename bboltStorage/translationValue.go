@@ -42,6 +42,7 @@ func (b *BBolter) CreateTranslationValue(tv types.TranslationValue) (types.Trans
 				return err
 			}
 			t.ValueIDs = append(t.ValueIDs, tv.ID)
+			t.UpdatedAt = nowPointer()
 			bytes, err := b.Marshal(t)
 			if err != nil {
 				return err

@@ -1,5 +1,21 @@
 # Skiver
 
+## Current feature-set
+
+- [X] Multi-locale support
+- [X] Multi-project support
+- [X] i18n-compliant export
+- [X] Auto-translate via external translation-service (Bing Translate, Libre Translate)
+- [ ] Report missing translation
+
+## Planned feature-set
+
+- [ ] Server-side translating
+- [ ] Source-code integration with project, to show usage of translation.
+- [ ] Upload of images to show usage of translation.
+- [ ] Sharing of translations between projects.
+- [ ] Multi-organization support
+
 
 ## Swagger and code-generation
 
@@ -25,3 +41,6 @@ models etc. should in this project be committed like any other file.
 This makes it a lot easier to reason about changes, and we are then not at the mercy of 
 code-generation. We still can at any point drop out of using code-generation for parts of, 
 or the whole schema.
+
+
+

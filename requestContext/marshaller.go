@@ -52,7 +52,7 @@ func WriteOutput(isError bool, statusCode int, output interface{}, r *http.Reque
 		if jmesPath != "" {
 			b, err := json.Marshal(output)
 			if err != nil {
-				WriteErr(err, CodeErrMarhal, r, rw)
+				WriteErr(err, CodeErrMarshal, r, rw)
 				return err
 			}
 			var JSON map[string]interface{}
@@ -89,14 +89,14 @@ func WriteOutput(isError bool, statusCode int, output interface{}, r *http.Reque
 	case OutputJson:
 		b, err := json.Marshal(output)
 		if err != nil {
-			WriteErr(err, CodeErrMarhal, r, rw)
+			WriteErr(err, CodeErrMarshal, r, rw)
 			return err
 		}
 		rw.Write(b)
 	case OutputYaml:
 		b, err := yaml.Marshal(output)
 		if err != nil {
-			WriteErr(err, CodeErrMarhal, r, rw)
+			WriteErr(err, CodeErrMarshal, r, rw)
 			return err
 		}
 		rw.Write(b)
@@ -106,19 +106,19 @@ func WriteOutput(isError bool, statusCode int, output interface{}, r *http.Reque
 		// E.g. it first uses json-marshaller/unmarshal then toml-marshal.
 		jb, err := json.Marshal(output)
 		if err != nil {
-			WriteErr(err, CodeErrMarhal, r, rw)
+			WriteErr(err, CodeErrMarshal, r, rw)
 			return err
 		}
 
 		var JSON map[string]interface{}
 		err = json.Unmarshal(jb, &JSON)
 		if err != nil {
-			WriteErr(err, CodeErrMarhal, r, rw)
+			WriteErr(err, CodeErrMarshal, r, rw)
 			return err
 		}
 		b, err := toml.Marshal(JSON)
 		if err != nil {
-			WriteErr(err, CodeErrMarhal, r, rw)
+			WriteErr(err, CodeErrMarshal, r, rw)
 			return err
 		}
 		rw.Write(b)

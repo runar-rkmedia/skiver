@@ -182,6 +182,59 @@ declare namespace ApiDef {
         updatedBy?: string;
         userName?: string;
     }
+    export interface MissingTranslation {
+        /**
+         * The reported category (may not exist), as reported by the client.
+         */
+        category?: string;
+        category_id?: string;
+        /**
+         * Number of times it has been reported.
+         */
+        count?: number; // int64
+        /**
+         * Time of which the entity was created in the database
+         */
+        createdAt: string; // date-time
+        /**
+         * User id refering to the user who created the item
+         */
+        createdBy?: string;
+        /**
+         * If set, the item is considered deleted. The item will normally not get deleted from the database,
+         * but it may if cleanup is required.
+         */
+        deleted?: string; // date-time
+        first_user_agent?: string;
+        /**
+         * Unique identifier of the entity
+         */
+        id: string;
+        latest_user_agent?: string;
+        /**
+         * The reported locale (may not exist), as reported by the client.
+         */
+        locale?: string;
+        locale_id?: string;
+        /**
+         * The reported project (may not exist), as reported by the client.
+         */
+        project?: string;
+        project_id?: string;
+        /**
+         * The reported translation (may not exist), as reported by the client.
+         */
+        translation?: string;
+        translation_id?: string;
+        /**
+         * Time of which the entity was updated, if any
+         */
+        updatedAt?: string; // date-time
+        /**
+         * User id refering to who created the item
+         */
+        updatedBy?: string;
+    }
     export interface Project {
         category_ids?: string[];
         /**
@@ -216,7 +269,11 @@ declare namespace ApiDef {
     }
     export interface ProjectInput {
         description?: string;
+        short_name: string;
         title: string;
+    }
+    export interface ReportMissingInput {
+        [name: string]: string;
     }
     export interface ServerInfo {
         /**
@@ -338,6 +395,36 @@ declare namespace ApiDef {
     }
 }
 declare namespace ApiPaths {
+    namespace ApiMissing$Locale$Project {
+        export interface BodyParameters {
+            ReportMissingPayload?: Parameters.ReportMissingPayload;
+        }
+        namespace Parameters {
+            /**
+             * The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+             *
+             */
+            export type Locale = string;
+            /**
+             * The parameter can be any of the Project's ID or ShortName.
+             *
+             */
+            export type Project = string;
+            export type ReportMissingPayload = ApiDef.ReportMissingInput;
+        }
+        export interface PathParameters {
+            project: /**
+             * The parameter can be any of the Project's ID or ShortName.
+             *
+             */
+            Parameters.Project;
+            locale: /**
+             * The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+             *
+             */
+            Parameters.Locale;
+        }
+    }
     namespace GetExport {
         namespace Parameters {
             /**

@@ -24,6 +24,12 @@ type ProjectInput struct {
 	// Min Length: 1
 	Description string `json:"description,omitempty"`
 
+	// short name
+	// Required: true
+	// Max Length: 20
+	// Min Length: 1
+	ShortName *string `json:"short_name"`
+
 	// title
 	// Required: true
 	// Max Length: 400
@@ -36,6 +42,10 @@ func (m *ProjectInput) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateDescription(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateShortName(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -59,6 +69,23 @@ func (m *ProjectInput) validateDescription(formats strfmt.Registry) error {
 	}
 
 	if err := validate.MaxLength("description", "body", m.Description, 8000); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *ProjectInput) validateShortName(formats strfmt.Registry) error {
+
+	if err := validate.Required("short_name", "body", m.ShortName); err != nil {
+		return err
+	}
+
+	if err := validate.MinLength("short_name", "body", *m.ShortName, 1); err != nil {
+		return err
+	}
+
+	if err := validate.MaxLength("short_name", "body", *m.ShortName, 20); err != nil {
 		return err
 	}
 

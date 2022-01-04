@@ -18,8 +18,11 @@ func (b *BBolter) CreateTranslation(translation types.Translation) (types.Transl
 		return translation, fmt.Errorf("Missing CategoryID: %w", ErrMissingIdArg)
 	}
 	existing, err := b.GetTranslationFilter(translation)
-	if err != ErrNotFound {
-		return *existing, fmt.Errorf("Already exists")
+	if err != nil {
+		return translation, err
+	}
+	if existing != nil {
+		return *existing, fmt.Errorf("Translation already exists")
 	}
 	translation.Entity = b.NewEntity()
 
@@ -42,6 +45,7 @@ func (b *BBolter) CreateTranslation(translation types.Translation) (types.Transl
 				return err
 			}
 			c.TranslationIDs = append(c.TranslationIDs, translation.ID)
+			c.UpdatedAt = nowPointer()
 			bytes, err := b.Marshal(c)
 			if err != nil {
 				return err
@@ -63,6 +67,7 @@ func (b *BBolter) CreateTranslation(translation types.Translation) (types.Transl
 
 	b.PublishChange(PubTypeTranslation, PubVerbCreate, translation)
 	b.PublishChange(PubTypeCategory, PubVerbUpdate, b)
+	go b.UpdateMissingWithNewIds(types.MissingTranslation{Translation: translation.Key, TranslationID: translation.ID})
 	return translation, err
 }
 
@@ -81,7 +86,7 @@ func (bb *BBolter) GetTranslations() (map[string]types.Translation, error) {
 }
 
 func (bb *BBolter) GetTranslationFilter(filter ...types.Translation) (*types.Translation, error) {
-	var u types.Translation
+	var u *types.Translation
 	err := bb.Iterate(BucketTranslation, func(key, b []byte) bool {
 		var uu types.Translation
 		err := bb.Unmarshal(b, &uu)
@@ -96,13 +101,10 @@ func (bb *BBolter) GetTranslationFilter(filter ...types.Translation) (*types.Tra
 			if f.Key != "" && f.Key != uu.Key {
 				continue
 			}
-			u = uu
+			u = &uu
 			return true
 		}
 		return false
 	})
-	if err != nil {
-		return nil, err
-	}
-	return &u, err
+	return u, err
 }

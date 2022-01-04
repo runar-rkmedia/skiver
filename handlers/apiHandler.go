@@ -43,8 +43,9 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 		isPut := r.Method == http.MethodPut
 		path := r.URL.Path
 		paths := strings.Split(strings.TrimSuffix(path, "/"), "/")
+		shouldReadBody := rc.ContentKind > 0 && (isPost || isPut)
 
-		if rc.ContentKind > 0 && (isPost || isPut) {
+		if shouldReadBody {
 			body, err = io.ReadAll(r.Body)
 			if err != nil {
 				rc.WriteErr(err, requestContext.CodeErrReadBody)
@@ -65,6 +66,71 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 		}
 
 		switch paths[0] {
+		case "missing":
+			if isGet {
+				r, err := ctx.DB.GetMissingKeysFilter(0)
+				rc.WriteAuto(r, err, requestContext.CodeErrReportMissing)
+				return
+			}
+			if isPost {
+				project := ""
+				locale := ""
+				if len(paths) >= 3 {
+					project = paths[2]
+					locale = paths[1]
+				}
+				if project == "" {
+					rc.WriteErr(fmt.Errorf("project is required"), requestContext.CodeErrInputValidation)
+					return
+				}
+				if locale == "" {
+					rc.WriteErr(fmt.Errorf("locale is required"), requestContext.CodeErrInputValidation)
+					return
+				}
+				if body == nil {
+					// The default-settings of i18next's AddMissing request does not add the correct Content-Type.
+					// Just to be nice, we attempt to read the body anyway...
+					rc.ContentKind = requestContext.OutputJson
+					body, err = io.ReadAll(r.Body)
+					if err != nil {
+						rc.WriteErr(err, requestContext.CodeErrReadBody)
+						return
+					}
+				}
+				var j models.ReportMissingInput
+				err = rc.ValidateBytes(body, &j)
+				if err != nil {
+					return
+				}
+				var errs []string
+				var mts []types.MissingTranslation
+				for k := range j {
+					category, translation, _ := strings.Cut(k, ".")
+					mt := types.MissingTranslation{
+						Locale:      locale,
+						Project:     project,
+						Translation: translation,
+						Category:    category,
+					}
+
+					mtt, err := ctx.DB.ReportMissing(mt)
+					if err != nil {
+						ctx.L.Err(err).Interface("mt", mt).Msg("failed to report message")
+						errs = append(errs, err.Error())
+						continue
+					}
+					mts = append(mts, *mtt)
+				}
+
+				if errs != nil && len(errs) > 0 {
+
+					rc.WriteErr(fmt.Errorf("%d/%d missing translations failed to report: %#v", len(errs), len(j), errs), requestContext.CodeErrProject)
+					return
+				}
+				rc.WriteOutput(mts, http.StatusOK)
+
+				return
+			}
 		case "export":
 			if !isGet {
 				break
@@ -225,6 +291,10 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 
 			user, err := ctx.DB.GetUserByUserName(*j.Username)
 			if err != nil {
+				rc.WriteErr(err, "Err:login")
+				return
+			}
+			if user == nil {
 				rc.WriteError("The supplied username/password is incorrect", "incorrect-user-password")
 				return
 			}
@@ -261,7 +331,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 			}
 
 			if session.UserAgent == "" {
-				session = userSessions.NewSession(user, userAgent)
+				session = userSessions.NewSession(*user, userAgent)
 			}
 
 			expiresD := session.Expires.Sub(now)
@@ -315,6 +385,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				l := types.Project{
 					Title:       *j.Title,
 					Description: j.Description,
+					ShortName:   *j.ShortName,
 				}
 				locale, err := ctx.DB.CreateProject(l)
 				rc.WriteAuto(locale, err, requestContext.CodeErrCreateProject)

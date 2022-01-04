@@ -9,6 +9,13 @@
   import sortOn from 'sort-on'
   import Icon from 'components/Icon.svelte'
   import id from 'date-fns/locale/id'
+  import { t } from '../util/i18next'
+  import { formatDate } from '../dates'
+
+  import CategoryForm from 'forms/CategoryForm.svelte'
+  import TranslationValueForm from 'forms/TranslationValueForm.svelte'
+  import TranslationForm from 'forms/TranslationForm.svelte'
+  import TranslationItem from 'components/TranslationItem.svelte'
 
   $: project = $projects[projectID]
   $: {
@@ -25,73 +32,6 @@
   let selectedCategory = ''
   let selectedTranslation = ''
   let selectedLocale = ''
-  async function onCreateTranslation() {
-    $state.createTranslation.category_id = selectedCategory
-    if (!$state.createTranslation.category_id) {
-      toast({
-        title: 'missing argument',
-        message: 'category was not set',
-        kind: 'warning',
-      })
-      return
-    }
-    const s = await api.translation.create($state.createTranslation)
-    if (!s[1]) {
-      visibleForm = null
-      $state.createTranslation = { category_id: '', key: '' }
-    }
-  }
-  async function onCreateTranslationValue() {
-    $state.createTranslationValue.locale_id = selectedLocale
-    $state.createTranslationValue.translation_id = selectedTranslation
-    if (!$state.createTranslationValue.locale_id) {
-      toast({
-        title: 'missing argument',
-        message: 'locale was not set',
-        kind: 'warning',
-      })
-      return
-    }
-    if (!$state.createTranslationValue.translation_id) {
-      toast({
-        title: 'missing argument',
-        message: 'translation was not set',
-        kind: 'warning',
-      })
-      return
-    }
-    const s = await api.translationValue.create($state.createTranslationValue)
-    if (!s[1]) {
-      visibleForm = null
-      $state.createTranslationValue = {
-        locale_id: '',
-        translation_id: '',
-        value: '',
-      }
-    }
-  }
-  async function onCreateCategory() {
-    $state.createCategory.project_id = projectID
-    if (!$state.createCategory.project_id) {
-      toast({
-        title: 'missing argument',
-        message: 'project was not set',
-        kind: 'warning',
-      })
-      return
-    }
-    const s = await api.category.create($state.createCategory)
-    if (!s[1]) {
-      visibleForm = null
-      $state.createCategory = { key: '', project_id: '', title: '' }
-    }
-  }
-  function retry(f: AnyFunc) {
-    const r = f()
-    if (!r) {
-      setTimeout(f, 10)
-    }
-  }
   const categorySortOptions: Array<keyof ApiDef.Category> = [
     'key',
     'title',
@@ -100,6 +40,13 @@
   ]
 </script>
 
+{$t('a.hello')}
+{$t('actions.create')}
+{$t('actions.update')}
+{$t('actions.delete')}
+{$t('forms.submit', { value: 4 })}
+
+<button on:click={() => t.changeLanguage('nb')}>toggle lang</button>
 {#if !project}
   {#if $db.responseStates.project.loading}
     Loading...
@@ -111,6 +58,10 @@
 {:else}
   <h2>{project.title}</h2>
   <p>{project.description}</p>
+  <small
+    >Created: {formatDate(project.createdAt)} | Updated: {formatDate(
+      project.updatedAt
+    )}</small>
   {#if $state.projectSettings[projectID]?.localeIds}
     <paper>
       <Collapse>
@@ -130,7 +81,7 @@
           </div>
         {/each}
         <!-- svelte-ignore a11y-missing-content -->
-        <a href={`/api/export/p=${project.shortName || project.id}`} >
+        <a href={`/api/export/p=${project.shortName || project.id}`}>
           Exported raw
         </a>
       </Collapse>
@@ -158,35 +109,20 @@
       }}>Create category</Button>
     {#if visibleForm === 'category'}
       <paper>
-        <form id="category-form">
-          <label for="category-id">Key</label>
-          <input id="category-key" bind:value={$state.createCategory.key} />
-          <label for="category-title">Title</label>
-          <input id="category-title" bind:value={$state.createCategory.title} />
-          <small>
-            <label for="category-description">Description</label>
-            <textarea
-              id="category-description"
-              bind:value={$state.createCategory.description} />
-          </small>
+        <CategoryForm on:complete={() => (visibleForm = null)} {projectID}>
           <Button
-            color="primary"
-            type="submit"
-            icon={'create'}
-            on:click={onCreateCategory}>
-            Create
-          </Button>
-          <Button
+            slot="actions"
             color="secondary"
             icon={'toggleOff'}
             on:click={() => (visibleForm = null)}>
             Cancel
           </Button>
-        </form></paper>
+        </CategoryForm>
+      </paper>
     {/if}
     {#each sortOn(Object.values(project.categories), ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn) as category}
-      <paper class="category-item" transition fly local>
-        <div class="category-item-header" transition:fly|local>
+      <paper class="category-item" transition:fly|local>
+        <div class="category-item-header">
           <h3>
             <code>
               {category.key}
@@ -196,6 +132,10 @@
           <div class="description">
             {category.description || ''}
           </div>
+          <small
+            >Created: {formatDate(category.createdAt)} | Updated: {formatDate(
+              category.updatedAt
+            )}</small>
           <div class="actions">
             <Button
               color="secondary"
@@ -205,53 +145,16 @@
               on:click={() => {
                 selectedCategory = category.id
                 visibleForm = 'translation'
-                retry(() => {
-                  const el = document.querySelector(
-                    '#form-' + category.id + ' input'
-                  )
-                  if (!el) {
-                    return false
-                  }
-                  el.focus()
-                  return true
-                })
               }}>Create translation</Button>
           </div>
         </div>
         {#if visibleForm === 'translation' && selectedCategory === category.id}
           <paper>
-            <form id={'form-' + selectedCategory}>
-              <label>
-                Key
-                <input name="key" bind:value={$state.createTranslation.key} />
-              </label>
-              <label>
-                Title
-                <input
-                  name="title"
-                  bind:value={$state.createTranslation.title} />
-              </label>
-              <label>
-                Description (Optional, but recommended)
-                <textarea
-                  name="description"
-                  rows="5"
-                  bind:value={$state.createTranslation.description} />
-              </label>
-              <label>
-                Context (Optional)
-                <input
-                  name="prefix"
-                  bind:value={$state.createTranslation.context} />
-              </label>
+            <TranslationForm
+              categoryID={selectedCategory}
+              on:complete={() => (visibleForm = null)}>
               <Button
-                color="primary"
-                type="submit"
-                icon={'create'}
-                on:click={onCreateTranslation}>
-                Create
-              </Button>
-              <Button
+                slot="actions"
                 color="secondary"
                 icon={'cancel'}
                 on:click={() => {
@@ -260,94 +163,31 @@
                 }}>
                 Cancel
               </Button>
-            </form></paper>
+            </TranslationForm>
+          </paper>
         {/if}
         <div class="translations" key="={category.id}">
           {#each sortOn(Object.values(category.translations), ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn) as translation}
             <paper class="translation-item">
-              <div>
-                <h4>
-                  <code>
-                    {category.key}.{translation.key}
-                  </code>
-                  {translation.title}
-                </h4>
-                <div>
-                  <small>
-                    {translation.description || ''}
-                  </small>
-                </div>
-              </div>
-              <table>
-                <thead>
-                  <th>Language</th>
-                  <th>Value</th>
-                </thead>
-                <tbody>
-                  {#each locales as locale}
-                    <tr
-                      class="locale-item"
-                      class:auto-translate={translation.values?.[locale.id]
-                        ?.source === 'system-translator'}
-                      class:missing={!translation.values?.[locale.id]?.value}
-                      class:selected={visibleForm === 'translationValue' &&
-                        selectedTranslation === translation.id &&
-                        selectedLocale === locale.id}>
-                      <td>{locale.title}</td>
-                      <td>
-                        {#if visibleForm === 'translationValue' && selectedTranslation === translation.id && selectedLocale === locale.id}
-                          {#if translation.values?.[locale.id]?.source === 'system-translator'}
-                            <p>
-                              <Icon icon="warning" color="warning" />
-                              This value was auto-translated.
-                            </p>
-                          {/if}
-                          <form>
-                            <!-- svelte-ignore a11y-autofocus -->
-                            <textarea
-                              autofocus
-                              rows={5}
-                              bind:value={$state.createTranslationValue.value}
-                              type="text"
-                              name="value" />
-                            <Button
-                              color="primary"
-                              type="submit"
-                              on:click={onCreateTranslationValue}
-                              icon={'submit'}>Submit</Button>
-                            <Button
-                              color="secondary"
-                              on:click={() => {
-                                visibleForm = null
-                              }}
-                              icon={'cancel'}>Cancel</Button>
-                          </form>
-                        {:else}
-                          <div
-                            class="keep-whitespace click-to-edit"
-                            on:click={() => {
-                              visibleForm = 'translationValue'
-                              selectedLocale = locale.id
-                              selectedTranslation = translation.id
-                              const value =
-                                translation.values?.[locale.id]?.value
-                              if (value) {
-                                $state.createTranslationValue.value = value
-                              }
-                            }}>
-                            {#if translation.values?.[locale.id]?.source === 'system-translator'}
-                              <Icon icon="warning" color="warning" />
-                            {/if}
-                            <Icon icon="edit" color="primary" />
-                            {translation.values?.[locale.id]?.value ||
-                              '<no value>'}
-                          </div>
-                        {/if}
-                      </td>
-                    </tr>
-                  {/each}
-                </tbody>
-              </table>
+              <TranslationItem
+                {translation}
+                translationValues={translation.values}
+                categoryKey={category.key}
+                {locales}
+                bind:selectedLocale
+                on:complete={() => {
+                  visibleForm = null
+                }}
+                on:showForm={({ detail: { show } }) => {
+                  if (show) {
+                    visibleForm = 'translationValue'
+                    selectedTranslation = translation.id
+                    return
+                  }
+                  visibleForm = null
+                }}
+                showForm={visibleForm === 'translationValue' &&
+                  selectedTranslation === translation.id} />
             </paper>
           {/each}
         </div>
@@ -357,9 +197,6 @@
 {/if}
 
 <style>
-  .selected {
-    outline: 1px dashed hotpink;
-  }
   .translation-item {
     padding-block: var(--size-4);
     padding-inline: var(--size-2);
@@ -367,48 +204,9 @@
   .translation-item:not(:last-of-type) {
     margin-block-end: var(--size-6);
   }
-  .locale-item td:first-of-type {
-    white-space: nowrap;
-    width: min-content;
-  }
-  td,
-  th {
-    padding-inline: var(--size-4);
-    padding-block: var(--size-2);
-  }
-  .locale-item td:not(:first-of-type) {
-    width: 100%;
-  }
-  .missing {
-    background-color: var(--color-danger-300);
-  }
-  .missing:nth-child(even) {
-    background-color: var(--color-danger);
-  }
-  form {
-    font-size: 1rem;
-  }
-  textarea {
-    width: 100%;
-    max-width: 100%;
-    font-size: inherit;
-    font-family: inherit;
-  }
-  #category-form {
-    background-color: var(--color-green-300);
-  }
   .category-item-header {
     display: grid;
     grid-template-columns: 1fr 2fr 1fr;
     align-items: center;
-  }
-  .category-item form {
-    display: block;
-  }
-  .click-to-edit {
-    cursor: pointer;
-  }
-  .keep-whitespace {
-    white-space: pre-line;
   }
 </style>

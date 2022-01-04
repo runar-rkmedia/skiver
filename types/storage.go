@@ -8,12 +8,12 @@ type Storage interface {
 	Size() (int64, error)
 
 	GetUser(userId string) (User, error)
-	GetUserByUserName(userName string) (User, error)
+	GetUserByUserName(userName string) (*User, error)
 	CreateUser(user User) (User, error)
 
 	GetLocale(ID string) (Locale, error)
 	CreateLocale(locale Locale) (Locale, error)
-	GetLocaleFilter(filter ...Locale) (Locale, error)
+	GetLocaleFilter(filter ...Locale) (*Locale, error)
 	GetLocales() (map[string]Locale, error)
 
 	GetProject(ID string) (*Project, error)
@@ -34,6 +34,9 @@ type Storage interface {
 	GetTranslationValues() (map[string]TranslationValue, error)
 	GetTranslationValueFilter(filter ...TranslationValue) (*TranslationValue, error)
 	GetTranslationValuesFilter(max int, filter ...TranslationValue) (map[string]TranslationValue, error)
+
+	ReportMissing(key MissingTranslation) (*MissingTranslation, error)
+	GetMissingKeysFilter(max int, filter ...MissingTranslation) (map[string]MissingTranslation, error)
 }
 
 type Entity struct {

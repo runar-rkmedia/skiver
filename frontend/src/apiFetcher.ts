@@ -12,9 +12,8 @@ export const methods = {
 } as const
 
 export const baseUrl = `${window.location.protocol}//${window.location.host}/api`
-export const wsUrl = `${
-  window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-}//${window.location.host}/ws/`
+export const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  }//${window.location.host}/ws/`
 
 export type ApiFetchOptions = {
   /** if set, will run the updater-function even on errors */
@@ -113,10 +112,10 @@ export const wsSubscribe = (options: {
   }
   try {
     const conn = new WebSocket(wsUrl)
-    conn.onerror = function (evt) {
+    conn.onerror = function(evt) {
       console.error('[ws] connection error: ', evt)
     }
-    conn.onclose = function (evt) {
+    conn.onclose = function(evt) {
       console.debug('[ws]: connection closed', evt)
       onClose?.()
       wsDisconnects++
@@ -124,7 +123,7 @@ export const wsSubscribe = (options: {
         setTimeout(() => wsSubscribe(options), 1000 * (wsDisconnects + wsFails))
       }
     }
-    conn.onmessage = function (evt) {
+    conn.onmessage = function(evt) {
       try {
         const json = JSON.parse(evt.data)
         onMessage(json)

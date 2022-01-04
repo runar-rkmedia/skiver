@@ -36,7 +36,7 @@ const (
 	CodeErrMethodNotAllowed ErrorCodes = "Error: HTTP-Method is not allowed"
 	CodeErrNoRoute          ErrorCodes = "Error: No route matched for this http-path"
 	CodeErrReadBody         ErrorCodes = "Error: Failed to read body"
-	CodeErrMarhal           ErrorCodes = "Error: Failed to marshal"
+	CodeErrMarshal          ErrorCodes = "Error: Failed to marshal"
 	CodeErrUnmarshal        ErrorCodes = "Error: Failed to unmarshal"
 	CodeErrJmesPath         ErrorCodes = "Error: JmesPath"
 	CodeErrJmesPathMarshal  ErrorCodes = "Error: JmesPathMarshal"
@@ -52,6 +52,7 @@ const (
 
 	CodeErrLocale           ErrorCodes = "Error: Locale error"
 	CodeErrProject          ErrorCodes = "Error: Project error"
+	CodeErrReportMissing    ErrorCodes = "Error: Report missing"
 	CodeErrTranslation      ErrorCodes = "Error: Translation error"
 	CodeErrCategory         ErrorCodes = "Error: Category error"
 	CodeErrTranslationValue ErrorCodes = "Error: TranslationValue error"

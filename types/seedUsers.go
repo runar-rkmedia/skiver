@@ -4,7 +4,7 @@ import "fmt"
 
 type userSeeder interface {
 	CreateUser(user User) (User, error)
-	GetUserByUserName(userName string) (User, error)
+	GetUserByUserName(userName string) (*User, error)
 }
 
 func SeedUsers(db userSeeder, users []User, pwHasher func(s string) ([]byte, error)) error {
@@ -15,7 +15,7 @@ func SeedUsers(db userSeeder, users []User, pwHasher func(s string) ([]byte, err
 			Store:    UserStoreLocal,
 		}}
 	}
-	if v, _ := db.GetUserByUserName(users[0].UserName); v.UserName != "" {
+	if v, _ := db.GetUserByUserName(users[0].UserName); v != nil {
 		return nil
 	}
 	for i := 0; i < len(users); i++ {
@@ -30,7 +30,7 @@ func SeedUsers(db userSeeder, users []User, pwHasher func(s string) ([]byte, err
 			users[i].PW = pw
 		}
 		if _, err := db.CreateUser(users[i]); err != nil {
-			return fmt.Errorf("failed to create locale %s: %w", users[i].UserName, err)
+			return fmt.Errorf("failed to create user %s: %w", users[i].UserName, err)
 		}
 		users[i].PW = nil
 	}

@@ -42,7 +42,7 @@ func WriteError(msg string, code ErrorCodes, r *http.Request, rw http.ResponseWr
 		statusCode = http.StatusNotFound
 	case CodeErrReadBody, CodeErrDBCreateLocale:
 		statusCode = http.StatusBadGateway
-	case CodeErrUnmarshal, CodeErrMarhal, CodeErrJmesPath, CodeErrJmesPathMarshal, CodeErrInputValidation, CodeErrIDNonValid, CodeErrIDTooLong, CodeErrIDEmpty:
+	case CodeErrUnmarshal, CodeErrMarshal, CodeErrJmesPath, CodeErrJmesPathMarshal, CodeErrInputValidation, CodeErrIDNonValid, CodeErrIDTooLong, CodeErrIDEmpty:
 		statusCode = http.StatusBadRequest
 	}
 	return WriteOutput(true, statusCode, ae, r, rw)
@@ -70,7 +70,7 @@ func WantedOutputFormat(r *http.Request) OutputKind {
 	}
 
 	// Fallback to a readable format.
-	return OutputToml
+	return OutputJson
 }
 
 func contentType(kind string) OutputKind {

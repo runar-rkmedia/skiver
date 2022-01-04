@@ -5,6 +5,7 @@
   import { db } from './api'
   import LocalePage from './pages/LocalePage.svelte'
   import ProjectsPage from './pages/ProjectsPage.svelte'
+  import MissingTranslationsPage from './pages/MissingTranslationsPage.svelte'
   let mainRoute = ''
   let routeArgs = ''
   $: {
@@ -32,6 +33,8 @@
 <!-- Simplified routing -->
 {#if mainRoute === 'locale'}
   <LocalePage />
+{:else if mainRoute === 'missing'}
+  <MissingTranslationsPage />
 {:else if mainRoute === 'project'}
   {#if routeArgs[0]}
     <ProjectPage projectID={routeArgs[0]} />

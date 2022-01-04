@@ -16,6 +16,7 @@ export function objectKeys<T extends object>(obj: T) {
  */
 
 export type DB = {
+  missingTranslation: Record<string, ApiDef.MissingTranslation>
   project: Record<string, ApiDef.Project>
   category: Record<string, ApiDef.Category>
   translationValue: Record<string, ApiDef.TranslationValue>
@@ -39,6 +40,9 @@ export const api = {
   translation: CrudFactory<ApiDef.TranslationInput, 'translation'>(
     'translation'
   ),
+  missingTranslation: {
+    list: apiGetListFactory<'missingTranslation'>('missing', 'missingTranslation')
+  },
   project: CrudFactory<ApiDef.ProjectInput, 'project'>('project'),
   category: CrudFactory<ApiDef.CategoryInput, 'category'>('category'),
   translationValue: CrudFactory<
@@ -322,8 +326,8 @@ function apiGetListFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
         ...s,
         ...(!res[1] &&
           !!res[0].data && {
-            [storeKey]: { ...s[storeKey], ...res[0].data },
-          }),
+          [storeKey]: { ...s[storeKey], ...res[0].data },
+        }),
         responseStates: {
           ...s.responseStates,
           [storeKey]: {
@@ -338,7 +342,6 @@ function apiGetListFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
   }
 }
 const checkError = (apiError?: ApiDef.APIError | null) => {
-  console.log('checkErr')
   if (!apiError) {
     return apiError
   }

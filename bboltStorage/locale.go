@@ -15,8 +15,11 @@ func (b *BBolter) GetLocale(ID string) (types.Locale, error) {
 
 func (b *BBolter) CreateLocale(locale types.Locale) (types.Locale, error) {
 	existing, err := b.GetLocaleFilter(locale)
-	if err != ErrNotFound {
-		return existing, fmt.Errorf("Already exists")
+	if err != nil {
+		return locale, err
+	}
+	if existing != nil {
+		return *existing, fmt.Errorf("Locale already exists")
 	}
 	locale.Entity = b.NewEntity()
 
@@ -52,8 +55,19 @@ func (bb *BBolter) GetLocales() (map[string]types.Locale, error) {
 	}
 	return us, err
 }
-func (bb *BBolter) GetLocaleFilter(filter ...types.Locale) (types.Locale, error) {
-	var u types.Locale
+func (bb *BBolter) GetLocaleByFirstMatch(name string) (*types.Locale, error) {
+	// OR-like search:
+	t, err := bb.GetLocaleFilter(
+		types.Locale{Entity: types.Entity{ID: name}},
+		types.Locale{Iso639_1: name},
+		types.Locale{Iso639_2: name},
+		types.Locale{Iso639_3: name},
+		types.Locale{IETF: name},
+	)
+	return t, err
+}
+func (bb *BBolter) GetLocaleFilter(filter ...types.Locale) (*types.Locale, error) {
+	var u *types.Locale
 	err := bb.Iterate(BucketLocale, func(key, b []byte) bool {
 		var uu types.Locale
 		err := bb.Unmarshal(b, &uu)
@@ -62,22 +76,31 @@ func (bb *BBolter) GetLocaleFilter(filter ...types.Locale) (types.Locale, error)
 			return false
 		}
 		for _, f := range filter {
+			if f.ID != "" && f.ID != uu.ID {
+				continue
+			}
 			if f.Iso639_1 != "" && f.Iso639_1 != uu.Iso639_1 {
 				continue
 			}
 			if f.Iso639_2 != "" && f.Iso639_2 != uu.Iso639_2 {
 				continue
 			}
+			if f.Iso639_3 != "" && f.Iso639_3 != uu.Iso639_3 {
+				continue
+			}
+			if f.IETF != "" && f.IETF != uu.IETF {
+				continue
+			}
 			if f.Title != "" && f.Title != uu.Title {
 				continue
 			}
-			u = uu
+			u = &uu
 			return true
 		}
 		return false
 	})
 	if err != nil {
-		return types.Locale{}, err
+		return u, err
 	}
 	return u, err
 }

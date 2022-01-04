@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -15,7 +14,6 @@ func extractParams(r *http.Request, basePath string) (url.Values, error) {
 	qpath := strings.Replace(r.URL.Path, basePath, "", 1)
 	qpath, _, _ = strings.Cut(qpath, ".")
 	qpath = strings.TrimPrefix(qpath, "/")
-	fmt.Println(qpath, basePath)
 
 	qq, err := url.ParseQuery(qpath)
 	if err != nil {

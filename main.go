@@ -22,7 +22,6 @@ import (
 	"net/http/pprof"
 
 	"github.com/NYTimes/gziphandler"
-	"github.com/ghodss/yaml"
 	swaggerMiddleware "github.com/go-openapi/runtime/middleware"
 	"github.com/runar-rkmedia/gabyoall/api/utils"
 	"github.com/runar-rkmedia/gabyoall/logger"
@@ -103,11 +102,12 @@ func (m *MultiPublisher) AddSubscriber(name string, publisher PubSubPublisher) e
 	return nil
 }
 
-type mockPublisher struct{}
+type logPublisher struct {
+	l logger.AppLogger
+}
 
-func (m *mockPublisher) Publish(kind, variant string, contents interface{}) {
-	b, _ := yaml.Marshal(contents)
-	fmt.Printf("\nmock publish: %s %s \n%s\n", kind, variant, string(b))
+func (m *logPublisher) Publish(kind, variant string, contents interface{}) {
+	m.l.Debug().Str("kind", kind).Str("variant", variant).Interface("contents", contents).Msg("Event received")
 }
 
 type Translator interface {
@@ -243,7 +243,9 @@ func main() {
 	if len(config.TranslatorServices) > 1 {
 		l.Fatal().Msg("currently, only a single translator-service can be used.")
 	}
-	events.AddSubscriber("mock", &mockPublisher{})
+	if l.HasDebug() {
+		events.AddSubscriber("log", &logPublisher{logger.GetLogger("events")})
+	}
 	if len(config.TranslatorServices) > 0 {
 		o := config.TranslatorServices[0]
 		t, err := translator.NewTranslator(translator.TranslatorOptions{
@@ -307,8 +309,14 @@ func main() {
 	// TODO: consider using a buffered channel.
 	handler.Handle("/ws/", handlers.NewWsHandler(logger.GetLoggerWithLevel("ws", "debug"), pubsub.Ch, handlers.WsOptions{}))
 
-	types.SeedUsers(&db, nil, pw.Hash)
-	types.SeedLocales(&db, nil)
+	err = types.SeedUsers(&db, nil, pw.Hash)
+	if err != nil {
+		panic(err)
+	}
+	err = types.SeedLocales(&db, nil)
+	if err != nil {
+		panic(err)
+	}
 	handler.Handle("/api/ping", handlers.PingHandler(handler))
 
 	info := types.ServerInfo{

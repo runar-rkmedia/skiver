@@ -71,7 +71,6 @@ function checkToasts() {
     if (!toasts.length) {
       return s
     }
-    console.log({ toasts })
     return {
       ...s,
       toasts: toasts.reduce((r, [k, toast]) => {

@@ -23,7 +23,9 @@ func (b *BBolter) CreateUser(user types.User) (types.User, error) {
 	if len(user.PW) == 0 {
 		return user, fmt.Errorf("password must be set")
 	}
-	if _, err := b.GetUserByUserName(user.UserName); err == nil {
+	if v, err := b.GetUserByUserName(user.UserName); err != nil {
+		return user, err
+	} else if v != nil {
 		return user, fmt.Errorf("Username is taken")
 	}
 
@@ -48,8 +50,8 @@ func (b *BBolter) CreateUser(user types.User) (types.User, error) {
 	b.PublishChange(PubTypeUser, PubVerbCreate, user)
 	return user, err
 }
-func (bb *BBolter) GetUserByUserName(userName string) (types.User, error) {
-	var u types.User
+func (bb *BBolter) GetUserByUserName(userName string) (*types.User, error) {
+	var u *types.User
 	err := bb.Iterate(BucketUser, func(key, b []byte) bool {
 		var uu types.User
 		err := bb.Unmarshal(b, &uu)
@@ -58,13 +60,13 @@ func (bb *BBolter) GetUserByUserName(userName string) (types.User, error) {
 			return false
 		}
 		if uu.UserName == userName {
-			u = uu
+			u = &uu
 			return true
 		}
 		return false
 	})
 	if err != nil {
-		return types.User{}, err
+		return nil, err
 	}
 	return u, err
 }

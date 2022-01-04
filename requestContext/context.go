@@ -113,7 +113,7 @@ func (rc ReqContext) Unmarshal(body []byte, j interface{}) error {
 func (rc ReqContext) ValidateBytes(body []byte, j interface{}) error {
 	err := rc.Unmarshal(body, j)
 	if err != nil {
-		rc.WriteErr(err, CodeErrMarhal)
+		rc.WriteErr(err, CodeErrMarshal)
 		return err
 	}
 	err = rc.ValidateStruct(j)

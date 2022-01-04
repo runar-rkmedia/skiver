@@ -20,7 +20,7 @@
   import Tabs from './components/Tabs.svelte'
   import Alert from './components/Alert.svelte'
   import Button from './components/Button.svelte'
-  import Spinner from 'components/Spinner.svelte'
+  import Spinner from './components/Spinner.svelte'
   import PageContent from 'PageContent.svelte'
   import { state } from 'state'
   let didRunInital = false
@@ -32,6 +32,7 @@
       api.category.list()
       api.translationValue.list()
       api.translation.list()
+      api.missingTranslation.list()
       didRunInital = true
     }
   }
@@ -85,8 +86,7 @@
             }
 
             api.login.post({ username, password })
-          }}
-        >
+          }}>
           <label>
             Username
             <!-- svelte-ignore a11y-autofocus -->
@@ -101,8 +101,7 @@
             preventDefault={false}
             color="primary"
             icon="signIn"
-            type="submit"
-          >
+            type="submit">
             Login
           </Button>
         </form>

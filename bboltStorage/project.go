@@ -14,8 +14,18 @@ func (b *BBolter) GetProject(ID string) (*types.Project, error) {
 }
 
 func (b *BBolter) CreateProject(project types.Project) (types.Project, error) {
-	existing, err := b.GetProjectFilter(project)
-	if err != ErrNotFound {
+	if project.ShortName == "" {
+		return project, fmt.Errorf("Missing short-name: %w", ErrMissingIdArg)
+	}
+	if project.Title == "" {
+		return project, fmt.Errorf("Missing title: %w", ErrMissingIdArg)
+	}
+	existing, err := b.GetProjectFilter(types.Project{ShortName: project.ShortName})
+	if err != nil {
+		return *existing, err
+	}
+	if existing != nil {
+
 		return *existing, fmt.Errorf("Already exists")
 	}
 	project.Entity = b.NewEntity()
@@ -36,7 +46,49 @@ func (b *BBolter) CreateProject(project types.Project) (types.Project, error) {
 		return project, err
 	}
 
+	go b.UpdateMissingWithNewIds(types.MissingTranslation{Project: project.ShortName, ProjectID: project.ID})
 	b.PublishChange(PubTypeProject, PubVerbCreate, project)
+	return project, err
+}
+func (b *BBolter) UpdateProject(project types.Project) (types.Project, error) {
+	err := b.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(BucketProject)
+		existing := bucket.Get([]byte(project.ID))
+		if existing == nil {
+			return fmt.Errorf("Project was not found")
+		}
+		var ex types.Project
+		err := b.Unmarshal(existing, &ex)
+		if err != nil {
+			return err
+		}
+		if project.ShortName != "" {
+			ex.ShortName = project.ShortName
+		}
+		if project.Title != "" {
+			ex.Title = project.Title
+		}
+		if project.Description != "" {
+			ex.Description = project.Description
+		}
+		if project.IncludedTags != nil {
+			ex.IncludedTags = project.IncludedTags
+		}
+		if project.CategoryIDs != nil {
+			ex.CategoryIDs = project.CategoryIDs
+		}
+		bytes, err := b.Marshal(project)
+		if err != nil {
+			return err
+		}
+		return bucket.Put([]byte(project.ID), bytes)
+	})
+	if err != nil {
+		return project, err
+	}
+
+	go b.UpdateMissingWithNewIds(types.MissingTranslation{Project: project.ShortName, ProjectID: project.ID})
+	b.PublishChange(PubTypeProject, PubVerbUpdate, project)
 	return project, err
 }
 
@@ -54,8 +106,21 @@ func (bb *BBolter) GetProjects() (map[string]types.Project, error) {
 	return us, err
 }
 
+func (bb *BBolter) GetProjectByIDOrShortName(shortNameOrId string) (*types.Project, error) {
+	p, err := bb.GetProject(shortNameOrId)
+	if err == nil {
+		return p, err
+	} else if err != ErrNotFound {
+		return nil, err
+	}
+	return bb.GetProjectByShortName(shortNameOrId)
+}
+func (bb *BBolter) GetProjectByShortName(shortName string) (*types.Project, error) {
+	return bb.GetProjectFilter(types.Project{ShortName: shortName})
+}
+
 func (bb *BBolter) GetProjectFilter(filter ...types.Project) (*types.Project, error) {
-	var u types.Project
+	var u *types.Project
 	err := bb.Iterate(BucketProject, func(key, b []byte) bool {
 		var uu types.Project
 		err := bb.Unmarshal(b, &uu)
@@ -64,19 +129,22 @@ func (bb *BBolter) GetProjectFilter(filter ...types.Project) (*types.Project, er
 			return false
 		}
 		for _, f := range filter {
-			if f.Title != "" && f.Title != uu.Title {
+			if f.ShortName != "" && f.ShortName != uu.ShortName {
 				continue
 			}
 			if f.Description != "" && f.Description != uu.Description {
 				continue
 			}
-			u = uu
+			u = &uu
 			return true
 		}
 		return false
 	})
 	if err != nil {
+		if err == ErrNotFound {
+			return nil, nil
+		}
 		return nil, err
 	}
-	return &u, err
+	return u, err
 }

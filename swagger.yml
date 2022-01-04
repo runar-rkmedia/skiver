@@ -1,4 +1,3 @@
-basePath: /api
 consumes:
 - application/json
 - text/vnd.yaml
@@ -303,6 +302,82 @@ definitions:
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
+  MissingTranslation:
+    properties:
+      category:
+        description: The reported category (may not exist), as reported by the client.
+        type: string
+        x-go-name: Category
+      category_id:
+        type: string
+        x-go-name: CategoryID
+      count:
+        description: Number of times it has been reported.
+        format: int64
+        type: integer
+        x-go-name: Count
+      createdAt:
+        description: Time of which the entity was created in the database
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      createdBy:
+        description: User id refering to the user who created the item
+        type: string
+        x-go-name: CreatedBy
+      deleted:
+        description: |-
+          If set, the item is considered deleted. The item will normally not get deleted from the database,
+          but it may if cleanup is required.
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      first_user_agent:
+        type: string
+        x-go-name: FirstUserAgent
+      id:
+        description: Unique identifier of the entity
+        type: string
+        x-go-name: ID
+      latest_user_agent:
+        type: string
+        x-go-name: LatestUserAgent
+      locale:
+        description: The reported locale (may not exist), as reported by the client.
+        type: string
+        x-go-name: Locale
+      locale_id:
+        type: string
+        x-go-name: LocaleID
+      project:
+        description: The reported project (may not exist), as reported by the client.
+        type: string
+        x-go-name: Project
+      project_id:
+        type: string
+        x-go-name: ProjectID
+      translation:
+        description: The reported translation (may not exist), as reported by the
+          client.
+        type: string
+        x-go-name: Translation
+      translation_id:
+        type: string
+        x-go-name: TranslationID
+      updatedAt:
+        description: Time of which the entity was updated, if any
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updatedBy:
+        description: User id refering to who created the item
+        type: string
+        x-go-name: UpdatedBy
+    required:
+    - createdAt
+    - id
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
   Project:
     properties:
       category_ids:
@@ -364,12 +439,21 @@ definitions:
         maxLength: 8000
         minLength: 1
         type: string
+      short_name:
+        maxLength: 20
+        minLength: 1
+        type: string
       title:
         maxLength: 400
         minLength: 1
         type: string
     required:
     - title
+    - short_name
+    type: object
+  ReportMissingInput:
+    additionalProperties:
+      type: string
     type: object
   ServerInfo:
     properties:
@@ -723,6 +807,24 @@ paths:
       summary: Login
       tags:
       - auth
+  /api/missing/{locale}/{project}:
+    parameters:
+    - description: |
+        The parameter can be any of the Project's ID or ShortName.
+      in: path
+      name: project
+      required: true
+      type: string
+    - description: |
+        The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+      in: path
+      name: locale
+      required: true
+      type: string
+    - in: body
+      name: ReportMissingPayload
+      schema:
+        $ref: '#/definitions/ReportMissingInput'
   /api/project/:
     get:
       operationId: getProject

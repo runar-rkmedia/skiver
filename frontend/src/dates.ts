@@ -11,7 +11,7 @@ function getLocale() {
 type DateType = Date | string | undefined | null
 
 /** Formats the date for human consumption */
-const formatDate = (
+export const formatDate = (
   date: DateType,
   {
     format: formatStr = 'short',

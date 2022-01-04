@@ -1,4 +1,4 @@
-basePath: /api
+b/asePath: /api
 consumes:
 - application/json
 - text/vnd.yaml
@@ -15,11 +15,16 @@ definitions:
     type: object
     required:
       - title
+      - short_name
     properties:
       title:
         type: string
         minLength: 1
         maxLength: 400
+      short_name:
+        type: string
+        minLength: 1
+        maxLength: 20
       description:
         type: string
         minLength: 1
@@ -104,6 +109,10 @@ definitions:
       - translation_id
       - locale_id
       - value
+  ReportMissingInput:
+    type: object
+    additionalProperties:
+      type: string
   CategoryInput:
     properties:
       key:
@@ -167,6 +176,29 @@ info:
   title: Skiver API.
   version: 0.0.1
 paths:
+  /api/missing/{locale}/{project}:
+    post: 
+    tags:
+      - translation
+    summary: Missing translations reported by users
+    operationId: reportMissing
+    parameters:
+      - in: path
+        name: project
+        type: string
+        required: true
+        description: >
+          The parameter can be any of the Project's ID or ShortName.
+      - in: path
+        name: locale
+        type: string
+        required: true
+        description: >
+          The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+      - in: body
+        name: ReportMissingPayload
+        schema:
+          $ref: '#/definitions/ReportMissingInput'
   /api/export/:
     get:
       tags:

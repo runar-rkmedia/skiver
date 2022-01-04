@@ -5,12 +5,8 @@
   import { state } from '../state'
   import formatDate from '../dates'
   import Tip from '../components/Tip.svelte'
-  import Button from 'components/Button.svelte'
+  import ProjectForm from 'forms/ProjectForm.svelte'
   $: projects = Object.values($db.project)
-
-  function createProject() {
-    api.project.create($state.createProject)
-  }
 </script>
 
 <h2>Project</h2>
@@ -24,8 +20,7 @@
 <paper>
   <EntityList
     error={$db.responseStates.project.error?.error}
-    loading={$db.responseStates.project.loading}
-  >
+    loading={$db.responseStates.project.loading}>
     {#each projects
       .filter((e) => {
         if (!$state.showDeleted) {
@@ -50,8 +45,7 @@
         deleteDisabled={true}
         editDisabled={true}
         ID={v.id}
-        deleted={!!v.deleted}
-      >
+        deleted={!!v.deleted}>
         <svelte:fragment slot="header">
           <a href={'#project/' + v.id}>
             {v.title}
@@ -76,17 +70,5 @@
   </EntityList>
 </paper>
 <paper>
-  <form>
-    <label>
-      Title
-      <input bind:value={$state.createProject.title} />
-    </label>
-    <label>
-      Description
-      <input bind:value={$state.createProject.description} />
-    </label>
-    <Button on:click={createProject} icon="edit" type="submit" color="primary"
-      >Create Project</Button
-    >
-  </form>
+  <ProjectForm />
 </paper>

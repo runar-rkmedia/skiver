@@ -5,6 +5,15 @@ __metadata:
   version: 4
   cacheKey: 8
 
+"@babel/runtime@npm:^7.12.0":
+  version: 7.16.7
+  resolution: "@babel/runtime@npm:7.16.7"
+  dependencies:
+    regenerator-runtime: ^0.13.4
+  checksum: 47912f0aaacd1cab2e2552aaf3e6eaffbcaf2d5ac9b07a89a12ac0d42029cb92c070b0d16f825e4277c4a34677c54d8ffe85e1f7c6feb57de58f700eec67ce2f
+  languageName: node
+  linkType: hard
+
 "@dtsgenerator/replace-namespace@npm:^1.5.1":
   version: 1.5.1
   resolution: "@dtsgenerator/replace-namespace@npm:1.5.1"
@@ -843,6 +852,8 @@ fsevents@~2.3.2:
     esbuild: ^0.14.8
     esbuild-svelte: ^0.6.0
     felte: ^0.9.0
+    i18next: ^21.6.4
+    i18next-fetch-backend: ^4.1.0
     merge: ^2.1.1
     nanoid: ^3.1.30
     pollen-css: ^2.1.0
@@ -913,6 +924,22 @@ fsevents@~2.3.2:
   dependencies:
     ms: ^2.0.0
   checksum: 9c7a74a2827f9294c009266c82031030eae811ca87b0da3dceb8d6071b9bde22c9f3daef0469c3c533cc67a97d8a167cd9fc0389350e5f415f61a79b171ded16
+  languageName: node
+  linkType: hard
+
+"i18next-fetch-backend@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "i18next-fetch-backend@npm:4.1.0"
+  checksum: bf3991c39ebc89625d7b9ba51170e46844a5ba2c193fb0d824d3eba99a40e1069930cfd560cc108831a6982c210b2a8e2a5698e96d526d1a5dd8a8603bcb14ce
+  languageName: node
+  linkType: hard
+
+"i18next@npm:^21.6.4":
+  version: 21.6.4
+  resolution: "i18next@npm:21.6.4"
+  dependencies:
+    "@babel/runtime": ^7.12.0
+  checksum: 9f8f627abafe5b890db67f90254fb9d07c75de9914c3563e63333fb4bd5ad8ac97f717e234d5e9dd8a17bd1512d4bc8a398c094300d574cc392c8d84e5e67fe9
   languageName: node
   linkType: hard
 
@@ -1438,6 +1465,13 @@ fsevents@~2.3.2:
   dependencies:
     picomatch: ^2.2.1
   checksum: 1ced032e6e45670b6d7352d71d21ce7edf7b9b928494dcaba6f11fba63180d9da6cd7061ebc34175ffda6ff529f481818c962952004d273178acd70f7059b320
+  languageName: node
+  linkType: hard
+
+"regenerator-runtime@npm:^0.13.4":
+  version: 0.13.9
+  resolution: "regenerator-runtime@npm:0.13.9"
+  checksum: 65ed455fe5afd799e2897baf691ca21c2772e1a969d19bb0c4695757c2d96249eb74ee3553ea34a91062b2a676beedf630b4c1551cc6299afb937be1426ec55e
   languageName: node
   linkType: hard
 

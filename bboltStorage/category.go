@@ -15,8 +15,11 @@ func (b *BBolter) GetCategory(ID string) (*types.Category, error) {
 
 func (b *BBolter) CreateCategory(category types.Category) (types.Category, error) {
 	existing, err := b.GetCategoryFilter(category)
-	if err != ErrNotFound {
-		return *existing, fmt.Errorf("Already exists")
+	if err != nil {
+		return *existing, err
+	}
+	if existing != nil {
+		return *existing, fmt.Errorf("Category already exists")
 	}
 	category.Entity = b.NewEntity()
 
@@ -39,6 +42,7 @@ func (b *BBolter) CreateCategory(category types.Category) (types.Category, error
 				return err
 			}
 			p.CategoryIDs = append(p.CategoryIDs, category.ID)
+			p.UpdatedAt = nowPointer()
 			bytes, err := b.Marshal(p)
 			if err != nil {
 				return err
@@ -59,6 +63,7 @@ func (b *BBolter) CreateCategory(category types.Category) (types.Category, error
 	}
 
 	b.PublishChange(PubTypeCategory, PubVerbCreate, category)
+	go b.UpdateMissingWithNewIds(types.MissingTranslation{Category: category.Key, CategoryID: category.ID})
 	b.PublishChange(PubTypeProject, PubVerbUpdate, p)
 	return category, err
 }
@@ -78,7 +83,7 @@ func (bb *BBolter) GetCategories() (map[string]types.Category, error) {
 }
 
 func (bb *BBolter) GetCategoryFilter(filter ...types.Category) (*types.Category, error) {
-	var u types.Category
+	var u *types.Category
 	err := bb.Iterate(BucketCategory, func(key, b []byte) bool {
 		var uu types.Category
 		err := bb.Unmarshal(b, &uu)
@@ -93,13 +98,10 @@ func (bb *BBolter) GetCategoryFilter(filter ...types.Category) (*types.Category,
 			if f.Key != "" && f.Key != uu.Key {
 				continue
 			}
-			u = uu
+			u = &uu
 			return true
 		}
 		return false
 	})
-	if err != nil {
-		return nil, err
-	}
-	return &u, err
+	return u, err
 }
