@@ -1,7 +1,21 @@
+<!-- 
+Sorry, but the whole concept of missing translations is a big mess.
+
+Mostly, this comes from the fact that the server does not really trust the user input
+of anything that is reported in a `missing-translation`.
+
+It will then try to parse this information, and attempt to map each reported field to
+a project, category, translation and locale.
+
+Therefore, any missing translation may or may not map into a valid object.
+
+Still, we should present this information.
+-->
+
 <script type="ts">
   import ProjectForm from 'forms/ProjectForm.svelte'
 
-  import { db } from '../api'
+  import { db, projects } from '../api'
   import { fly } from 'svelte/transition'
   import Button from './Button.svelte'
   import ListItem from './ListItem.svelte'
@@ -11,7 +25,7 @@
   import TranslationItem from './TranslationItem.svelte'
   export let projectID = ''
   // import { t } from '../util/i18next'
-  $: projects = Object.values($db.missingTranslation).reduce((r, m) => {
+  $: projectKeyMap = Object.values($db.missingTranslation).reduce((r, m) => {
     if (!m.project) {
       return r
     }
@@ -34,7 +48,7 @@
     }
     if (!m.category_id) {
       return r
-    }
+    } 
     r[m.category] = $db.category[m.category_id] || { id: m.category_id }
 
     return r
@@ -66,13 +80,13 @@
 {#each Object.entries(missings) as [projectIsh, projectCategories]}
   <paper>
     {#if !projectID}
-      {#if projects[projectIsh]}
+      {#if projectKeyMap[projectIsh]}
         <h3>
-          Project: <a href={`#project/${projects[projectIsh].id}`}>
-            {#if projects[projectIsh].title}
-              {projects[projectIsh].title}
+          Project: <a href={`#project/${projectKeyMap[projectIsh].id}`}>
+            {#if projectKeyMap[projectIsh].title}
+              {projectKeyMap[projectIsh].title}
               <code>
-                {projects[projectIsh].short_name}
+                {projectKeyMap[projectIsh].short_name}
               </code>
             {:else}
               {projectIsh}
@@ -130,7 +144,7 @@
         {#if visibleForm === 'category' && selectedCategoryIsh === categoryIsh && selectedProjectIsh === projectIsh}
           <paper in:fly|local>
             <CategoryForm
-              projectID={projects[projectIsh].id}
+              projectID={projectKeyMap[projectIsh].id}
               on:complete={() => (visibleForm = null)}>
               <Button
                 icon="cancel"
@@ -141,7 +155,7 @@
                 }}>Cancel</Button>
             </CategoryForm>
           </paper>
-        {:else if projects[projectIsh]}
+        {:else if projectKeyMap[projectIsh]}
           <Button
             icon="create"
             color="primary"
@@ -155,11 +169,18 @@
       {/if}
       {#each missings as missing}
         {#if missing.translation_id && $db.translation[missing.translation_id]}
+          {missing.translation_id}
+          {JSON.stringify(
+            $projects[projectKeyMap[projectIsh]?.id]?.categories?.[
+              categories[categoryIsh]?.id
+            ]?.translations?.[missing.translation_id]?.values
+          )}
           <TranslationItem
             translation={$db.translation[missing.translation_id]}
-            translationValues={$projects[projects[projectIsh].id].categories[
-              categories[categoryIsh].id
-            ].translations[$db.translation[missing.translation_id].id].values}
+            translationValues={// This is terribale, I am sorry...
+            $projects[projectKeyMap[projectIsh]?.id]?.categories?.[
+              categories[categoryIsh]?.id
+            ]?.translations?.[missing.translation_id]?.values}
             categoryKey={categories[categoryIsh]?.key || categoryIsh}
             locales={Object.values($db.locale)}
             on:complete={() => {
@@ -187,7 +208,7 @@
                 <paper in:fly|local>
                   <TranslationForm categoryID={missing.category_id || ''} />
                 </paper>
-              {:else if projects[projectIsh] && categories[categoryIsh] && missing.translation}
+              {:else if projectKeyMap[projectIsh] && categories[categoryIsh] && missing.translation}
                 <Button
                   icon="create"
                   color="primary"

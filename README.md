@@ -1,5 +1,7 @@
 # Skiver
 
+[[toc]]
+
 ## Current feature-set
 
 - [X] Multi-locale support
@@ -12,9 +14,24 @@
 
 - [ ] Server-side translating
 - [ ] Source-code integration with project, to show usage of translation.
+      
+     E.g.
+     
+     > This translation is used in SuperComponent.svelte:74:
+       ```jsx
+       73: <div>
+       74:   <p>{t("feature.awesome", {count: 6})}
+       75: </div>
+       ```
 - [ ] Upload of images to show usage of translation.
 - [ ] Sharing of translations between projects.
 - [ ] Multi-organization support
+
+
+## Things that are a mess, and need refactoring
+
+- Missing translations. They work, but they are terrible. It comes mostly from not trusting the user-input, 
+while still attempting to resolve this untrusted information.
 
 
 ## Swagger and code-generation
