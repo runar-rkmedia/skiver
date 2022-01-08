@@ -73,6 +73,9 @@ declare namespace ApiDef {
         updatedBy?: string;
     }
     export type ErrorCodes = string;
+    export interface ImportInput {
+        [name: string]: any;
+    }
     /**
      * # See https://en.wikipedia.org/wiki/Language_code for more information
      * TODO: consider supporting other standards here, like Windows(?), which seem to have their own thing.
@@ -398,36 +401,6 @@ declare namespace ApiDef {
     }
 }
 declare namespace ApiPaths {
-    namespace ApiMissing$Locale$Project {
-        export interface BodyParameters {
-            ReportMissingPayload?: Parameters.ReportMissingPayload;
-        }
-        namespace Parameters {
-            /**
-             * The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
-             *
-             */
-            export type Locale = string;
-            /**
-             * The parameter can be any of the Project's ID or ShortName.
-             *
-             */
-            export type Project = string;
-            export type ReportMissingPayload = ApiDef.ReportMissingInput;
-        }
-        export interface PathParameters {
-            project: /**
-             * The parameter can be any of the Project's ID or ShortName.
-             *
-             */
-            Parameters.Project;
-            locale: /**
-             * The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
-             *
-             */
-            Parameters.Locale;
-        }
-    }
     namespace GetExport {
         namespace Parameters {
             /**
@@ -510,6 +483,64 @@ declare namespace ApiPaths {
             }
         }
     }
+    namespace ImportTranslations {
+        export interface BodyParameters {
+            ImportInput?: Parameters.ImportInput;
+        }
+        namespace Parameters {
+            /**
+             * If set, a dry-run will occur, and the result is returned.
+             *
+             */
+            export type Dry = boolean;
+            export type ImportInput = ApiDef.ImportInput;
+            /**
+             * The format of the imported object.
+             * If set to auto, the server will attempt to find the format for you.
+             *
+             */
+            export type Kind = "i18n" | "auto";
+            /**
+             * The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+             *
+             */
+            export type Locale = string;
+            /**
+             * The parameter can be any of the Project's ID or ShortName.
+             *
+             */
+            export type Project = string;
+        }
+        export interface PathParameters {
+            kind: /**
+             * The format of the imported object.
+             * If set to auto, the server will attempt to find the format for you.
+             *
+             */
+            Parameters.Kind;
+            project: /**
+             * The parameter can be any of the Project's ID or ShortName.
+             *
+             */
+            Parameters.Project;
+            locale: /**
+             * The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+             *
+             */
+            Parameters.Locale;
+        }
+        export interface QueryParameters {
+            dry?: /**
+             * If set, a dry-run will occur, and the result is returned.
+             *
+             */
+            Parameters.Dry;
+        }
+        namespace Responses {
+            export interface $200 {
+            }
+        }
+    }
     namespace ListLocale {
         export interface BodyParameters {
             LocaleInput: Parameters.LocaleInput;
@@ -524,6 +555,40 @@ declare namespace ApiPaths {
         }
         namespace Parameters {
             export type LoginInput = ApiDef.LoginInput;
+        }
+    }
+    namespace ReportMissing {
+        export interface BodyParameters {
+            ReportMissingInput?: Parameters.ReportMissingInput;
+        }
+        namespace Parameters {
+            /**
+             * The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+             *
+             */
+            export type Locale = string;
+            /**
+             * The parameter can be any of the Project's ID or ShortName.
+             *
+             */
+            export type Project = string;
+            export type ReportMissingInput = ApiDef.ReportMissingInput;
+        }
+        export interface PathParameters {
+            project: /**
+             * The parameter can be any of the Project's ID or ShortName.
+             *
+             */
+            Parameters.Project;
+            locale: /**
+             * The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+             *
+             */
+            Parameters.Locale;
+        }
+        namespace Responses {
+            export interface $200 {
+            }
         }
     }
     namespace UpdateTranslationValue {

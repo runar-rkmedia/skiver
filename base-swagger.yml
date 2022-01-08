@@ -122,6 +122,9 @@ definitions:
     type: object
     additionalProperties:
       type: string
+  ImportInput:
+    type: object
+    additionalProperties: true
   CategoryInput:
     properties:
       key:
@@ -162,11 +165,14 @@ definitions:
     required:
       - username
       - password
-host: localhost
+host: localhost:8756
+basePath: /api/
+schemes:
+  - http
 info:
   description: >
     Api fo Skiver-api.
-    <a href="https://insomnia.rest/run/?label=&uri=" target="_blank"><img src="https://insomnia.rest/images/run.svg" alt="Run in Insomnia"></a>
+    <a href="https://insomnia.rest/run/?label=&uri=http://localhost:8756/api/swagger.yml" target="_blank"><img src="https://insomnia.rest/images/run.svg" alt="Run in Insomnia"></a>
 
     # About formatting
 
@@ -185,30 +191,81 @@ info:
   title: Skiver API.
   version: 0.0.1
 paths:
-  /api/missing/{locale}/{project}:
+  /import/{kind}/{project}/{locale}:
     post: 
-    tags:
-      - translation
-    summary: Missing translations reported by users
-    operationId: reportMissing
-    parameters:
-      - in: path
-        name: project
-        type: string
-        required: true
-        description: >
-          The parameter can be any of the Project's ID or ShortName.
-      - in: path
-        name: locale
-        type: string
-        required: true
-        description: >
-          The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
-      - in: body
-        name: ReportMissingPayload
-        schema:
-          $ref: '#/definitions/ReportMissingInput'
-  /api/export/:
+      tags:
+        - import
+      summary: Import translations
+      operationId: importTranslations
+      parameters:
+        - in: path
+          name: kind
+          type: string
+          enum:
+            - i18n
+            - auto
+          required: true
+          description: >
+            The format of the imported object.
+
+            If set to auto, the server will attempt to find the format for you.
+        - in: query
+          name: dry
+          type: boolean
+          description: >
+            If set, a dry-run will occur, and the result is returned.
+        - in: path
+          name: project
+          type: string
+          required: true
+          description: >
+            The parameter can be any of the Project's ID or ShortName.
+        - in: path
+          name: locale
+          type: string
+          required: true
+          description: >
+            The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+        - in: body
+          name: ImportInput
+          schema:
+            $ref: '#/definitions/ImportInput'
+      responses:
+        "200":
+          schema:
+            type: object
+        "500":
+          $ref: '#/responses/apiError'
+  /missing/{locale}/{project}:
+    post: 
+      tags:
+        - translation
+      summary: Missing translations reported by users
+      operationId: reportMissing
+      parameters:
+        - in: path
+          name: project
+          type: string
+          required: true
+          description: >
+            The parameter can be any of the Project's ID or ShortName.
+        - in: path
+          name: locale
+          type: string
+          required: true
+          description: >
+            The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+        - in: body
+          name: ReportMissingInput
+          schema:
+            $ref: '#/definitions/ReportMissingInput'
+      responses:
+        "200":
+          schema:
+            type: object
+        "500":
+          $ref: '#/responses/apiError'
+  /export/:
     get:
       tags:
         - export
@@ -286,7 +343,7 @@ paths:
         "500":
           $ref: '#/responses/apiError'
 
-  /api/serverInfo/:
+  /serverInfo/:
     get:
       summary: Information about the server
       operationId: getServerInfo
@@ -297,7 +354,7 @@ paths:
           $ref: '#/responses/apiError'
       tags:
       - server
-  /api/project/:
+  /project/:
     get:
       summary: List projects
       operationId: getProject
@@ -318,7 +375,7 @@ paths:
           $ref: '#/responses/apiError'
       tags:
       - project
-  /api/category/:
+  /category/:
     get:
       summary: List categories
       operationId: getcategory
@@ -339,7 +396,7 @@ paths:
           $ref: '#/responses/apiError'
       tags:
       - category
-  /api/translation/:
+  /translation/:
     get:
       summary: List translations
       operationId: getTranslation
@@ -360,7 +417,7 @@ paths:
           $ref: '#/responses/apiError'
       tags:
       - translation
-  /api/translation-value/:
+  /translationValue/:
     get:
       summary: List translation-values
       operationId: getTranslationValue
@@ -398,7 +455,7 @@ paths:
           $ref: '#/responses/apiError'
       tags:
       - translationValue
-  /api/login/:
+  /login/:
     get:
       summary: Get login-information
       description: "Returns information about the logged in user"
@@ -430,7 +487,7 @@ paths:
           $ref: '#/responses/apiError'
       tags:
       - auth
-  /api/locale/:
+  /locale/:
     post:
       summary: Create a locale
       operationId: listLocale

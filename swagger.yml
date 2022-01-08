@@ -1,3 +1,4 @@
+basePath: /api/
 consumes:
 - application/json
 - text/vnd.yaml
@@ -134,6 +135,9 @@ definitions:
   ErrorCodes:
     type: string
     x-go-package: github.com/runar-rkmedia/skiver/requestContext
+  ImportInput:
+    additionalProperties: true
+    type: object
   Locale:
     description: |-
       # See https://en.wikipedia.org/wiki/Language_code for more information
@@ -660,10 +664,10 @@ definitions:
     required:
     - value
     type: object
-host: localhost
+host: localhost:8756
 info:
   description: |
-    Api fo Skiver-api. <a href="https://insomnia.rest/run/?label=&uri=" target="_blank"><img src="https://insomnia.rest/images/run.svg" alt="Run in Insomnia"></a>
+    Api fo Skiver-api. <a href="https://insomnia.rest/run/?label=&uri=http://localhost:8756/api/swagger.yml" target="_blank"><img src="https://insomnia.rest/images/run.svg" alt="Run in Insomnia"></a>
     # About formatting
     This api produces output in json, yaml and toml. Every api-route takes parameters for controlling which content-type should be produced.
     In General, you can control this with these parameters:
@@ -678,7 +682,7 @@ info:
   title: Skiver API.
   version: 0.0.1
 paths:
-  /api/category/:
+  /category/:
     get:
       operationId: getcategory
       responses:
@@ -699,7 +703,7 @@ paths:
       summary: Create a new category
       tags:
       - category
-  /api/export/:
+  /export/:
     get:
       description: |
         For caching in browsers, proxy caching services etc. to work consistenly with parameters, the `?`-prefix for the query-parameters should be removed.
@@ -757,7 +761,52 @@ paths:
       summary: Returnes a snapshot of the set of translations.
       tags:
       - export
-  /api/locale/:
+  /import/{kind}/{project}/{locale}:
+    post:
+      operationId: importTranslations
+      parameters:
+      - description: |
+          The format of the imported object.
+          If set to auto, the server will attempt to find the format for you.
+        enum:
+        - i18n
+        - auto
+        in: path
+        name: kind
+        required: true
+        type: string
+      - description: |
+          If set, a dry-run will occur, and the result is returned.
+        in: query
+        name: dry
+        type: boolean
+      - description: |
+          The parameter can be any of the Project's ID or ShortName.
+        in: path
+        name: project
+        required: true
+        type: string
+      - description: |
+          The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+        in: path
+        name: locale
+        required: true
+        type: string
+      - in: body
+        name: ImportInput
+        schema:
+          $ref: '#/definitions/ImportInput'
+      responses:
+        "200":
+          description: ""
+          schema:
+            type: object
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Import translations
+      tags:
+      - import
+  /locale/:
     get:
       operationId: getLocale
       responses:
@@ -784,7 +833,7 @@ paths:
       summary: Create a locale
       tags:
       - locale
-  /api/login/:
+  /login/:
     get:
       description: Returns information about the logged in user
       operationId: getLogin
@@ -816,25 +865,37 @@ paths:
       summary: Login
       tags:
       - auth
-  /api/missing/{locale}/{project}:
-    parameters:
-    - description: |
-        The parameter can be any of the Project's ID or ShortName.
-      in: path
-      name: project
-      required: true
-      type: string
-    - description: |
-        The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
-      in: path
-      name: locale
-      required: true
-      type: string
-    - in: body
-      name: ReportMissingPayload
-      schema:
-        $ref: '#/definitions/ReportMissingInput'
-  /api/project/:
+  /missing/{locale}/{project}:
+    post:
+      operationId: reportMissing
+      parameters:
+      - description: |
+          The parameter can be any of the Project's ID or ShortName.
+        in: path
+        name: project
+        required: true
+        type: string
+      - description: |
+          The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+        in: path
+        name: locale
+        required: true
+        type: string
+      - in: body
+        name: ReportMissingInput
+        schema:
+          $ref: '#/definitions/ReportMissingInput'
+      responses:
+        "200":
+          description: ""
+          schema:
+            type: object
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Missing translations reported by users
+      tags:
+      - translation
+  /project/:
     get:
       operationId: getProject
       responses:
@@ -855,7 +916,7 @@ paths:
       summary: Create a new project
       tags:
       - project
-  /api/serverInfo/:
+  /serverInfo/:
     get:
       operationId: getServerInfo
       responses:
@@ -866,7 +927,28 @@ paths:
       summary: Information about the server
       tags:
       - server
-  /api/translation-value/:
+  /translation/:
+    get:
+      operationId: getTranslation
+      responses:
+        "200":
+          $ref: '#/responses/TranslationsResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: List translations
+      tags:
+      - translation
+    post:
+      operationId: createTranslation
+      responses:
+        "200":
+          $ref: '#/responses/TranslationResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Create a new translation
+      tags:
+      - translation
+  /translationValue/:
     get:
       operationId: getTranslationValue
       responses:
@@ -893,27 +975,6 @@ paths:
       summary: Update a new translation-value for a locale
       tags:
       - translationValue
-  /api/translation/:
-    get:
-      operationId: getTranslation
-      responses:
-        "200":
-          $ref: '#/responses/TranslationsResponse'
-        "500":
-          $ref: '#/responses/apiError'
-      summary: List translations
-      tags:
-      - translation
-    post:
-      operationId: createTranslation
-      responses:
-        "200":
-          $ref: '#/responses/TranslationResponse'
-        "500":
-          $ref: '#/responses/apiError'
-      summary: Create a new translation
-      tags:
-      - translation
 produces:
 - application/json
 - text/vnd.yaml
