@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -10,7 +11,7 @@ import (
 )
 
 var (
-	DefaultCompareOptions = CompareOptions{true, true, true}
+	DefaultCompareOptions = CompareOptions{true, true, true, false}
 	// red                   = color.FgRed.Render
 	cName = color.Green.Render
 	cGot  = color.Yellow.Render
@@ -40,6 +41,11 @@ func Compare(name string, got, want interface{}, options ...CompareOptions) erro
 				w = MustYaml(want)
 				d = MustYaml(diff)
 			}
+			if opts.JSON {
+				g = MustJSON(got)
+				w = MustJSON(want)
+				d = MustJSON(diff)
+			}
 			return fmt.Errorf("YAML: %s: \n%v\ndiff:\n%s\nwant:\n%v", cName(name), cGot(g), cDiff(d), cWant(w))
 		}
 	}
@@ -49,6 +55,10 @@ func Compare(name string, got, want interface{}, options ...CompareOptions) erro
 			var w interface{} = want
 			if opts.Yaml {
 				g = MustYaml(got)
+				w = MustYaml(want)
+			}
+			if opts.JSON {
+				g = MustJSON(got)
 				w = MustYaml(want)
 			}
 			return fmt.Errorf("YAML: %s: \n%v\nwant:\n%v", cName(name), cGot(g), cWant(w))
@@ -64,10 +74,18 @@ type CompareOptions struct {
 	Reflect,
 	// Produces output in yaml for readability
 	Yaml bool
+	JSON bool
 }
 
 func MustYaml(j interface{}) string {
 	b, err := yaml.Marshal(j)
+	if err != nil {
+		panic(fmt.Errorf("Failed to marshal: %w\n\n%v", err, j))
+	}
+	return string(b)
+}
+func MustJSON(j interface{}) string {
+	b, err := json.MarshalIndent(j, "", "  ")
 	if err != nil {
 		panic(fmt.Errorf("Failed to marshal: %w\n\n%v", err, j))
 	}
