@@ -16,6 +16,7 @@
   import TranslationValueForm from 'forms/TranslationValueForm.svelte'
   import TranslationForm from 'forms/TranslationForm.svelte'
   import TranslationItem from 'components/TranslationItem.svelte'
+  import EntityDetails from 'components/EntityDetails.svelte'
 
   $: project = $projects[projectID]
   $: {
@@ -58,10 +59,7 @@
 {:else}
   <h2>{project.title}</h2>
   <p>{project.description}</p>
-  <small
-    >Created: {formatDate(project.createdAt)} | Updated: {formatDate(
-      project.updatedAt
-    )}</small>
+  <EntityDetails entity={project} />
   {#if $state.projectSettings[projectID]?.localeIds}
     <paper>
       <Collapse>
@@ -132,10 +130,9 @@
           <div class="description">
             {category.description || ''}
           </div>
-          <small
-            >Created: {formatDate(category.createdAt)} | Updated: {formatDate(
-              category.updatedAt
-            )}</small>
+          <div class="right">
+            <EntityDetails entity={category} />
+          </div>
           <div class="actions">
             <Button
               color="secondary"
@@ -197,6 +194,9 @@
 {/if}
 
 <style>
+  .right {
+    text-align: right;
+  }
   .translation-item {
     padding-block: var(--size-4);
     padding-inline: var(--size-2);

@@ -89,6 +89,9 @@ func (rc ReqContext) WriteOutput(output interface{}, statusCode int) {
 	WriteOutput(false, statusCode, output, rc.Req, rc.Rw)
 }
 func (rc ReqContext) ValidateStruct(input interface{}) error {
+	if rc.L.HasDebug() {
+		rc.L.Debug().Interface("input", input).Msg("Validating input")
+	}
 	return rc.Context.StructValidater(input)
 }
 func (rc ReqContext) Unmarshal(body []byte, j interface{}) error {

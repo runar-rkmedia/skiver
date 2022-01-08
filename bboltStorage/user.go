@@ -29,9 +29,14 @@ func (b *BBolter) CreateUser(user types.User) (types.User, error) {
 		return user, fmt.Errorf("Username is taken")
 	}
 
-	user.Entity = b.NewEntity()
+	entity, err := b.NewEntity(user.CreatedBy)
+	if err != nil {
+		return user, err
+	}
 
-	err := b.Update(func(tx *bolt.Tx) error {
+	user.Entity = entity
+
+	err = b.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(BucketUser)
 		existing := bucket.Get([]byte(user.ID))
 		if existing != nil {

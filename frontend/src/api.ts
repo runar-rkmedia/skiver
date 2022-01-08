@@ -24,10 +24,7 @@ export type DB = {
   translation: Record<string, ApiDef.Translation>
   login: ApiDef.LoginResponse
   serverInfo: ApiDef.ServerInfo
-  responseStates: Pick<
-    Record<keyof DB, { loading: boolean; error?: ApiDef.APIError }>,
-    'project' | 'locale' | 'login'
-  >
+  responseStates: Omit<Record<keyof DB, { loading: boolean; error?: ApiDef.APIError }>, 'responseStates' | 'serverInfo'>
 }
 
 export const api = {
@@ -418,6 +415,13 @@ function apiUpdateFactory<Payload extends {}, K extends DBKeyValue>(
       }
     ).then((r) => {
       checkError(r[1])
+      db.update((s) => ({
+        ...s,
+        responseStates: {
+          ...s.responseStates,
+          [storeKey]: { loading: false, error: r[1] },
+        },
+      }))
       return r
     })
 }
@@ -436,6 +440,13 @@ function apiDeleteFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
       }
     ).then((r) => {
       checkError(r[1])
+      db.update((s) => ({
+        ...s,
+        responseStates: {
+          ...s.responseStates,
+          [storeKey]: { loading: false, error: r[1] },
+        },
+      }))
       return r
     })
 }

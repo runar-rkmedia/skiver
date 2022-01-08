@@ -13,15 +13,67 @@ func (b *BBolter) GetTranslationValue(ID string) (*types.TranslationValue, error
 	return &u, err
 }
 
+// Updates an existing entity-struct with changes.
+// NOTE: This does NOT update the db-value itself., but is meant as a helper-func
+func updateEntity(existing, changes types.Entity) (types.Entity, error) {
+	if existing.ID == "" {
+		return existing, fmt.Errorf("The existing-value does not have an ID.")
+	}
+	updatedBy := changes.UpdatedBy
+	if updatedBy == "" {
+		updatedBy = changes.CreatedBy
+	}
+	if updatedBy == "" {
+		return existing, fmt.Errorf("UpdatedBy is not set")
+	}
+
+	if changes.UpdatedAt == nil {
+		changes.UpdatedAt = nowPointer()
+	}
+	existing.UpdatedAt = changes.UpdatedAt
+	existing.UpdatedBy = changes.UpdatedBy
+	return existing, nil
+}
+
+func (bb *BBolter) UpdateTranslationValue(tv types.TranslationValue) (types.TranslationValue, error) {
+	if tv.Value == "" {
+		return tv, fmt.Errorf("empty value")
+	}
+	var ex types.TranslationValue
+	err := bb.updater(tv.ID, BucketTranslationValue, func(b []byte) ([]byte, error) {
+		err := bb.Unmarshal(b, &ex)
+		if err != nil {
+			return nil, err
+		}
+		entity, err := updateEntity(ex.Entity, tv.Entity)
+		if err != nil {
+			return nil, err
+		}
+		ex.Entity = entity
+		ex.Value = tv.Value
+		return bb.Marshal(ex)
+	})
+
+	return ex, err
+}
 func (b *BBolter) CreateTranslationValue(tv types.TranslationValue) (types.TranslationValue, error) {
+	if tv.Value == "" {
+		return tv, fmt.Errorf("empty value")
+	}
 	existing, err := b.GetTranslationValueFilter(tv)
 	if err != nil {
 		return types.TranslationValue{}, err
 	}
 	if existing != nil {
-		return *existing, fmt.Errorf("Already exists")
+		if b.l.HasDebug() {
+			b.l.Debug().Interface("existing", existing).Interface("input", tv).Msg("Translationvalue already exists")
+		}
+		return *existing, fmt.Errorf("Translationvalue already exists")
 	}
-	tv.Entity = b.NewEntity()
+	tv.Entity, err = b.NewEntity(tv.CreatedBy)
+	if err != nil {
+		return tv, err
+	}
 
 	var t types.Translation
 	err = b.Update(func(tx *bolt.Tx) error {

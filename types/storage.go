@@ -31,6 +31,7 @@ type Storage interface {
 
 	GetTranslationValue(ID string) (*TranslationValue, error)
 	CreateTranslationValue(translationValue TranslationValue) (TranslationValue, error)
+	UpdateTranslationValue(tv TranslationValue) (TranslationValue, error)
 	GetTranslationValues() (map[string]TranslationValue, error)
 	GetTranslationValueFilter(filter ...TranslationValue) (*TranslationValue, error)
 	GetTranslationValuesFilter(max int, filter ...TranslationValue) (map[string]TranslationValue, error)

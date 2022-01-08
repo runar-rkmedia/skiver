@@ -109,6 +109,15 @@ definitions:
       - translation_id
       - locale_id
       - value
+  UpdateTranslationValueInput:
+    properties:
+      value:
+        maxLength: 8000
+        minLength: 0
+        type: string
+    type: object
+    required:
+      - value
   ReportMissingInput:
     type: object
     additionalProperties:
@@ -362,9 +371,26 @@ paths:
           $ref: '#/responses/apiError'
       tags:
       - translationValue
-    post:
-      summary: Create a new translation-value for a locale
-      operationId: createTranslationValue
+    # post:
+    #   summary: Create a new translation-value for a locale
+    #   operationId: createTranslationValue
+    #   responses:
+    #     "200":
+    #       $ref: '#/responses/TranslationValueResponse'
+    #     "500":
+    #       $ref: '#/responses/apiError'
+    #   tags:
+    #   - translationValue
+    put:
+      summary: Update a new translation-value for a locale
+      operationId: updateTranslationValue
+      parameters:
+      - in: body
+        required: true
+        name: UpdateTranslationValueInput
+        schema:
+          $ref: '#/definitions/UpdateTranslationValueInput'
+        
       responses:
         "200":
           $ref: '#/responses/TranslationValueResponse'

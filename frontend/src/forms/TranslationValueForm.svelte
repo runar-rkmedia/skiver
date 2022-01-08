@@ -4,28 +4,44 @@
   import { api } from '../api'
   import { state, toast } from '../state'
   export let localeID: string
+  export let existingID: string = ''
   export let translationID: string
   const dispatch = createEventDispatcher()
   async function onCreateTranslationValue() {
-    $state.createTranslationValue.locale_id = localeID
-    $state.createTranslationValue.translation_id = translationID
-    if (!$state.createTranslationValue.locale_id) {
-      toast({
-        title: 'missing argument',
-        message: 'locale was not set',
-        kind: 'warning',
-      })
+    let s: Awaited<ReturnType<typeof api.translationValue.create>>
+    if (existingID) {
+      // Update
+      s = await api.translationValue.update(
+        existingID,
+        $state.createTranslationValue
+      )
+    } else {
+      // Create
+
+      $state.createTranslationValue.locale_id = localeID
+      $state.createTranslationValue.translation_id = translationID
+      if (!$state.createTranslationValue.locale_id) {
+        toast({
+          title: 'missing argument',
+          message: 'locale was not set',
+          kind: 'warning',
+        })
+        return
+      }
+      if (!$state.createTranslationValue.translation_id) {
+        toast({
+          title: 'missing argument',
+          message: 'translation was not set',
+          kind: 'warning',
+        })
+        return
+      }
+      s = await api.translationValue.create($state.createTranslationValue)
+    }
+    if (!s) {
+      console.log('result was not set')
       return
     }
-    if (!$state.createTranslationValue.translation_id) {
-      toast({
-        title: 'missing argument',
-        message: 'translation was not set',
-        kind: 'warning',
-      })
-      return
-    }
-    const s = await api.translationValue.create($state.createTranslationValue)
     if (!s[1]) {
       dispatch('complete', s[0])
       $state.createTranslationValue = {
@@ -38,6 +54,7 @@
 </script>
 
 <form>
+  Existing: {existingID}
   <!-- svelte-ignore a11y-autofocus -->
   <textarea
     autofocus
@@ -50,5 +67,12 @@
     type="submit"
     on:click={onCreateTranslationValue}
     icon={'submit'}>Submit</Button>
+  <Button
+    slot="actions"
+    color="secondary"
+    on:click={() => {
+      dispatch('cancel')
+    }}
+    icon={'cancel'}>Cancel</Button>
   <slot name="actions" />
 </form>

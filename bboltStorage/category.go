@@ -21,7 +21,10 @@ func (b *BBolter) CreateCategory(category types.Category) (types.Category, error
 	if existing != nil {
 		return *existing, fmt.Errorf("Category already exists")
 	}
-	category.Entity = b.NewEntity()
+	category.Entity, err = b.NewEntity(category.CreatedBy)
+	if err != nil {
+		return category, err
+	}
 
 	var p types.Project
 	err = b.Update(func(tx *bolt.Tx) error {

@@ -6,6 +6,7 @@
   import formatDate from '../dates'
   import Tip from '../components/Tip.svelte'
   import ProjectForm from 'forms/ProjectForm.svelte'
+  import EntityDetails from 'components/EntityDetails.svelte'
   $: projects = Object.values($db.project)
 </script>
 
@@ -53,11 +54,7 @@
         </svelte:fragment>
         <svelte:fragment slot="description">
           {v.description}
-          Created: {formatDate(v.createdAt)}
-
-          {#if v.updatedAt}
-            Updated: {formatDate(v.updatedAt)}
-          {/if}
+          <EntityDetails entity={v} />
         </svelte:fragment>
       </ListItem>
     {:else}

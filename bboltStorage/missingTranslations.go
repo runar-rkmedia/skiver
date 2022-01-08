@@ -92,7 +92,11 @@ func (b *BBolter) ReportMissing(key types.MissingTranslation) (*types.MissingTra
 	if key.Locale == "" {
 		return &key, fmt.Errorf("Missing Locale: %w", ErrMissingIdArg)
 	}
-	key.Entity = b.NewEntity()
+	entity, err := b.NewEntity(key.CreatedBy)
+	if err != nil {
+		return nil, err
+	}
+	key.Entity = entity
 	key.ID = strings.Join([]string{key.Project, key.Locale, key.Category, key.Translation}, " / ")
 
 	if key.ProjectID == "" {
@@ -133,7 +137,7 @@ func (b *BBolter) ReportMissing(key types.MissingTranslation) (*types.MissingTra
 	}
 	verb := PubVerbCreate
 
-	err := b.Update(func(tx *bolt.Tx) (err error) {
+	err = b.Update(func(tx *bolt.Tx) (err error) {
 		bucket := tx.Bucket(BucketMissing)
 		existing := bucket.Get([]byte(key.ID))
 		var ex types.MissingTranslation

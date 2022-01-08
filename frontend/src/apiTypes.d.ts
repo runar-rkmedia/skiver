@@ -393,6 +393,9 @@ declare namespace ApiDef {
         translation_id: string;
         value: string;
     }
+    export interface UpdateTranslationValueInput {
+        value: string;
+    }
 }
 declare namespace ApiPaths {
     namespace ApiMissing$Locale$Project {
@@ -521,6 +524,14 @@ declare namespace ApiPaths {
         }
         namespace Parameters {
             export type LoginInput = ApiDef.LoginInput;
+        }
+    }
+    namespace UpdateTranslationValue {
+        export interface BodyParameters {
+            UpdateTranslationValueInput: Parameters.UpdateTranslationValueInput;
+        }
+        namespace Parameters {
+            export type UpdateTranslationValueInput = ApiDef.UpdateTranslationValueInput;
         }
     }
 }

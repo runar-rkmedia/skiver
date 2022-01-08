@@ -21,7 +21,10 @@ func (b *BBolter) CreateLocale(locale types.Locale) (types.Locale, error) {
 	if existing != nil {
 		return *existing, fmt.Errorf("Locale already exists")
 	}
-	locale.Entity = b.NewEntity()
+	locale.Entity, err = b.NewEntity(locale.CreatedBy)
+	if err != nil {
+		return locale, err
+	}
 
 	err = b.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(BucketLocale)

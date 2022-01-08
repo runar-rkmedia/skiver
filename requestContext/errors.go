@@ -65,4 +65,10 @@ const (
 	CodeErrCreateTranslation      ErrorCodes = "Error: Database Create Translation"
 	CodeErrCreateCategory         ErrorCodes = "Error: Database Create Category"
 	CodeErrCreateTranslationValue ErrorCodes = "Error: Database Create TranslationValue"
+
+	CodeErrDBUpdateLocale         ErrorCodes = "Error: Database Update Locale"
+	CodeErrUpdateProject          ErrorCodes = "Error: Database Update Project"
+	CodeErrUpdateTranslation      ErrorCodes = "Error: Database Update Translation"
+	CodeErrUpdateCategory         ErrorCodes = "Error: Database Update Category"
+	CodeErrUpdateTranslationValue ErrorCodes = "Error: Database Update TranslationValue"
 )

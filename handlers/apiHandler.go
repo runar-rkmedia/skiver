@@ -105,12 +105,25 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				var errs []string
 				var mts []types.MissingTranslation
 				for k := range j {
-					category, translation, _ := strings.Cut(k, ".")
+					splitted := strings.Split(k, ".")
+					category := splitted[0]
+					var translation string
+					if len(splitted) > 0 {
+						translation = splitted[1]
+					}
+					// requires go 1.18
+					// category, translation, _ := strings.Cut(k, ".")
 					mt := types.MissingTranslation{
 						Locale:      locale,
 						Project:     project,
 						Translation: translation,
 						Category:    category,
+					}
+					if session != nil {
+						mt.CreatedBy = session.User.ID
+					}
+					if mt.CreatedBy == "" {
+						mt.CreatedBy = "anonymous"
 					}
 
 					mtt, err := ctx.DB.ReportMissing(mt)
@@ -387,6 +400,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					Description: j.Description,
 					ShortName:   *j.ShortName,
 				}
+				l.CreatedBy = session.User.ID
 				locale, err := ctx.DB.CreateProject(l)
 				rc.WriteAuto(locale, err, requestContext.CodeErrCreateProject)
 				return
@@ -411,6 +425,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					Description: j.Description,
 					Title:       j.Title,
 				}
+				t.CreatedBy = session.User.ID
 				translation, err := ctx.DB.CreateTranslation(t)
 				rc.WriteAuto(translation, err, requestContext.CodeErrCreateTranslation)
 				return
@@ -434,6 +449,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					Description: j.Description,
 					Title:       *j.Title,
 				}
+				c.CreatedBy = session.User.ID
 				category, err := ctx.DB.CreateCategory(c)
 				rc.WriteAuto(category, err, requestContext.CodeErrCategory)
 				return
@@ -455,9 +471,29 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					TranslationID: *j.TranslationID,
 					Value:         *j.Value,
 				}
+				tv.CreatedBy = session.User.ID
 				translationValue, err := ctx.DB.CreateTranslationValue(tv)
 				rc.WriteAuto(translationValue, err, requestContext.CodeErrCreateTranslationValue)
 				return
+			}
+			if isPut {
+				id := getStringSliceIndex(paths, 1)
+				if id == "" {
+					rc.WriteError("Missing id", requestContext.CodeErrIDEmpty)
+					return
+				}
+				var j models.UpdateTranslationValueInput
+				if err := rc.ValidateBytes(body, &j); err != nil {
+					return
+				}
+				tv := types.TranslationValue{}
+				tv.ID = id
+				tv.Value = *j.Value
+				tv.UpdatedBy = session.User.ID
+				translationValue, err := ctx.DB.UpdateTranslationValue(tv)
+				rc.WriteAuto(translationValue, err, requestContext.CodeErrUpdateTranslationValue)
+				return
+
 			}
 		case "locale":
 			if isGet {
@@ -486,6 +522,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					IETF:     *j.IetfTag,
 					Title:    *j.Title,
 				}
+				l.CreatedBy = session.User.ID
 				locale, err := ctx.DB.CreateLocale(l)
 				if err != nil {
 					rc.WriteErr(err, requestContext.CodeErrDBCreateLocale)
@@ -497,4 +534,11 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 		}
 		rc.WriteError(fmt.Sprintf("No route registerd for: %s %s", r.Method, r.URL.Path), requestContext.CodeErrNoRoute)
 	}
+}
+
+func getStringSliceIndex(slice []string, index int) string {
+	if len(slice) < index {
+		return ""
+	}
+	return slice[index]
 }

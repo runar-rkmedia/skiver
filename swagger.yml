@@ -651,6 +651,15 @@ definitions:
     - locale_id
     - value
     type: object
+  UpdateTranslationValueInput:
+    properties:
+      value:
+        maxLength: 8000
+        minLength: 0
+        type: string
+    required:
+    - value
+    type: object
 host: localhost
 info:
   description: |
@@ -868,14 +877,20 @@ paths:
       summary: List translation-values
       tags:
       - translationValue
-    post:
-      operationId: createTranslationValue
+    put:
+      operationId: updateTranslationValue
+      parameters:
+      - in: body
+        name: UpdateTranslationValueInput
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateTranslationValueInput'
       responses:
         "200":
           $ref: '#/responses/TranslationValueResponse'
         "500":
           $ref: '#/responses/apiError'
-      summary: Create a new translation-value for a locale
+      summary: Update a new translation-value for a locale
       tags:
       - translationValue
   /api/translation/:

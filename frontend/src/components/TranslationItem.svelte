@@ -1,21 +1,35 @@
 <script lang="ts">
+  import { db } from 'api'
+
   import Button from 'components/Button.svelte'
   import TranslationValueForm from 'forms/TranslationValueForm.svelte'
   import { createEventDispatcher } from 'svelte'
   import { state } from '../state'
+  import Alert from './Alert.svelte'
+  import EntityDetails from './EntityDetails.svelte'
   import Icon from './Icon.svelte'
   export let translation: ApiDef.Translation
   /** Map by locale-id */
   export let translationValues: Record<string, ApiDef.TranslationValue>
   export let categoryKey: string
-  export let showForm: boolean
-  export let selectedLocale: string = ''
+  let showForm: boolean = true
+
+  let selectedLocale: string = ''
   export let locales: ApiDef.Locale[]
   const dispatch = createEventDispatcher()
+  $: errs = Object.entries($db.responseStates.translationValue).reduce(
+    (r, [k, v]) => {
+      if (v && typeof v === 'object' && v.error) {
+        r.push(v)
+      }
+      return r
+    },
+    [] as ApiDef.APIError[]
+  )
 </script>
 
 {#if translation}
-  <div>
+  <div class="desc">
     <h4>
       <code>
         {categoryKey}.{translation.key}
@@ -26,6 +40,7 @@
       <small>
         {translation.description || ''}
       </small>
+      <EntityDetails entity={translation} />
     </div>
   </div>
   <table>
@@ -51,18 +66,29 @@
                     This value was auto-translated.
                   </p>
                 {/if}
+                <!-- {#if translationValues?.[locale.id]?.source === 'system-translator'} -->
                 <TranslationValueForm
+                  existingID={translationValues?.[locale.id]?.id}
                   localeID={locale.id}
                   translationID={translation.id}
-                  on:complete={() => dispatch('complete')}>
-                  <Button
-                    slot="actions"
-                    color="secondary"
-                    on:click={() => {
-                      dispatch('showForm', { locale, show: false })
-                    }}
-                    icon={'cancel'}>Cancel</Button>
-                </TranslationValueForm>
+                  on:complete={() => {
+                    dispatch('complete')
+                    selectedLocale = ''
+                  }}
+                  on:cancel={() => {
+                    selectedLocale = ''
+                    dispatch('showForm', { locale, show: false })
+                  }} />
+                <EntityDetails entity={translationValues?.[locale.id]} />
+                {#each errs as v}
+                  <Alert kind="error">
+                    <h5>{v.code}</h5>
+                    <p>{v.error}</p>
+                    {#if v.details}
+                      {JSON.stringify(v.details)}
+                    {/if}
+                  </Alert>
+                {/each}
               {:else}
                 <div
                   class="keep-whitespace click-to-edit"
@@ -92,6 +118,16 @@
 {/if}
 
 <style>
+  .desc {
+    display: flex;
+    justify-content: space-between;
+  }
+  .desc > * {
+    display: block;
+  }
+  .desc > :last-child {
+    text-align: right;
+  }
   .selected {
     outline: 1px dashed hotpink;
   }

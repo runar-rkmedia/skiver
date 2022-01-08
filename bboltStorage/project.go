@@ -28,7 +28,10 @@ func (b *BBolter) CreateProject(project types.Project) (types.Project, error) {
 
 		return *existing, fmt.Errorf("Already exists")
 	}
-	project.Entity = b.NewEntity()
+	project.Entity, err = b.NewEntity(project.CreatedBy)
+	if err != nil {
+		return project, err
+	}
 
 	err = b.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(BucketProject)

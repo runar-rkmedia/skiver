@@ -11,7 +11,6 @@ Therefore, any missing translation may or may not map into a valid object.
 
 Still, we should present this information.
 -->
-
 <script type="ts">
   import ProjectForm from 'forms/ProjectForm.svelte'
 
@@ -48,7 +47,7 @@ Still, we should present this information.
     }
     if (!m.category_id) {
       return r
-    } 
+    }
     r[m.category] = $db.category[m.category_id] || { id: m.category_id }
 
     return r
@@ -71,7 +70,12 @@ Still, we should present this information.
   }, {} as Record<string, Record<string, ApiDef.MissingTranslation[]>>)
   $: {
   }
-  let visibleForm: null | 'project' | 'category' | 'translation' = null
+  let visibleForm:
+    | null
+    | 'project'
+    | 'category'
+    | 'translation'
+    | 'translationValue' = null
   let selectedProjectIsh = ''
   let selectedCategoryIsh = ''
   let selectedTranslationIsh = ''
@@ -169,12 +173,6 @@ Still, we should present this information.
       {/if}
       {#each missings as missing}
         {#if missing.translation_id && $db.translation[missing.translation_id]}
-          {missing.translation_id}
-          {JSON.stringify(
-            $projects[projectKeyMap[projectIsh]?.id]?.categories?.[
-              categories[categoryIsh]?.id
-            ]?.translations?.[missing.translation_id]?.values
-          )}
           <TranslationItem
             translation={$db.translation[missing.translation_id]}
             translationValues={// This is terribale, I am sorry...
@@ -190,11 +188,11 @@ Still, we should present this information.
               if (show) {
                 // visibleForm = 'translationValue'
                 // selectedTranslation = translation.id
+                // selectedLocale = translation.locale_id
                 return
               }
               visibleForm = null
-            }}
-            showForm={true} />
+            }} />
         {:else}
           <ListItem deleted={!!missing.deleted} ID={missing.id}>
             <span slot="header">

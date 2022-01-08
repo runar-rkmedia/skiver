@@ -173,21 +173,27 @@ func (m *translationHook) Publish(kind, variant string, contents interface{}) {
 				continue
 
 			}
-			result, err := m.translator.Translate(tv.Value, sourceLocale.Iso639_1, l.Iso639_1)
+			// TODO: check if source and target are supported.
+			source := sourceLocale.Iso639_1
+			target := l.Iso639_1
+			result, err := m.translator.Translate(tv.Value, source, target)
 			if err != nil {
-				m.l.Error().Err(err).Msg("failed during translation")
+				m.l.Error().Err(err).Str("source", source).Str("target", target).Msg("failed during translation")
 				continue
 			}
 			if result == "" {
 				m.l.Warn().Str("result", result).Msg("The translation returned a empty result")
 				continue
 			}
-			_, err = m.db.CreateTranslationValue(types.TranslationValue{
+			tv := types.TranslationValue{
 				Value:         result,
 				LocaleID:      l.ID,
 				TranslationID: tv.TranslationID,
 				Source:        types.CreatorSourceTranslator,
-			})
+			}
+			tv.CreatedBy = string(tv.Source)
+			_, err = m.db.CreateTranslationValue(tv)
+
 			if err != nil {
 				m.l.Error().Err(err).Msg("Failed to create translation-value")
 				continue
@@ -234,6 +240,7 @@ func main() {
 		Time("buildDateLocal", BuildDate.Local()).
 		Str("gitHash", GitHash).
 		Str("db", cfg.DBLocation).
+		Int("pid", os.Getpid()).
 		Msg("Starting")
 	// IMPORTANT: database publishes changes, but for performance-reasons, it should not be used until the listener (ws) is started.
 	db, err := bboltStorage.NewBbolt(l, cfg.DBLocation, &events)
@@ -249,7 +256,8 @@ func main() {
 	if len(config.TranslatorServices) > 0 {
 		o := config.TranslatorServices[0]
 		t, err := translator.NewTranslator(translator.TranslatorOptions{
-			Kind:     o.Kind,
+			Kind: o.Kind,
+
 			ApiToken: o.ApiToken,
 			Endpoint: o.Endpoint,
 		})
@@ -327,15 +335,17 @@ func main() {
 	}
 
 	handler.Handle("/api/",
-		http.MaxBytesHandler(
-			gziphandler.GzipHandler(
-				http.StripPrefix("/api/",
-					handlers.EndpointsHandler(
-						ctx, pw, info, []byte(swaggerYml),
-					),
+		// requires go.1.18
+		// http.MaxBytesHandler(
+		gziphandler.GzipHandler(
+			http.StripPrefix("/api/",
+				handlers.EndpointsHandler(
+					ctx, pw, info, []byte(swaggerYml),
 				),
 			),
-			maxBodySize))
+			// ),
+			// maxBodySize,
+		))
 
 	useCert := false
 	if cfg.CertFile != "" {

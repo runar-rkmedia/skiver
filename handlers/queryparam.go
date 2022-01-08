@@ -12,7 +12,8 @@ func extractParams(r *http.Request, basePath string) (url.Values, error) {
 	q := r.URL.Query()
 
 	qpath := strings.Replace(r.URL.Path, basePath, "", 1)
-	qpath, _, _ = strings.Cut(qpath, ".")
+	// qpath, _, _ = strings.Cut(qpath, ".")
+	qpath = strings.Split(qpath, ".")[0]
 	qpath = strings.TrimPrefix(qpath, "/")
 
 	qq, err := url.ParseQuery(qpath)

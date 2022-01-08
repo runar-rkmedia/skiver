@@ -4,14 +4,14 @@
   import { db } from '../api'
   import { state } from '../state'
   import formatDate from 'dates'
+  import EntityDetails from 'components/EntityDetails.svelte'
 </script>
 
 <h2>Locales</h2>
 <paper>
   <EntityList
     error={$db.responseStates.locale.error?.error}
-    loading={$db.responseStates.locale.loading}
-  >
+    loading={$db.responseStates.locale.loading}>
     {#each Object.values($db.locale)
       .filter((e) => {
         if (!$state.showDeleted) {
@@ -36,17 +36,12 @@
         deleteDisabled={true}
         editDisabled={true}
         ID={v.id}
-        deleted={!!v.deleted}
-      >
+        deleted={!!v.deleted}>
         <svelte:fragment slot="header">
           {v.title}
         </svelte:fragment>
         <svelte:fragment slot="description">
-          Created: {formatDate(v.createdAt)}
-
-          {#if v.updatedAt}
-            Updated: {formatDate(v.updatedAt)}
-          {/if}
+          <EntityDetails entity={v} />
         </svelte:fragment>
       </ListItem>
     {/each}

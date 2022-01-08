@@ -24,7 +24,10 @@ func (b *BBolter) CreateTranslation(translation types.Translation) (types.Transl
 	if existing != nil {
 		return *existing, fmt.Errorf("Translation already exists")
 	}
-	translation.Entity = b.NewEntity()
+	translation.Entity, err = b.NewEntity(translation.CreatedBy)
+	if err != nil {
+		return translation, err
+	}
 
 	var c types.Category
 	err = b.Update(func(tx *bolt.Tx) error {

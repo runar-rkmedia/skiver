@@ -2,6 +2,7 @@ package bboltStorage
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -77,14 +78,18 @@ func (s *BBolter) GetItem(bucket []byte, id string, j interface{}) error {
 
 	return err
 }
-func (s *BBolter) NewEntity() types.Entity {
+func (s *BBolter) NewEntity(createdBy string) (types.Entity, error) {
+	if createdBy == "" {
+		return types.Entity{}, fmt.Errorf("CreatedBy was empty")
+	}
 	// ForceNewEntity may return an error, but it guarantees the the Entity is still usable.
 	// The error should be logged, though.
 	e, err := ForceNewEntity()
 	if err != nil {
 		s.l.Error().Err(err).Str("id", e.ID).Msg("An error occured while creating entity. ")
 	}
-	return e
+	e.CreatedBy = createdBy
+	return e, nil
 }
 
 func nowPointer() *time.Time {
