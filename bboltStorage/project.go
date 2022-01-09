@@ -118,8 +118,12 @@ func (bb *BBolter) GetProjectByIDOrShortName(shortNameOrId string) (*types.Proje
 	}
 	return bb.GetProjectByShortName(shortNameOrId)
 }
+
 func (bb *BBolter) GetProjectByShortName(shortName string) (*types.Project, error) {
-	return bb.GetProjectFilter(types.Project{ShortName: shortName})
+	return bb.GetProjectFilter(
+		types.Project{Entity: types.Entity{ID: shortName}},
+		types.Project{ShortName: shortName},
+	)
 }
 
 func (bb *BBolter) GetProjectFilter(filter ...types.Project) (*types.Project, error) {
@@ -132,6 +136,9 @@ func (bb *BBolter) GetProjectFilter(filter ...types.Project) (*types.Project, er
 			return false
 		}
 		for _, f := range filter {
+			if f.ID != "" && f.ID != uu.ID {
+				continue
+			}
 			if f.ShortName != "" && f.ShortName != uu.ShortName {
 				continue
 			}

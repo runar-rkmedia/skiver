@@ -26,7 +26,7 @@ type Translation struct {
 	Description         string                 `json:"description,omitempty"`
 	Key                 string                 `json:"key,omitempty"`
 	CategoryID          string                 `json:"category,omitempty"`
-	Tag                 []string               `json:"tags"`
+	Tag                 []string               `json:"tags,omitempty"`
 	Title               string                 `json:"title,omitempty"`
 	Variables           map[string]interface{} `json:"variables,omitempty"`
 	ValueIDs            []string               `json:"value_ids,omitempty"`
@@ -51,6 +51,7 @@ type CreatorSource string
 var (
 	CreatorSourceUser       CreatorSource = "user"
 	CreatorSourceTranslator CreatorSource = "system-translator"
+	CreatorSourceImport     CreatorSource = "user-import"
 )
 
 // Locale represents a language, dialect etc.

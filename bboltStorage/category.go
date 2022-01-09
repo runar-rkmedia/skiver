@@ -19,6 +19,7 @@ func (b *BBolter) CreateCategory(category types.Category) (types.Category, error
 		return *existing, err
 	}
 	if existing != nil {
+		b.l.Warn().Interface("existing", existing).Interface("input", category).Err(err).Msg("category already exists")
 		return *existing, fmt.Errorf("Category already exists")
 	}
 	category.Entity, err = b.NewEntity(category.CreatedBy)
@@ -98,6 +99,8 @@ func (bb *BBolter) GetCategoryFilter(filter ...types.Category) (*types.Category,
 			if f.ProjectID != "" && f.ProjectID != uu.ProjectID {
 				continue
 			}
+			// rootCategory is an empty string, complicating things... perhaps we should make it a constant non-empty value?
+
 			if f.Key != "" && f.Key != uu.Key {
 				continue
 			}

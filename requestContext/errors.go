@@ -34,6 +34,7 @@ var (
 
 const (
 	CodeErrMethodNotAllowed ErrorCodes = "Error: HTTP-Method is not allowed"
+	CodeErrNotImplemented   ErrorCodes = "Error: Not implemented"
 	CodeErrNoRoute          ErrorCodes = "Error: No route matched for this http-path"
 	CodeErrReadBody         ErrorCodes = "Error: Failed to read body"
 	CodeErrMarshal          ErrorCodes = "Error: Failed to marshal"
@@ -56,9 +57,11 @@ const (
 	CodeErrTranslation      ErrorCodes = "Error: Translation error"
 	CodeErrCategory         ErrorCodes = "Error: Category error"
 	CodeErrTranslationValue ErrorCodes = "Error: TranslationValue error"
+	CodeErrImport           ErrorCodes = "Error: Import error"
 
-	CodeErrNotFoundLocale ErrorCodes = "Error: Locale not found"
-	CodeErrNotFoundUser   ErrorCodes = "Error: User not found"
+	CodeErrNotFoundLocale  ErrorCodes = "Error: Locale not found"
+	CodeErrNotFoundProject ErrorCodes = "Error: Project not found"
+	CodeErrNotFoundUser    ErrorCodes = "Error: User not found"
 
 	CodeErrDBCreateLocale         ErrorCodes = "Error: Database Create Locale"
 	CodeErrCreateProject          ErrorCodes = "Error: Database Create Project"

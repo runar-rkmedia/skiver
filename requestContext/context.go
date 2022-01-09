@@ -76,8 +76,8 @@ func (rc ReqContext) WriteAuto(output interface{}, error error, errCode ErrorCod
 		l.Msg("Failure during WriteAuto")
 	}
 }
-func (rc ReqContext) WriteError(msg string, errCode ErrorCodes) {
-	WriteError(msg, errCode, rc.Req, rc.Rw)
+func (rc ReqContext) WriteError(msg string, errCode ErrorCodes, details ...interface{}) {
+	WriteError(msg, errCode, rc.Req, rc.Rw, details...)
 }
 func (rc ReqContext) WriteNotFound(errCode ErrorCodes) {
 	WriteErr(errors.New("Not found"), errCode, rc.Req, rc.Rw)

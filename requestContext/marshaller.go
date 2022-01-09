@@ -49,6 +49,10 @@ func WriteOutput(isError bool, statusCode int, output interface{}, r *http.Reque
 	}
 	if !isError {
 		jmesPath := r.Header.Get("JMES-path")
+		if jmesPath == "" {
+			jmesPath = r.URL.Query().Get("JMES-path")
+		}
+		fmt.Println("jmes???", jmesPath)
 		if jmesPath != "" {
 			b, err := json.Marshal(output)
 			if err != nil {

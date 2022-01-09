@@ -20,8 +20,17 @@ type Import struct {
 // Every leaf-node must be of type string
 func ImportI18NTranslation(locales []types.Locale, localeHint *types.Locale, projectID string, createdBy string, source types.CreatorSource, input map[string]interface{}) (*Import, error) {
 	localeLength := len(locales)
-	if input == nil {
+	if input == nil || len(input) == 0 {
 		return nil, fmt.Errorf("Empty input")
+	}
+	if projectID == "" {
+		return nil, fmt.Errorf("ProjectID is required")
+	}
+	if createdBy == "" {
+		return nil, fmt.Errorf("source is required")
+	}
+	if source == "" {
+		return nil, fmt.Errorf("source is required")
 	}
 	if localeLength == 0 && localeHint == nil {
 		return nil, fmt.Errorf("No locales")
@@ -37,9 +46,10 @@ func ImportI18NTranslation(locales []types.Locale, localeHint *types.Locale, pro
 	}
 	for i := 0; i < len(mv); i++ {
 		node := getNode(mv[i])
-		if node.Value == "" {
+		if node.Value == "" && node.Root == "" && node.MidPath == "" {
 			return nil, fmt.Errorf("one of the values failed to parse: %s", strings.Join(mv[i], "."))
 		}
+
 		var locale types.Locale
 		if localeHint != nil {
 			locale = *localeHint
@@ -55,12 +65,14 @@ func ImportI18NTranslation(locales []types.Locale, localeHint *types.Locale, pro
 				}
 			}
 			if locale.ID == "" {
-				return nil, fmt.Errorf("Failed to resolve the locale: %s in value %s", split[0], strings.Join(mv[i], "."))
+				return nil, fmt.Errorf("Failed to resolve as locale, attempted to parse '%s' as locale from value. You can add a locale as input-hint, or specify the locale within the body. The first value that failed to parse was: '%s'", split[0], strings.Join(mv[i], "."))
 			}
-			fmt.Println("\n\nlennnnn", len(split), split)
-			category := "" // Empty string here is root-elemenent
+			category := ""
 
 			category = strings.Join(split[1:], ".")
+			if category == "" {
+				category = types.RootCategory
+			}
 			// if len(split) > 2 {
 			// }
 			translation := node.MidPath
@@ -70,6 +82,7 @@ func ImportI18NTranslation(locales []types.Locale, localeHint *types.Locale, pro
 			}
 			cat := imp.Categories[category]
 			cat.Key = category
+			cat.Title = InferTitle(category)
 			cat.ProjectID = projectID
 			cat.CreatedBy = createdBy
 			if cat.Translations == nil {
@@ -112,7 +125,14 @@ func CleanKey(s string) string {
 
 // TODO: This should be a bit smarter.
 func InferTitle(s string) string {
+	if s == "" {
+		return ""
+	}
+	if len(s) == 1 {
+		return strings.ToUpper(s)
+	}
 	str := strings.ReplaceAll(stringy.New(s).SnakeCase().ToLower(), "_", " ")
+	fmt.Println(s, str)
 	return strings.ToTitle(str[:1]) + str[1:]
 }
 

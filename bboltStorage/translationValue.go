@@ -57,8 +57,11 @@ func (bb *BBolter) UpdateTranslationValue(tv types.TranslationValue) (types.Tran
 	return ex, err
 }
 func (b *BBolter) CreateTranslationValue(tv types.TranslationValue) (types.TranslationValue, error) {
-	if tv.Value == "" {
-		return tv, fmt.Errorf("empty value")
+	if tv.LocaleID == "" {
+		return tv, fmt.Errorf("empty locale-id")
+	}
+	if tv.TranslationID == "" {
+		return tv, fmt.Errorf("empty translation-id")
 	}
 	existing, err := b.GetTranslationValueFilter(tv)
 	if err != nil {

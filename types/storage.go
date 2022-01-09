@@ -15,14 +15,17 @@ type Storage interface {
 	CreateLocale(locale Locale) (Locale, error)
 	GetLocaleFilter(filter ...Locale) (*Locale, error)
 	GetLocales() (map[string]Locale, error)
+	GetLocaleByIDOrShortName(shortNameOrId string) (*Locale, error)
 
 	GetProject(ID string) (*Project, error)
 	CreateProject(locale Project) (Project, error)
 	GetProjects() (map[string]Project, error)
+	GetProjectByIDOrShortName(shortNameOrId string) (*Project, error)
 
 	GetTranslation(ID string) (*Translation, error)
 	CreateTranslation(locale Translation) (Translation, error)
 	GetTranslations() (map[string]Translation, error)
+	GetTranslationsFilter(max int, filter ...Translation) (map[string]Translation, error)
 
 	// These must be added
 	GetCategory(ID string) (*Category, error)

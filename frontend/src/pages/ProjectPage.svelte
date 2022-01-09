@@ -39,6 +39,7 @@
     'createdAt',
     'updatedAt',
   ]
+  let expandedCategory: string | true = true
 </script>
 
 {$t('a.hello')}
@@ -120,19 +121,39 @@
     {/if}
     {#each sortOn(Object.values(project.categories), ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn) as category}
       <paper class="category-item" transition:fly|local>
-        <div class="category-item-header">
-          <h3>
-            <code>
-              {category.key}
-            </code>
-            {category.title}
-          </h3>
-          <div class="description">
-            {category.description || ''}
+        <button
+          on:click={(e) => {
+            const el = e.target
+            console.log(e.target.tagName, e.target)
+            if (expandedCategory === category.id) {
+              expandedCategory = ''
+              return
+            }
+            expandedCategory = category.id
+            setTimeout(() => {
+              if (el.scrollIntoViewIfNeeded) {
+                el.scrollIntoViewIfNeeded(true)
+              } else {
+                el.scrollIntoView({ behaviour: 'smooth', block: 'center' })
+              }
+            }, 20)
+          }}>
+          <div class="category-item-header">
+            <h3>
+              <code>
+                {category.key}
+              </code>
+              {category.title}
+            </h3>
+            <div class="description">
+              {category.description || ''}
+            </div>
+            <div class="right">
+              <EntityDetails entity={category} />
+            </div>
           </div>
-          <div class="right">
-            <EntityDetails entity={category} />
-          </div>
+        </button>
+        {#if expandedCategory === true || expandedCategory === category.id}
           <div class="actions">
             <Button
               color="secondary"
@@ -144,50 +165,52 @@
                 visibleForm = 'translation'
               }}>Create translation</Button>
           </div>
-        </div>
-        {#if visibleForm === 'translation' && selectedCategory === category.id}
-          <paper>
-            <TranslationForm
-              categoryID={selectedCategory}
-              on:complete={() => (visibleForm = null)}>
-              <Button
-                slot="actions"
-                color="secondary"
-                icon={'cancel'}
-                on:click={() => {
-                  selectedCategory = ''
-                  visibleForm = null
-                }}>
-                Cancel
-              </Button>
-            </TranslationForm>
-          </paper>
         {/if}
-        <div class="translations" key="={category.id}">
-          {#each sortOn(Object.values(category.translations), ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn) as translation}
-            <paper class="translation-item">
-              <TranslationItem
-                {translation}
-                translationValues={translation.values}
-                categoryKey={category.key}
-                {locales}
-                bind:selectedLocale
-                on:complete={() => {
-                  visibleForm = null
-                }}
-                on:showForm={({ detail: { show } }) => {
-                  if (show) {
-                    visibleForm = 'translationValue'
-                    selectedTranslation = translation.id
-                    return
-                  }
-                  visibleForm = null
-                }}
-                showForm={visibleForm === 'translationValue' &&
-                  selectedTranslation === translation.id} />
+        {#if expandedCategory === true || expandedCategory === category.id}
+          {#if visibleForm === 'translation' && selectedCategory === category.id}
+            <paper>
+              <TranslationForm
+                categoryID={selectedCategory}
+                on:complete={() => (visibleForm = null)}>
+                <Button
+                  slot="actions"
+                  color="secondary"
+                  icon={'cancel'}
+                  on:click={() => {
+                    selectedCategory = ''
+                    visibleForm = null
+                  }}>
+                  Cancel
+                </Button>
+              </TranslationForm>
             </paper>
-          {/each}
-        </div>
+          {/if}
+          <div class="translations" key="={category.id}">
+            {#each sortOn(Object.values(category.translations), ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn) as translation}
+              <paper class="translation-item">
+                <TranslationItem
+                  {translation}
+                  translationValues={translation.values}
+                  categoryKey={category.key}
+                  {locales}
+                  bind:selectedLocale
+                  on:complete={() => {
+                    visibleForm = null
+                  }}
+                  on:showForm={({ detail: { show } }) => {
+                    if (show) {
+                      visibleForm = 'translationValue'
+                      selectedTranslation = translation.id
+                      return
+                    }
+                    visibleForm = null
+                  }}
+                  showForm={visibleForm === 'translationValue' &&
+                    selectedTranslation === translation.id} />
+              </paper>
+            {/each}
+          </div>
+        {/if}
       </paper>
     {/each}
   </div>

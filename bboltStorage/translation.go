@@ -89,7 +89,18 @@ func (bb *BBolter) GetTranslations() (map[string]types.Translation, error) {
 }
 
 func (bb *BBolter) GetTranslationFilter(filter ...types.Translation) (*types.Translation, error) {
-	var u *types.Translation
+	t, err := bb.GetTranslationsFilter(1, filter...)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range t {
+		return &v, nil
+	}
+	return nil, nil
+}
+func (bb *BBolter) GetTranslationsFilter(max int, filter ...types.Translation) (map[string]types.Translation, error) {
+	u := make(map[string]types.Translation)
+	len := 0
 	err := bb.Iterate(BucketTranslation, func(key, b []byte) bool {
 		var uu types.Translation
 		err := bb.Unmarshal(b, &uu)
@@ -104,8 +115,12 @@ func (bb *BBolter) GetTranslationFilter(filter ...types.Translation) (*types.Tra
 			if f.Key != "" && f.Key != uu.Key {
 				continue
 			}
-			u = &uu
-			return true
+			u[uu.ID] = uu
+			len++
+			if max == 0 {
+				return false
+			}
+			return len >= max
 		}
 		return false
 	})

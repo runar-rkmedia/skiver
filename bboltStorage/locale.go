@@ -69,6 +69,27 @@ func (bb *BBolter) GetLocaleByFirstMatch(name string) (*types.Locale, error) {
 	)
 	return t, err
 }
+
+func (bb *BBolter) GetLocaleByIDOrShortName(shortNameOrId string) (*types.Locale, error) {
+	p, err := bb.GetLocale(shortNameOrId)
+	if err == nil {
+		return &p, err
+	} else if err != ErrNotFound {
+		return nil, err
+	}
+	return bb.GetLocaleByShortName(shortNameOrId)
+}
+
+func (bb *BBolter) GetLocaleByShortName(shortName string) (*types.Locale, error) {
+	return bb.GetLocaleFilter(
+		types.Locale{Entity: types.Entity{ID: shortName}},
+		types.Locale{IETF: shortName},
+		types.Locale{Iso639_3: shortName},
+		types.Locale{Iso639_2: shortName},
+		types.Locale{Iso639_1: shortName},
+	)
+}
+
 func (bb *BBolter) GetLocaleFilter(filter ...types.Locale) (*types.Locale, error) {
 	var u *types.Locale
 	err := bb.Iterate(BucketLocale, func(key, b []byte) bool {

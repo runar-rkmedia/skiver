@@ -7,15 +7,18 @@ import (
 
 type ExtendedProject struct {
 	Project
+	Exists     *bool `json:"exists,omitempty"`
 	Categories map[string]ExtendedCategory
 	Locales    map[string]Locale
 }
 type ExtendedCategory struct {
 	Category
+	Exists       *bool `json:"exists,omitempty"`
 	Translations map[string]ExtendedTranslation
 }
 type ExtendedTranslation struct {
 	Translation
+	Exists *bool `json:"exists,omitempty"`
 	Values map[string]TranslationValue
 }
 
@@ -34,7 +37,11 @@ const (
 	LocaleKeyISO3 LocaleKey = "iso3"
 )
 
-func (t Translation) Extend(db Storage) (et ExtendedTranslation, err error) {
+func (t Translation) Extend(db Storage, options ...ExtendOptions) (et ExtendedTranslation, err error) {
+	opts, err := getExtendOptions(options)
+	if err != nil {
+		return
+	}
 	et.Translation = t
 	if len(et.ValueIDs) == 0 {
 		return
@@ -48,11 +55,19 @@ func (t Translation) Extend(db Storage) (et ExtendedTranslation, err error) {
 		if t == nil {
 			continue
 		}
-		et.Values[tid] = *t
+		key := tid
+		if opts.ByKeyLike {
+			key = t.LocaleID
+		}
+		et.Values[key] = *t
 	}
 	return
 }
-func (c Category) Extend(db Storage) (ec ExtendedCategory, err error) {
+func (c Category) Extend(db Storage, options ...ExtendOptions) (ec ExtendedCategory, err error) {
+	opts, err := getExtendOptions(options)
+	if err != nil {
+		return
+	}
 	ec.Category = c
 	if len(ec.TranslationIDs) == 0 {
 		return
@@ -66,13 +81,44 @@ func (c Category) Extend(db Storage) (ec ExtendedCategory, err error) {
 		if t == nil {
 			continue
 		}
-		et, err := t.Extend(db)
-		ec.Translations[tid] = et
+		et, err := t.Extend(db, opts)
+		if err != nil {
+			return ec, err
+		}
+		key := tid
+		if opts.ByKeyLike {
+			key = et.Key
+		}
+		ec.Translations[key] = et
 	}
 	return
 }
-func (p Project) Extend(db Storage) (ep ExtendedProject, err error) {
+
+type ExtendOptions struct {
+	ByID, ByKeyLike bool
+}
+
+func (o ExtendOptions) Validate() error {
+	if o.ByID && o.ByKeyLike {
+		return fmt.Errorf("ExtendOptions cannot have both ByID and ByKeyLike")
+	}
+	if !o.ByID && !o.ByKeyLike {
+		return fmt.Errorf("ExtendOptions must have one of ByID or ByKeyLike")
+	}
+	return nil
+}
+func getExtendOptions(options []ExtendOptions) (ExtendOptions, error) {
+	if len(options) == 0 {
+		return ExtendOptions{ByID: true}, nil
+	}
+	return options[0], options[0].Validate()
+}
+func (p Project) Extend(db Storage, options ...ExtendOptions) (ep ExtendedProject, err error) {
 	ep.Project = p
+	opts, err := getExtendOptions(options)
+	if err != nil {
+		return ep, err
+	}
 	locales, err := db.GetLocales()
 	if err != nil {
 		return
@@ -90,8 +136,12 @@ func (p Project) Extend(db Storage) (ep ExtendedProject, err error) {
 		if cat == nil {
 			continue
 		}
-		ec, err := cat.Extend(db)
-		ep.Categories[cid] = ec
+		ec, err := cat.Extend(db, opts)
+		key := cid
+		if opts.ByKeyLike {
+			key = ec.Key
+		}
+		ep.Categories[key] = ec
 	}
 	return
 }

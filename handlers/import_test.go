@@ -35,7 +35,7 @@ en:
 						Entity: types.Entity{
 							CreatedBy: "jim",
 						},
-						Title:       "",
+						Title:       "General",
 						Description: "",
 						Key:         "general",
 						ProjectID:   "proj-123",
