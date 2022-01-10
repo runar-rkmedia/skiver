@@ -11,13 +11,16 @@
     <Button color={'secondary'} disabled={page <= 0} on:click={() => page--}
       >Prev</Button>
     <page-count>
-      {page + 1} / {Math.ceil(count / pageSize)}
-      <select bind:value={pageSize}>
-        <option value={10}>10 per page</option>
-        <option value={50}>50 per page</option>
-        <option value={100}>100 per page</option>
-      </select>
+      item {page * pageSize + 1}-{Math.min(
+        Math.ceil((page + 1) * pageSize),
+        count
+      )}{#if count > pageSize}{' '}total: {count}{/if}
     </page-count>
+    <select bind:value={pageSize}>
+      <option value={10}>10 per page</option>
+      <option value={50}>50 per page</option>
+      <option value={100}>100 per page</option>
+    </select>
     <Button
       color={'secondary'}
       disabled={page + 1 > count / pageSize}
@@ -30,8 +33,16 @@
     <Button color={'secondary'} disabled={page <= 0} on:click={() => page--}
       >Prev</Button>
     <page-count>
-      {page + 1} / {Math.ceil(count / pageSize)}
+      item {page * pageSize + 1}-{Math.min(
+        Math.ceil((page + 1) * pageSize),
+        count
+      )}{#if count > pageSize}{' '}total: {count}{/if}
     </page-count>
+    <select bind:value={pageSize}>
+      <option value={10}>10 per page</option>
+      <option value={50}>50 per page</option>
+      <option value={100}>100 per page</option>
+    </select>
     <Button
       color={'secondary'}
       disabled={page + 1 > count / pageSize}

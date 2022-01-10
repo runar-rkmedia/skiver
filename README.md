@@ -15,10 +15,11 @@
   - [ ] `i18next`-format
     - [X] multiple-language 
     - [X] context-support
-    - [X]
+    - [ ] inferring of variables and nested keys. 
 
 ## Planned feature-set
 
+- [ ] Variables with examples to help translators and developers.
 - [ ] Server-side interpolation via API
 - [ ] Client-side live interpolation via library
 - [ ] Source-code integration with project, to show usage of translation.

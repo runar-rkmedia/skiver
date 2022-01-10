@@ -1,29 +1,24 @@
 <script lang="ts">
-  import { db } from 'api'
-
-  import { createEventDispatcher } from 'svelte'
-  import { state } from '../state'
   import TranslationValueRow from './TranslationValueRow.svelte'
-  import Alert from './Alert.svelte'
   import EntityDetails from './EntityDetails.svelte'
-  import Icon from './Icon.svelte'
+  import Button from './Button.svelte'
   export let translation: ApiDef.Translation
   /** Map by locale-id */
   export let translationValues: Record<string, ApiDef.TranslationValue>
   export let categoryKey: string
-  let showForm: boolean = true
+  export let selectedLocale = ''
 
-  let selectedLocale: string = ''
   export let locales: ApiDef.Locale[]
-  const dispatch = createEventDispatcher()
-  $: errs = Object.entries($db.responseStates.translationValue).reduce(
-    (r, [k, v]) => {
-      if (v && typeof v === 'object' && v.error) {
-        r.push(v)
+  $: contextKeys = Array.from(
+    Object.values(translationValues).reduce((r, tv) => {
+      if (!tv.context) {
+        return r
+      }
+      for (const c of Object.keys(tv.context)) {
+        r.add(c)
       }
       return r
-    },
-    [] as ApiDef.APIError[]
+    }, new Set<string>())
   )
 </script>
 
@@ -31,7 +26,9 @@
   <div class="desc">
     <h4>
       <code>
-        {`${categoryKey !== "___root___" ? categoryKey + "." : ''}${translation.key}`}
+        {`${categoryKey !== '___root___' ? categoryKey + '.' : ''}${
+          translation.key
+        }`}
       </code>
       {translation.title}
     </h4>
@@ -58,6 +55,37 @@
       {/if}
     </tbody>
   </table>
+
+  {#if contextKeys.length}
+    <hr />
+    <h5>Contexts</h5>
+    <p>
+      Contexts are variations of the default value, often used programmatically.
+      If not set, the value will typically fall back to the default value
+    </p>
+
+    {#each contextKeys as contextKey}
+      <h6>
+        {contextKey}
+      </h6>
+      <table>
+        <thead>
+          <th>Language</th>
+          <th>Value</th>
+        </thead>
+        <tbody>
+          {#each locales as locale}
+            <TranslationValueRow
+              translationID={translation.id}
+              bind:selectedLocale
+              {contextKey}
+              {locale}
+              translationValue={translationValues[locale.id]} />
+          {/each}
+        </tbody>
+      </table>
+    {/each}
+  {/if}
 {:else}
   ... (no translation???)
 {/if}

@@ -9,6 +9,9 @@ type localeSeeder interface {
 	GetLocaleFilter(filter ...Locale) (*Locale, error)
 }
 
+// We should use this list: https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
+// See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl
+
 func SeedLocales(db localeSeeder, locales []Locale) error {
 	if locales == nil || len(locales) == 0 {
 		// TODO: build this data from som external api/resours

@@ -12,17 +12,16 @@
 
 {#if categories.length}
   <Pagination count={categories.length} let:page let:pageSize>
-  {#each categories.slice(pageSize * page, pageSize * page + pageSize) as category (category.id)}
-    <CategoryItem
-      bind:category
-      bind:locales
-      bind:selectedLocale
-      bind:selectedTranslation
-      bind:selectedCategory
-      bind:expandedCategory
-      forceExpand={false}
-      bind:visibleForm
-    />
-  {/each}
+    {#each categories.slice(pageSize * page, pageSize * page + pageSize) as category (category.id)}
+      <CategoryItem
+        bind:category
+        bind:locales
+        bind:selectedLocale
+        bind:selectedTranslation
+        bind:selectedCategory
+        bind:expandedCategory
+        forceExpand={false}
+        bind:visibleForm />
+    {/each}
   </Pagination>
 {/if}

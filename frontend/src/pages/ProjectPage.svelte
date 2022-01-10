@@ -32,7 +32,6 @@
     'createdAt',
     'updatedAt',
   ]
-  let expandedCategory: string | true = true
 </script>
 
 {$t('a.hello')}

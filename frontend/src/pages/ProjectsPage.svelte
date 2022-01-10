@@ -1,9 +1,8 @@
 <script lagn="ts">
   import EntityList from '../components/EntityList.svelte'
   import ListItem from '../components/ListItem.svelte'
-  import { api, db } from '../api'
+  import { db } from '../api'
   import { state } from '../state'
-  import formatDate from '../dates'
   import Tip from '../components/Tip.svelte'
   import ProjectForm from 'forms/ProjectForm.svelte'
   import EntityDetails from 'components/EntityDetails.svelte'

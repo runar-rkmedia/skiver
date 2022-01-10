@@ -304,7 +304,6 @@ declare namespace ApiDef {
     export interface Translation {
         aliases?: string[];
         category?: string;
-        context?: string;
         /**
          * Time of which the entity was created in the database
          */
@@ -344,12 +343,14 @@ declare namespace ApiDef {
     }
     export interface TranslationInput {
         category_id: string;
-        context?: string; // ^[^\s]*$
         description?: string;
         key: string; // ^[^\s]*$
         title?: string;
     }
     export interface TranslationValue {
+        context?: {
+            [name: string]: string;
+        };
         /**
          * Time of which the entity was created in the database
          */
@@ -392,6 +393,9 @@ declare namespace ApiDef {
         value?: string;
     }
     export interface TranslationValueInput {
+        context?: {
+            [name: string]: string;
+        };
         locale_id: string;
         translation_id: string;
         value: string;

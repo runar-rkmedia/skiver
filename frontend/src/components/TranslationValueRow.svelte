@@ -3,21 +3,26 @@
   import { createEventDispatcher } from 'svelte'
   import { state } from '../state'
   import ApiResponseError from './ApiResponseError.svelte'
+  import Button from './Button.svelte'
   import EntityDetails from './EntityDetails.svelte'
   import Icon from './Icon.svelte'
   /** Map by locale-id */
 
-  let selectedLocale: string = ''
+  export let selectedLocale: string = ''
   const dispatch = createEventDispatcher()
   export let translationID: string
   export let locale: ApiDef.Locale
+  export let contextKey = ''
   export let translationValue: ApiDef.TranslationValue | undefined
+  $: value = contextKey
+    ? translationValue?.context?.[contextKey]
+    : translationValue?.value
 </script>
 
 <tr
   class="locale-item"
   class:auto-translate={translationValue?.source === 'system-translator'}
-  class:missing={!translationValue?.value}
+  class:missing={!value}
   class:selected={selectedLocale === locale.id}>
   <td>{locale.title}</td>
   <td>
@@ -51,7 +56,6 @@
         on:click={() => {
           dispatch('showForm', { locale, show: true })
           selectedLocale = locale.id
-          const value = translationValue?.value
           if (value) {
             $state.createTranslationValue.value = value
           }
@@ -60,7 +64,7 @@
           <Icon icon="warning" color="warning" />
         {/if}
         <Icon icon="edit" color="primary" />
-        {translationValue?.value || '<no value>'}
+        {value || '<no value>'}
       </div>
     {/if}
   </td>
