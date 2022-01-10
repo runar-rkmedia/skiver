@@ -132,7 +132,6 @@ func InferTitle(s string) string {
 		return strings.ToUpper(s)
 	}
 	str := strings.ReplaceAll(stringy.New(s).SnakeCase().ToLower(), "_", " ")
-	fmt.Println(s, str)
 	return strings.ToTitle(str[:1]) + str[1:]
 }
 

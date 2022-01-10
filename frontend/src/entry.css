@@ -81,6 +81,23 @@ paper paper {
   box-shadow: var(--elevation-6);
 }
 
+paper paper-count {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: var(--color-secondary);
+  padding-block: var(--size-2);
+  text-align: center;
+  min-width: 3.2ch;
+  border-color: var(--color-primary);
+  color: var(--var-grey-100);
+  border-style: solid;
+  border-width: 1px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--elevation-4);
+  transform: translate(-8px, -8px)
+}
+
 nav .active .fas {
   transform: scale(1.2);
 }

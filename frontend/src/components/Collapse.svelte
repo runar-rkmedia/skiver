@@ -6,7 +6,11 @@
 
   export let show = false
   export let key: string
+  export let forceShow = false
   onMount(() => {
+    if (forceShow) {
+      return
+    }
     if (!key) {
       return
     }
@@ -19,23 +23,27 @@
     class="btn-reset toggle"
     aria-label="Collapse"
     on:click|preventDefault={() => {
+      if (forceShow) {
+        return
+      }
       show = !show
       if (!key) {
         return
       }
       $state.collapse[key] = show
-    }}
-  >
+    }}>
     <slot name="title" class="title" />
-    <div class="icon">
-      {#if show}
-        <Icon icon={'collapseUp'} class="toggle-icon" />
-      {:else}
-        <Icon icon={'collapseDown'} class="toggle-icon" />
-      {/if}
-    </div>
+    {#if !forceShow}
+      <div class="icon">
+        {#if show}
+          <Icon icon={'collapseUp'} class="toggle-icon" />
+        {:else}
+          <Icon icon={'collapseDown'} class="toggle-icon" />
+        {/if}
+      </div>
+    {/if}
   </button>
-  {#if show}
+  {#if show || forceShow}
     <slot />
   {/if}
 </div>

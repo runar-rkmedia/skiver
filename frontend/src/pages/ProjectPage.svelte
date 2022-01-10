@@ -1,21 +1,14 @@
 <script lang="ts">
   import { db, api, projects } from 'api'
   import { state, toast } from 'state'
-  import { fly, slide, draw, fade, blur, crossfade } from 'svelte/transition'
   import Button from 'components/Button.svelte'
-  import type { AnyFunc } from 'simplytyped'
   import Collapse from 'components/Collapse.svelte'
   export let projectID: string
   import sortOn from 'sort-on'
-  import Icon from 'components/Icon.svelte'
-  import id from 'date-fns/locale/id'
   import { t } from '../util/i18next'
-  import { formatDate } from '../dates'
 
   import CategoryForm from 'forms/CategoryForm.svelte'
-  import TranslationValueForm from 'forms/TranslationValueForm.svelte'
-  import TranslationForm from 'forms/TranslationForm.svelte'
-  import TranslationItem from 'components/TranslationItem.svelte'
+  import CategoryList from '../components/CategoryList.svelte'
   import EntityDetails from 'components/EntityDetails.svelte'
 
   $: project = $projects[projectID]
@@ -63,7 +56,7 @@
   <EntityDetails entity={project} />
   {#if $state.projectSettings[projectID]?.localeIds}
     <paper>
-      <Collapse>
+      <Collapse key={'ps-' + projectID}>
         <h3 slot="title">Project-settings</h3>
         <h4>Only show these locales</h4>
         {#each Object.values($db.locale) as locale}
@@ -80,7 +73,7 @@
           </div>
         {/each}
         <!-- svelte-ignore a11y-missing-content -->
-        <a href={`/api/export/p=${project.shortName || project.id}`}>
+        <a href={`/api/export/p=${project.short_name || project.id}`}>
           Exported raw
         </a>
       </Collapse>
@@ -89,8 +82,8 @@
   <div>
     <h2>Categories</h2>
     <label>
-      Sort by: {$state.sortCategoryOn}
-      <select bind:value={$state.sortCategoryOn}>
+      Sort by: {$state.categorySortOn}
+      <select bind:value={$state.categorySortOn}>
         {#each categorySortOptions as option}
           <option value={option}>{option}</option>
         {/each}
@@ -119,117 +112,15 @@
         </CategoryForm>
       </paper>
     {/if}
-    {#each sortOn(Object.values(project.categories), ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn) as category}
-      <paper class="category-item" transition:fly|local>
-        <button
-          on:click={(e) => {
-            const el = e.target
-            console.log(e.target.tagName, e.target)
-            if (expandedCategory === category.id) {
-              expandedCategory = ''
-              return
-            }
-            expandedCategory = category.id
-            setTimeout(() => {
-              if (el.scrollIntoViewIfNeeded) {
-                el.scrollIntoViewIfNeeded(true)
-              } else {
-                el.scrollIntoView({ behaviour: 'smooth', block: 'center' })
-              }
-            }, 20)
-          }}>
-          <div class="category-item-header">
-            <h3>
-              <code>
-                {category.key}
-              </code>
-              {category.title}
-            </h3>
-            <div class="description">
-              {category.description || ''}
-            </div>
-            <div class="right">
-              <EntityDetails entity={category} />
-            </div>
-          </div>
-        </button>
-        {#if expandedCategory === true || expandedCategory === category.id}
-          <div class="actions">
-            <Button
-              color="secondary"
-              icon={'create'}
-              disabled={selectedCategory === category.id &&
-                visibleForm === 'translation'}
-              on:click={() => {
-                selectedCategory = category.id
-                visibleForm = 'translation'
-              }}>Create translation</Button>
-          </div>
-        {/if}
-        {#if expandedCategory === true || expandedCategory === category.id}
-          {#if visibleForm === 'translation' && selectedCategory === category.id}
-            <paper>
-              <TranslationForm
-                categoryID={selectedCategory}
-                on:complete={() => (visibleForm = null)}>
-                <Button
-                  slot="actions"
-                  color="secondary"
-                  icon={'cancel'}
-                  on:click={() => {
-                    selectedCategory = ''
-                    visibleForm = null
-                  }}>
-                  Cancel
-                </Button>
-              </TranslationForm>
-            </paper>
-          {/if}
-          <div class="translations" key="={category.id}">
-            {#each sortOn(Object.values(category.translations), ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn) as translation}
-              <paper class="translation-item">
-                <TranslationItem
-                  {translation}
-                  translationValues={translation.values}
-                  categoryKey={category.key}
-                  {locales}
-                  bind:selectedLocale
-                  on:complete={() => {
-                    visibleForm = null
-                  }}
-                  on:showForm={({ detail: { show } }) => {
-                    if (show) {
-                      visibleForm = 'translationValue'
-                      selectedTranslation = translation.id
-                      return
-                    }
-                    visibleForm = null
-                  }}
-                  showForm={visibleForm === 'translationValue' &&
-                    selectedTranslation === translation.id} />
-              </paper>
-            {/each}
-          </div>
-        {/if}
-      </paper>
-    {/each}
   </div>
+  <CategoryList
+    {locales}
+    {selectedCategory}
+    {selectedTranslation}
+    {selectedLocale}
+    {visibleForm}
+    categories={sortOn(
+      Object.values(project.categories),
+      ($state.categorySortAsc ? '' : '-') + $state.categorySortOn
+    )} />
 {/if}
-
-<style>
-  .right {
-    text-align: right;
-  }
-  .translation-item {
-    padding-block: var(--size-4);
-    padding-inline: var(--size-2);
-  }
-  .translation-item:not(:last-of-type) {
-    margin-block-end: var(--size-6);
-  }
-  .category-item-header {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr;
-    align-items: center;
-  }
-</style>
