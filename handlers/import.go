@@ -18,7 +18,14 @@ type Import struct {
 // i18n-translations are either:
 // a root-elemenent of type locale as key, or the category as key, or the translation as key.
 // Every leaf-node must be of type string
-func ImportI18NTranslation(locales []types.Locale, localeHint *types.Locale, projectID string, createdBy string, source types.CreatorSource, input map[string]interface{}) (*Import, error) {
+func ImportI18NTranslation(
+	locales []types.Locale,
+	localeHint *types.Locale,
+	projectID string,
+	createdBy string,
+	source types.CreatorSource,
+	input map[string]interface{},
+) (*Import, error) {
 	localeLength := len(locales)
 	if input == nil || len(input) == 0 {
 		return nil, fmt.Errorf("Empty input")
@@ -75,7 +82,8 @@ func ImportI18NTranslation(locales []types.Locale, localeHint *types.Locale, pro
 			}
 			// if len(split) > 2 {
 			// }
-			translation := node.MidPath
+			// translation := node.MidPath
+			translation, context := cutLast(node.MidPath, "_")
 			translationValue := node.Value
 			if _, ok := imp.Categories[category]; !ok {
 				imp.Categories[category] = types.ExtendedCategory{}
@@ -98,12 +106,19 @@ func ImportI18NTranslation(locales []types.Locale, localeHint *types.Locale, pro
 			if t.Values == nil {
 				t.Values = make(map[string]types.TranslationValue)
 			}
-			tvId := translationValue + locale.ID
+			tvId := locale.ID
 			if _, ok := t.Values[tvId]; !ok {
 				t.Values[tvId] = types.TranslationValue{}
 			}
 			tv := t.Values[tvId]
-			tv.Value = translationValue
+			if context != "" {
+				if tv.Context == nil {
+					tv.Context = map[string]string{}
+				}
+				tv.Context[context] = translationValue
+			} else {
+				tv.Value = translationValue
+			}
 			tv.LocaleID = locale.ID
 			tv.CreatedBy = createdBy
 			tv.Source = source
@@ -116,6 +131,28 @@ func ImportI18NTranslation(locales []types.Locale, localeHint *types.Locale, pro
 	}
 
 	return &imp, nil
+}
+
+func cutLast(s, sep string) (string, string) {
+	if s == "" {
+		return "", ""
+	}
+	split := strings.Split(s, sep)
+	i := len(split) - 1
+	if i == 0 {
+		return s, ""
+	}
+	first := strings.Join(split[:i], sep)
+	last := strings.Join(split[i:], sep)
+	if first == "" {
+		if last == "" {
+			return "", ""
+		}
+		unos, dos := cutLast(last, sep)
+		return sep + unos, dos
+	}
+
+	return first, last
 }
 
 // TODO: implement

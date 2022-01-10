@@ -25,12 +25,6 @@ type TranslationInput struct {
 	// Min Length: 3
 	CategoryID *string `json:"category_id"`
 
-	// context
-	// Max Length: 400
-	// Min Length: 1
-	// Pattern: ^[^\s]*$
-	Context string `json:"context,omitempty"`
-
 	// description
 	// Max Length: 8000
 	// Min Length: 1
@@ -54,10 +48,6 @@ func (m *TranslationInput) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateCategoryID(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateContext(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -90,26 +80,6 @@ func (m *TranslationInput) validateCategoryID(formats strfmt.Registry) error {
 	}
 
 	if err := validate.MaxLength("category_id", "body", *m.CategoryID, 100); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *TranslationInput) validateContext(formats strfmt.Registry) error {
-	if swag.IsZero(m.Context) { // not required
-		return nil
-	}
-
-	if err := validate.MinLength("context", "body", m.Context, 1); err != nil {
-		return err
-	}
-
-	if err := validate.MaxLength("context", "body", m.Context, 400); err != nil {
-		return err
-	}
-
-	if err := validate.Pattern("context", "body", m.Context, `^[^\s]*$`); err != nil {
 		return err
 	}
 

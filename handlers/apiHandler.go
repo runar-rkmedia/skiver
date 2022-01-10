@@ -451,7 +451,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					localesSlice[i] = v
 					i++
 				}
-				imp, err := ImportI18NTranslation(localesSlice, locale, project.ID, session.User.ID, types.CreatorSourceTranslator, input)
+				imp, err := ImportI18NTranslation(localesSlice, locale, project.ID, session.User.ID, types.CreatorSourceImport, input)
 				if err != nil {
 					rc.WriteErr(err, requestContext.CodeErrImport)
 					return
@@ -534,43 +534,47 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 								}
 							}
 						}
-						for k, tv := range t.Values {
-							if exT == nil {
-								// TODO: Create translationValue
-								rc.WriteError("condition not implemented", requestContext.CodeErrMethodNotAllowed, tv)
-								return
+						if exT == nil {
+							if dry {
+								exT = &t
+								exT.Exists = boolPointer(false)
 							} else {
-								tv.TranslationID = exT.ID
-								exTv, existsTV := exT.Values[tv.LocaleID]
-								if existsTV {
-									if exTv.Value != tv.Value {
-										exTv.Value = tv.Value
-										if !dry {
-											updated, err := ctx.DB.UpdateTranslationValue(exTv)
-											if err != nil {
-												rc.WriteError(err.Error(), requestContext.CodeErrUpdateTranslationValue, tv)
-												return
-											}
-											updates.TranslationValueUpdates[updated.ID] = updated
-										} else {
-											updates.TranslationValueUpdates[exTv.ID] = exTv
-										}
-									}
-								} else {
+								// TODO: Create translationValue
+								rc.WriteError("condition not implemented: translation did not resolve", requestContext.CodeErrNotImplemented, map[string]interface{}{"translation": t})
+								return
+							}
+						}
+						for k, tv := range t.Values {
+							tv.TranslationID = exT.ID
+							exTv, existsTV := exT.Values[tv.LocaleID]
+							if existsTV {
+								if exTv.Value != tv.Value {
+									exTv.Value = tv.Value
 									if !dry {
-										created, err := ctx.DB.CreateTranslationValue(tv)
+										updated, err := ctx.DB.UpdateTranslationValue(exTv)
 										if err != nil {
-											details := struct {
-												Input    types.TranslationValue
-												Response types.TranslationValue
-											}{tv, created}
-											rc.WriteError(err.Error(), requestContext.CodeErrCreateTranslationValue, details)
+											rc.WriteError(err.Error(), requestContext.CodeErrUpdateTranslationValue, tv)
 											return
 										}
-										updates.TranslationsValueCreations[created.ID] = created
+										updates.TranslationValueUpdates[updated.ID] = updated
 									} else {
-										updates.TranslationsValueCreations["_toCreate_in_Category_"+cKey+"_"+"under_Translation_"+tKey+"_"+k] = tv
+										updates.TranslationValueUpdates[exTv.ID] = exTv
 									}
+								}
+							} else {
+								if !dry {
+									created, err := ctx.DB.CreateTranslationValue(tv)
+									if err != nil {
+										details := struct {
+											Input    types.TranslationValue
+											Response types.TranslationValue
+										}{tv, created}
+										rc.WriteError(err.Error(), requestContext.CodeErrCreateTranslationValue, details)
+										return
+									}
+									updates.TranslationsValueCreations[created.ID] = created
+								} else {
+									updates.TranslationsValueCreations["_toCreate_in_Category_"+cKey+"_"+"under_Translation_"+tKey+"_"+k] = tv
 								}
 							}
 						}
@@ -635,7 +639,6 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					// TranslationInput: j,
 					CategoryID:  *j.CategoryID,
 					Key:         *j.Key,
-					Context:     j.Context,
 					Description: j.Description,
 					Title:       j.Title,
 				}
@@ -683,6 +686,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				tv := types.TranslationValue{
 					LocaleID:      *j.LocaleID,
 					TranslationID: *j.TranslationID,
+					Context:       j.Context,
 					Value:         *j.Value,
 				}
 				tv.CreatedBy = session.User.ID

@@ -21,7 +21,6 @@ type Locale struct {
 type Translation struct {
 	Entity
 	Aliases             []string               `json:"aliases"`
-	Context             string                 `json:"context,omitempty"`
 	ParentTranslationID string                 `json:"parent_translation,omitempty"`
 	Description         string                 `json:"description,omitempty"`
 	Key                 string                 `json:"key,omitempty"`
@@ -43,7 +42,8 @@ type TranslationValue struct {
 	// Translation ID
 	TranslationID string `json:"translation_id,omitempty"`
 	// Indicating from where the value was created from, usually user, but could be a tranlator-service, like Bing.
-	Source CreatorSource `json:"source,omitempty"`
+	Source  CreatorSource     `json:"source,omitempty"`
+	Context map[string]string `json:"context,omitempty"`
 }
 
 type CreatorSource string

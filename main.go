@@ -130,7 +130,7 @@ func (m *translationHook) Publish(kind, variant string, contents interface{}) {
 		}
 		if tv.Source == types.CreatorSourceTranslator {
 			if debug {
-				m.l.Debug().Interface("content", contents).Msg("ingoring TranslationValue since it was sourced from me")
+				m.l.Debug().Interface("content", contents).Msg("ignoring TranslationValue since it was sourced from me")
 			}
 			return
 		}

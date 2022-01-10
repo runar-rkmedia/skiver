@@ -25,9 +25,6 @@ type Translation struct {
 	// category ID
 	CategoryID string `json:"category,omitempty"`
 
-	// context
-	Context string `json:"context,omitempty"`
-
 	// Time of which the entity was created in the database
 	// Required: true
 	// Format: date-time

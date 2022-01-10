@@ -19,6 +19,9 @@ import (
 // swagger:model TranslationValueInput
 type TranslationValueInput struct {
 
+	// context
+	Context map[string]string `json:"context,omitempty"`
+
 	// locale id
 	// Required: true
 	// Max Length: 100
@@ -36,6 +39,7 @@ type TranslationValueInput struct {
 	// Max Length: 8000
 	// Min Length: 0
 	Value *string `json:"value"`
+
 }
 
 // Validate validates this translation value input

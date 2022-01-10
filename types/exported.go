@@ -183,9 +183,6 @@ func ExportI18N(ex ExtendedProject, options ExportI18NOptions) (i18n I18N, err e
 		}
 		for _, t := range c.Translations {
 			tKey := t.Key
-			if t.Context != "" {
-				tKey = tKey + "_" + t.Context
-			}
 			for _, v := range t.Values {
 				if v.Value == "" {
 					continue
@@ -201,6 +198,12 @@ func ExportI18N(ex ExtendedProject, options ExportI18NOptions) (i18n I18N, err e
 				}
 
 				i18n[localeKey][cKey][tKey] = v.Value
+				if v.Context != nil {
+					for context, v := range v.Context {
+						tKey = tKey + "_" + context
+						i18n[localeKey][cKey][tKey] = v
+					}
+				}
 			}
 		}
 	}

@@ -40,6 +40,8 @@ func WriteError(msg string, code ErrorCodes, r *http.Request, rw http.ResponseWr
 		// duplicates??
 	case CodeErrNotFoundLocale, CodeErrNoRoute:
 		statusCode = http.StatusNotFound
+	case CodeErrNotImplemented:
+		statusCode = http.StatusNotImplemented
 	case CodeErrReadBody, CodeErrDBCreateLocale:
 		statusCode = http.StatusBadGateway
 	case CodeErrUnmarshal, CodeErrMarshal, CodeErrJmesPath, CodeErrJmesPathMarshal, CodeErrInputValidation, CodeErrIDNonValid, CodeErrIDTooLong, CodeErrIDEmpty:

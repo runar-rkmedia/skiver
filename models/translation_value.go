@@ -19,6 +19,9 @@ import (
 // swagger:model TranslationValue
 type TranslationValue struct {
 
+	// context
+	Context map[string]string `json:"context,omitempty"`
+
 	// Time of which the entity was created in the database
 	// Required: true
 	// Format: date-time

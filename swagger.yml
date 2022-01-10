@@ -493,9 +493,6 @@ definitions:
       category:
         type: string
         x-go-name: CategoryID
-      context:
-        type: string
-        x-go-name: Context
       createdAt:
         description: Time of which the entity was created in the database
         format: date-time
@@ -563,11 +560,6 @@ definitions:
         maxLength: 100
         minLength: 3
         type: string
-      context:
-        maxLength: 400
-        minLength: 1
-        pattern: ^[^\s]*$
-        type: string
       description:
         maxLength: 8000
         minLength: 1
@@ -587,6 +579,11 @@ definitions:
     type: object
   TranslationValue:
     properties:
+      context:
+        additionalProperties:
+          type: string
+        type: object
+        x-go-name: Context
       createdAt:
         description: Time of which the entity was created in the database
         format: date-time
@@ -638,6 +635,10 @@ definitions:
     x-go-package: github.com/runar-rkmedia/skiver/types
   TranslationValueInput:
     properties:
+      context:
+        additionalProperties:
+          type: string
+        type: object
       locale_id:
         maxLength: 100
         minLength: 1

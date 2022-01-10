@@ -44,11 +44,6 @@ definitions:
         pattern: ^[^\s]*$
         minLength: 1
         maxLength: 400
-      context:
-        type: string
-        pattern: ^[^\s]*$
-        minLength: 1
-        maxLength: 400
       title:
         type: string
         minLength: 1
@@ -104,6 +99,10 @@ definitions:
         maxLength: 8000
         minLength: 0
         type: string
+      context:
+        type: object
+        additionalProperties:
+          type: string
     type: object
     required:
       - translation_id
@@ -590,8 +589,6 @@ responses:
       items:
         $ref: '#/definitions/TranslationValue'
       type: array
-schemes:
-- http
 swagger: "2.0"
 tags: 
   - name: project

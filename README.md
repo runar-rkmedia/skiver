@@ -8,11 +8,19 @@
 - [X] Multi-project support
 - [X] i18n-compliant export
 - [X] Auto-translate via external translation-service (Bing Translate, Libre Translate)
-- [ ] Report missing translation
+- [X] Report missing translation
+- [ ] Import translations
+  - [X] General AST
+  - [X] Dry run, with preview of updates and creations
+  - [ ] `i18next`-format
+    - [X] multiple-language 
+    - [X] context-support
+    - [X]
 
 ## Planned feature-set
 
-- [ ] Server-side translating
+- [ ] Server-side interpolation via API
+- [ ] Client-side live interpolation via library
 - [ ] Source-code integration with project, to show usage of translation.
       
      E.g.
@@ -26,6 +34,7 @@
 - [ ] Upload of images to show usage of translation.
 - [ ] Sharing of translations between projects.
 - [ ] Multi-organization support
+- [ ] Typescript-type-generation with rich comments
 
 
 ## Things that are a mess, and need refactoring
