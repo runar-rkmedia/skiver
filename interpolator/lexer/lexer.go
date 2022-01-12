@@ -1,7 +1,7 @@
 package lexer
 
 type Lexer struct {
-	input          string
+	Input          string
 	position       int
 	readPosition   int
 	length         int
@@ -12,7 +12,7 @@ type Lexer struct {
 }
 
 func NewLexer(input string, tokenMap map[string]TokenKind) *Lexer {
-	l := Lexer{input: input, length: len(input), tokenMap: tokenMap}
+	l := Lexer{Input: input, length: len(input), tokenMap: tokenMap}
 	for k := range tokenMap {
 		if len(k) > l.maxTokenLength {
 			l.maxTokenLength = len(k)
@@ -23,10 +23,10 @@ func NewLexer(input string, tokenMap map[string]TokenKind) *Lexer {
 }
 
 func (l *Lexer) NewInput(input string) {
-	l.input = input
+	l.Input = input
 	l.position = 0
 	l.readPosition = 0
-	l.length = len(l.input)
+	l.length = len(l.Input)
 	l.ch = 0
 	l.readChar()
 }
@@ -35,7 +35,7 @@ func (l *Lexer) readChar() {
 	if l.readPosition >= l.length {
 		l.ch = 0
 	} else {
-		l.ch = l.input[l.readPosition]
+		l.ch = l.Input[l.readPosition]
 	}
 	l.position = l.readPosition
 	l.readPosition += 1
@@ -45,7 +45,7 @@ func (l *Lexer) peekCharAt(i int) byte {
 	if i >= l.length {
 		return 0
 	} else {
-		return l.input[i]
+		return l.Input[i]
 	}
 }
 func (l *Lexer) peekChar() byte {
@@ -82,7 +82,7 @@ func (l *Lexer) FindAllTokens() []Token {
 		tok := l.peekToken(l.position)
 		if tok != nil {
 			if lastIndex != tok.Start {
-				literal := newToken(TokenLiteral, l.input[lastIndex:tok.Start], lastIndex, tok.Start)
+				literal := newToken(TokenLiteral, l.Input[lastIndex:tok.Start], lastIndex, tok.Start)
 				l.Tokens = append(l.Tokens, literal)
 			}
 			lastIndex = tok.End

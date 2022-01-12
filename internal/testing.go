@@ -8,10 +8,11 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/go-test/deep"
 	"github.com/gookit/color"
+	"github.com/pelletier/go-toml"
 )
 
 var (
-	DefaultCompareOptions = CompareOptions{true, true, true, false}
+	DefaultCompareOptions = CompareOptions{true, true, true, false, false}
 	// red                   = color.FgRed.Render
 	cName = color.Green.Render
 	cGot  = color.Yellow.Render
@@ -31,6 +32,9 @@ func Compare(name string, got, want interface{}, options ...CompareOptions) erro
 		panic("Invlid options")
 	}
 
+	if opts.TOML || opts.JSON {
+		opts.Yaml = false
+	}
 	if opts.Diff {
 		if diff := deep.Equal(got, want); diff != nil {
 			var g interface{} = got
@@ -39,13 +43,20 @@ func Compare(name string, got, want interface{}, options ...CompareOptions) erro
 			if opts.Yaml {
 				g = MustYaml(got)
 				w = MustYaml(want)
-				d = MustYaml(diff)
+				// d = MustYaml(diff)
 			}
 			if opts.JSON {
 				g = MustJSON(got)
 				w = MustJSON(want)
-				d = MustJSON(diff)
+				// d = MustJSON(diff)
 			}
+			// Toml looks weird with some inputs
+			if opts.TOML {
+				g = MustToml(got)
+				w = MustToml(want)
+			}
+			// Toml looks great on diffs!
+			d = MustToml(diff)
 			return fmt.Errorf("YAML: %s: \n%v\ndiff:\n%s\nwant:\n%v", cName(name), cGot(g), cDiff(d), cWant(w))
 		}
 	}
@@ -61,6 +72,10 @@ func Compare(name string, got, want interface{}, options ...CompareOptions) erro
 				g = MustJSON(got)
 				w = MustYaml(want)
 			}
+			if opts.Yaml {
+				g = MustToml(got)
+				w = MustToml(want)
+			}
 			return fmt.Errorf("YAML: %s: \n%v\nwant:\n%v", cName(name), cGot(g), cWant(w))
 		}
 	}
@@ -75,6 +90,7 @@ type CompareOptions struct {
 	// Produces output in yaml for readability
 	Yaml bool
 	JSON bool
+	TOML bool
 }
 
 func MustYaml(j interface{}) string {
@@ -89,5 +105,20 @@ func MustJSON(j interface{}) string {
 	if err != nil {
 		panic(fmt.Errorf("Failed to marshal: %w\n\n%v", err, j))
 	}
+	return string(b)
+}
+func MustToml(j interface{}) string {
+	s := MustJSON(j)
+	// var k interface{}
+	var k map[string]interface{}
+	err := json.Unmarshal([]byte(s), &k)
+	if err != nil {
+		return s
+	}
+	b, err := toml.Marshal(k)
+	if err != nil {
+		panic(fmt.Errorf("Failed to marshal: %w\n\n%v", err, s))
+	}
+	fmt.Println("ok", k)
 	return string(b)
 }
