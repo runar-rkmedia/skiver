@@ -346,6 +346,14 @@ declare namespace ApiDef {
         description?: string;
         key: string; // ^[^\s]*$
         title?: string;
+        /**
+         * key/value type. The value can be any type, but the key must a string.
+         */
+        variables?: {
+            [name: string]: {
+                [key: string]: any;
+            };
+        };
     }
     export interface TranslationValue {
         context?: {
@@ -405,6 +413,14 @@ declare namespace ApiDef {
     }
 }
 declare namespace ApiPaths {
+    namespace CreateTranslation {
+        export interface BodyParameters {
+            TranslationInput: Parameters.TranslationInput;
+        }
+        namespace Parameters {
+            export type TranslationInput = ApiDef.TranslationInput;
+        }
+    }
     namespace GetExport {
         namespace Parameters {
             /**

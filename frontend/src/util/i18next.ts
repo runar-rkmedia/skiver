@@ -44,8 +44,31 @@ function createL10nStore() {
     subscribe,
     init,
     changeLanguage,
+    i18next,
   };
 }
 
 export const t = createL10nStore();
 t.init()
+
+/** Used to add translation-resources for use in preview.*/
+export function addPreviewTranslationResource(localeKey: string, ns: string, categoryKey: string, key: string, value: string, context?: string) {
+  if (!localeKey) {
+    return
+  }
+  if (!ns) {
+    return
+  }
+  if (!categoryKey) {
+    return
+  }
+  if (!key) {
+    return
+  }
+  const cat = categoryKey === '___root___' ? "" : categoryKey
+  const kk = context ? key + "_" + context : key
+  const k = cat ? cat + "." + kk : kk
+  // TODO: check if this is performance-heavy.
+  i18next.addResource(localeKey, '__derived__' + ns, k, value)
+}
+

@@ -8,34 +8,16 @@
   import type { TFunction } from 'i18next'
   import Alert from './Alert.svelte'
   let myT: TFunction
+  // $: myT = t.i18next.getFixedT(locale, '__derived__' + ns)
   $: {
-    if (ns && locale && input) {
-      console.log('updating input', t.i18next)
+    if (ns && locale && key) {
+      console.log('updating input', t.i18next, { ns, locale, key, input })
+      // TODO: we might need to debounce this...
       t.i18next.addResource(locale, '__derived__' + ns, key, input)
       myT = t.i18next.getFixedT(locale, '__derived__' + ns)
+      const b = t.i18next.getResourceBundle(locale, '__derived__' + ns)
+      console.log('bundle', b)
     }
-  }
-
-  const defaultVariables = {
-    count: 42,
-    total: 42,
-    year: `{{now | formatDate "2006" }}`,
-    color: 'blue',
-    colour: 'green',
-    error: 'Simulated error',
-    errormessage: 'Simulated error',
-    errormsg: 'Simulated error',
-    regionname: 'Gigantis',
-    region: 'Gigantis',
-    country: 'Japan',
-    countryname: 'Japan',
-    companyname: 'Wily',
-    name: 'Douglas',
-    price: 'Ƶ5000',
-    email: 'roll@example.com',
-    date: new Date('1987-12-17T06:00:00-09:00'),
-    expires: new Date('1995-03-24T06:00:00-09:00'),
-    days: 6,
   }
 </script>
 
@@ -44,11 +26,13 @@
     <div />
 
     <span>
-      {myT(key, { defaultVariables, ...variables })}
+      {myT(key, variables)}
     </span>
   </div>
+  <code>Key: {key}</code>
+  <code>Locale: {locale}</code>
+  <code>Project: {ns}</code>
 {/if}
-<input bind:value={input} />
 
 {#if !ns}
   <Alert kind="warning">Cannot preview without namespace</Alert>

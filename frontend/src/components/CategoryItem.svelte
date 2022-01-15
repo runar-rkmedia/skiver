@@ -18,6 +18,7 @@
   import EntityDetails from 'components/EntityDetails.svelte'
   export let category: ApiDef.Category
   export let locales: ApiDef.Locale[]
+  export let projectKey: ApiDef.Locale[]
   export let selectedLocale: string
   export let selectedTranslation: string
   export let selectedCategory: string
@@ -32,12 +33,12 @@
   <Collapse key={category.id} forceShow={forceExpand}>
     <div class="category-item-header" slot="title">
       <h3>
-        {#if category.key !== "___root___"}
-        <code>
-          {category.key}
-        </code>
+        {#if category.key !== '___root___'}
+          <code>
+            {category.key}
+          </code>
         {/if}
-        {category.title} 
+        {category.title}
       </h3>
       <div class="description">
         {category.description || ''}
@@ -80,6 +81,7 @@
         <paper class="translation-item">
           <TranslationItem
             {translation}
+            {projectKey}
             translationValues={translation.values}
             categoryKey={category.key}
             {locales}

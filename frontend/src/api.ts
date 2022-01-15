@@ -5,6 +5,7 @@ import type { AnyFunc } from 'simplytyped'
 import { parseDate } from 'dates'
 import { isPast } from 'date-fns'
 import { derived } from 'svelte/store'
+import { addPreviewTranslationResource } from 'util/i18next'
 export function objectKeys<T extends object>(obj: T) {
   return Object.keys(obj) as Array<keyof T>
 }
@@ -192,6 +193,9 @@ export const projects = derived(db, ($db) =>
               }
               // NOTE: translations are indexed by their locale-id, not their id.
               rtv[tv.locale_id!] = tv
+              // This might be really performance intesive, depending on how i18next has implemented it.
+              // The reason we do this is to add every resource as a previewable item.
+              // addPreviewTranslationResource(tv.locale_id, project.short_name || project.id, c.key, t.key, tv.value, t.context)
               return rtv
             }, {})
             rt[t.id] = t

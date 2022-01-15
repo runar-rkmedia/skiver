@@ -16,6 +16,7 @@
     - [X] multiple-language 
     - [X] context-support
     - [ ] inferring of variables and nested keys. 
+- [ ] Multi-organization support
 
 ## Planned feature-set
 
@@ -34,7 +35,6 @@
        ```
 - [ ] Upload of images to show usage of translation.
 - [ ] Sharing of translations between projects.
-- [ ] Multi-organization support
 - [ ] Typescript-type-generation with rich comments
 
 

@@ -54,7 +54,6 @@
 </script>
 
 <form>
-  Existing: {existingID}
   <!-- svelte-ignore a11y-autofocus -->
   <textarea
     autofocus
@@ -62,6 +61,9 @@
     bind:value={$state.createTranslationValue.value}
     type="text"
     name="value" />
+  <div>
+    <slot name="preview">No preview available</slot>
+  </div>
   <Button
     color="primary"
     type="submit"

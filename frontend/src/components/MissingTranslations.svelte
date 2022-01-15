@@ -174,6 +174,7 @@ Still, we should present this information.
       {#each missings as missing}
         {#if missing.translation_id && $db.translation[missing.translation_id]}
           <TranslationItem
+            projectKey={projectIsh}
             translation={$db.translation[missing.translation_id]}
             translationValues={// This is terribale, I am sorry...
             $projects[projectKeyMap[projectIsh]?.id]?.categories?.[

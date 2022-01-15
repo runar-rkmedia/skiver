@@ -4,6 +4,7 @@
   export let categories: ApiDef.Category[]
   export let locales: ApiDef.Locale[]
   export let selectedLocale: string
+  export let projectKey: string
   export let selectedTranslation: string
   export let selectedCategory: string
   export let visibleForm: string
@@ -15,6 +16,7 @@
     {#each categories.slice(pageSize * page, pageSize * page + pageSize) as category (category.id)}
       <CategoryItem
         bind:category
+        bind:projectKey
         bind:locales
         bind:selectedLocale
         bind:selectedTranslation

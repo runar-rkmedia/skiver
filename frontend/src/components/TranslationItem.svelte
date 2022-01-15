@@ -1,16 +1,16 @@
 <script lang="ts">
   import TranslationValueRow from './TranslationValueRow.svelte'
   import EntityDetails from './EntityDetails.svelte'
-  import Button from './Button.svelte'
   export let translation: ApiDef.Translation
   /** Map by locale-id */
   export let translationValues: Record<string, ApiDef.TranslationValue>
   export let categoryKey: string
+  export let projectKey: string
   export let selectedLocale = ''
 
   export let locales: ApiDef.Locale[]
   $: contextKeys = Array.from(
-    Object.values(translationValues).reduce((r, tv) => {
+    Object.values(translationValues || {}).reduce((r, tv) => {
       if (!tv.context) {
         return r
       }
@@ -39,16 +39,20 @@
       <EntityDetails entity={translation} />
     </div>
   </div>
+  Selected {selectedLocale}
   <table>
     <thead>
       <th>Language</th>
       <th>Value</th>
     </thead>
     <tbody>
-      {#if locales}
+      {#if locales && translationValues}
         {#each locales as locale}
           <TranslationValueRow
-            translationID={translation.id}
+            {categoryKey}
+            {projectKey}
+            bind:selectedLocale
+            {translation}
             {locale}
             translationValue={translationValues[locale.id]} />
         {/each}
@@ -56,7 +60,7 @@
     </tbody>
   </table>
 
-  {#if contextKeys.length}
+  {#if contextKeys && contextKeys.length}
     <hr />
     <h5>Contexts</h5>
     <p>
@@ -76,7 +80,9 @@
         <tbody>
           {#each locales as locale}
             <TranslationValueRow
-              translationID={translation.id}
+              {categoryKey}
+              {projectKey}
+              {translation}
               bind:selectedLocale
               {contextKey}
               {locale}
@@ -84,6 +90,16 @@
           {/each}
         </tbody>
       </table>
+    {/each}
+  {/if}
+  {#if translation?.variables}
+    <h6>Variables</h6>
+    {#each Object.entries(translation.variables) as [k, v]}
+      <var-pair>
+        <var-key>{k}</var-key>
+        <var-value>{JSON.stringify(v)}</var-value>
+      </var-pair>
+      <!-- TODO: allow editing -->
     {/each}
   {/if}
 {:else}
@@ -104,5 +120,11 @@
   th {
     padding-inline: var(--size-4);
     padding-block: var(--size-2);
+  }
+  var-pair {
+    display: block;
+  }
+  var-key::after {
+    content: ': ';
   }
 </style>

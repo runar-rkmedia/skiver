@@ -1,6 +1,6 @@
 <script lang="ts">
   import { db, api, projects } from 'api'
-  import { state, toast } from 'state'
+  import { state } from 'state'
   import Button from 'components/Button.svelte'
   import Collapse from 'components/Collapse.svelte'
   export let projectID: string
@@ -118,6 +118,7 @@
     {selectedTranslation}
     {selectedLocale}
     {visibleForm}
+    projectKey={project.short_name || project.id}
     categories={sortOn(
       Object.values(project.categories),
       ($state.categorySortAsc ? '' : '-') + $state.categorySortOn
