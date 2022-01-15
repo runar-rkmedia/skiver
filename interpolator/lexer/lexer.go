@@ -12,6 +12,9 @@ type Lexer struct {
 }
 
 func NewLexer(input string, tokenMap map[string]TokenKind) *Lexer {
+	if len(tokenMap) == 0 {
+		tokenMap = DefaultI18NextLexerMap
+	}
 	l := Lexer{Input: input, length: len(input), tokenMap: tokenMap}
 	for k := range tokenMap {
 		if len(k) > l.maxTokenLength {
@@ -21,6 +24,17 @@ func NewLexer(input string, tokenMap map[string]TokenKind) *Lexer {
 	l.readChar()
 	return &l
 }
+
+var (
+	// The default map that i18next uses
+	DefaultI18NextLexerMap = map[string]TokenKind{
+		"{{":  TokenPrefix,
+		"}}":  TokenSuffix,
+		",":   TokenFormatSeperator,
+		"$t(": TokenNestingPrefix,
+		")":   TokenNestingSuffix,
+	}
+)
 
 func (l *Lexer) NewInput(input string) {
 	l.Input = input

@@ -52,6 +52,11 @@ definitions:
         type: string
         minLength: 1
         maxLength: 8000
+      variables:
+        type: object
+        description: "key/value type. The value can be any type, but the key must a string."
+        additionalProperties:
+          type: object
         
   LocaleInput:
     type: object
@@ -409,6 +414,12 @@ paths:
     post:
       summary: Create a new translation
       operationId: createTranslation
+      parameters:
+      - in: body
+        required: true
+        name: TranslationInput
+        schema:
+          $ref: '#/definitions/TranslationInput'
       responses:
         "200":
           $ref: '#/responses/TranslationResponse'

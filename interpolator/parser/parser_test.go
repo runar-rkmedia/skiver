@@ -97,7 +97,7 @@ func TestParser(t *testing.T) {
 
 		// {
 		// 	"Multiple nestings, interpolations, with eobjects",
-		// 	`They have $t(girls, {\"count\": {{girls}} }) and $t(boys, {\"count\": {{boys}} })`,
+		// 	`They have $t(girls, "count": {{girls}} }) and $t(boys, "count": {{boys}} })`,
 		// 	Ast{
 		// 		Nodes: []Node{
 		// 			{

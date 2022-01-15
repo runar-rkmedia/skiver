@@ -451,7 +451,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					localesSlice[i] = v
 					i++
 				}
-				imp, err := ImportI18NTranslation(localesSlice, locale, project.ID, session.User.ID, types.CreatorSourceImport, input)
+				imp, warnings, err := ImportI18NTranslation(localesSlice, locale, project.ID, session.User.ID, types.CreatorSourceImport, input)
 				if err != nil {
 					rc.WriteErr(err, requestContext.CodeErrImport)
 					return
@@ -481,6 +481,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					map[string]types.Category{},
 				}
 				// TODO: this should ideally all be done in a single atomic commit.
+				// TODO: handle changes to translation-values
 				for cKey, cat := range imp.Categories {
 					exCat, catExists := ex.Categories[cat.Key]
 					cat.Exists = &catExists
@@ -585,14 +586,16 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				}
 
 				out := struct {
-					Changes Updates
-					Imp     Import
-					Ex      types.ExtendedProject
+					Changes  Updates
+					Imp      Import
+					Ex       types.ExtendedProject
+					Warnings []Warning
 				}{
 
-					Changes: updates,
-					Imp:     *imp,
-					Ex:      ex,
+					Changes:  updates,
+					Imp:      *imp,
+					Ex:       ex,
+					Warnings: warnings,
 				}
 				rc.WriteOutput(out, http.StatusOK)
 				return
@@ -641,6 +644,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					Key:         *j.Key,
 					Description: j.Description,
 					Title:       j.Title,
+					Variables:   j.Variables,
 				}
 				t.CreatedBy = session.User.ID
 				translation, err := ctx.DB.CreateTranslation(t)

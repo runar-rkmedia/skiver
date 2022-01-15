@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/MarvinJWendt/testza"
@@ -11,11 +12,12 @@ import (
 
 func TestImport(t *testing.T) {
 	tests := []struct {
-		name       string
-		localeHint *types.Locale
-		fields     string
-		expects    *Import
-		wantErr    bool
+		name            string
+		localeHint      *types.Locale
+		fields          string
+		expects         *Import
+		expectsWarnings []Warning
+		wantErr         bool
 	}{
 
 		{
@@ -24,6 +26,7 @@ func TestImport(t *testing.T) {
 			`
 en:
   general:
+    thisIsFine: Great
     thisIsFine: Great
     thisIsFine_superb: Fantastic
     _strangeNonContext: foo
@@ -122,18 +125,88 @@ en:
 				},
 				},
 			},
+			nil,
+			false,
+		},
+		{
+			"interpolation",
+			nil,
+			`
+en:
+	meaningOfLife: The meaning of $t(life) is {{count}}
+	life: life
+`,
+			&Import{
+				Categories: map[string]types.ExtendedCategory{types.RootCategory: {
+					Category: types.Category{
+						Entity: types.Entity{
+							CreatedBy: "jim",
+						},
+						Title:       "Root",
+						Description: "",
+						Key:         types.RootCategory,
+						ProjectID:   "proj-123",
+					},
+					Translations: map[string]types.ExtendedTranslation{
+						"meaningOfLife": {
+							Translation: types.Translation{
+								Entity: types.Entity{
+									CreatedBy: "jim",
+								},
+								Key:   "meaningOfLife",
+								Title: "Meaning of life",
+								Variables: map[string]interface{}{
+									"count":      42,
+									"_refs:life": nil,
+								},
+							},
+							Values: map[string]types.TranslationValue{
+								"loc-en": {
+									Entity: types.Entity{
+										CreatedBy: "jim",
+									},
+									Value:    "The meaning of $t(life) is {{count}}",
+									LocaleID: "loc-en",
+									Source:   "test-import",
+								},
+							},
+						},
+						"life": {
+							Translation: types.Translation{
+								Entity: types.Entity{
+									CreatedBy: "jim",
+								},
+								Key:   "life",
+								Title: "Life",
+							},
+							Values: map[string]types.TranslationValue{
+								"loc-en": {
+									Entity: types.Entity{
+										CreatedBy: "jim",
+									},
+									Value:    "life",
+									LocaleID: "loc-en",
+									Source:   "test-import",
+								},
+							},
+						},
+					},
+				},
+				},
+			},
+			nil,
 			false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var j map[string]interface{}
-			err := yaml.Unmarshal([]byte(tt.fields), &j)
+			err := yamlUnmarshalAllowTabs(tt.fields, &j)
 			if err != nil {
 				t.Errorf("TEST-INPUT_ERROR: Failed to unmarshal: %s %s", err, tt.fields)
 				return
 			}
-			got, err := ImportI18NTranslation(_test_locales, tt.localeHint, "proj-123", "jim", "test-import", j)
+			got, warnings, err := ImportI18NTranslation(_test_locales, tt.localeHint, "proj-123", "jim", "test-import", j)
 			if !tt.wantErr {
 				testza.AssertNoError(t, err)
 			} else if got == nil {
@@ -148,10 +221,24 @@ en:
 				t.Log("input", tt.fields)
 				t.Error(err)
 			}
+			if err := internal.Compare("warnings", warnings, tt.expectsWarnings, internal.CompareOptions{
+				Diff:    true,
+				Reflect: true,
+				Yaml:    true,
+			}); err != nil {
+				t.Log("input", tt.fields)
+				t.Error(err)
+			}
 
 			// testza.AssertEqual(t, tt.expects, got)
 		})
 	}
+}
+
+// Tabs are annoying in yaml, so lets just convert it.
+func yamlUnmarshalAllowTabs(s string, j interface{}) error {
+	s = strings.ReplaceAll(s, "\t", "  ")
+	return yaml.Unmarshal([]byte(s), j)
 }
 
 var (

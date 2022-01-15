@@ -573,6 +573,12 @@ definitions:
         maxLength: 400
         minLength: 1
         type: string
+      variables:
+        additionalProperties:
+          type: object
+        description: key/value type. The value can be any type, but the key must a
+          string.
+        type: object
     required:
     - category_id
     - key
@@ -941,6 +947,12 @@ paths:
       - translation
     post:
       operationId: createTranslation
+      parameters:
+      - in: body
+        name: TranslationInput
+        required: true
+        schema:
+          $ref: '#/definitions/TranslationInput'
       responses:
         "200":
           $ref: '#/responses/TranslationResponse'

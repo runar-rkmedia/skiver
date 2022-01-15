@@ -39,7 +39,6 @@ type TranslationValueInput struct {
 	// Max Length: 8000
 	// Min Length: 0
 	Value *string `json:"value"`
-
 }
 
 // Validate validates this translation value input

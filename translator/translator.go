@@ -38,7 +38,8 @@ func NewTranslator(options TranslatorOptions) (TranslatorProvider, error) {
 			Client:   options.HttpClient,
 		})
 		return &bing, err
-
+	case "mock":
+		return &MockTranlator{}, nil
 	}
 	return nil, fmt.Errorf("No valid translator could be initiated")
 }

@@ -41,6 +41,9 @@ type TranslationInput struct {
 	// Max Length: 400
 	// Min Length: 1
 	Title string `json:"title,omitempty"`
+
+	// key/value type. The value can be any type, but the key must a string.
+	Variables map[string]interface{} `json:"variables,omitempty"`
 }
 
 // Validate validates this translation input

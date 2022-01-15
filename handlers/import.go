@@ -6,6 +6,10 @@ import (
 	"strings"
 
 	"github.com/gobeam/stringy"
+	"github.com/runar-rkmedia/skiver/internal"
+	"github.com/runar-rkmedia/skiver/interpolator"
+	"github.com/runar-rkmedia/skiver/interpolator/lexer"
+	"github.com/runar-rkmedia/skiver/interpolator/parser"
 	"github.com/runar-rkmedia/skiver/types"
 )
 
@@ -13,6 +17,32 @@ import (
 // The keys in each map is of no importance except for temporarily tracking these values
 type Import struct {
 	Categories map[string]types.ExtendedCategory
+}
+
+type WarningLevel string
+type WarningKind string
+
+const (
+	WarningLevelMinor               WarningLevel = "minor"
+	WarningLevelMajor               WarningLevel = "major"
+	WarningKindTranslationVariables WarningKind  = "translation-variable"
+	WarningKindTranslationReference WarningKind  = "translation-reference"
+)
+
+type Warning struct {
+	Message string       `json:"message"`
+	Error   error        `json:"error,omitempty"`
+	Details interface{}  `json:"details,omitempty"`
+	Level   WarningLevel `json:"level"`
+	Kind    WarningKind  `json:"kind"`
+}
+
+func newWarning(msg string, kind WarningKind, level WarningLevel) Warning {
+	return Warning{
+		Message: msg,
+		Level:   level,
+		Kind:    kind,
+	}
 }
 
 // i18n-translations are either:
@@ -25,26 +55,29 @@ func ImportI18NTranslation(
 	createdBy string,
 	source types.CreatorSource,
 	input map[string]interface{},
-) (*Import, error) {
+) (*Import, []Warning, error) {
+	parso := parser.NewParser(nil)
+	var w []Warning
+
 	localeLength := len(locales)
 	if input == nil || len(input) == 0 {
-		return nil, fmt.Errorf("Empty input")
+		return nil, w, fmt.Errorf("Empty input")
 	}
 	if projectID == "" {
-		return nil, fmt.Errorf("ProjectID is required")
+		return nil, w, fmt.Errorf("ProjectID is required")
 	}
 	if createdBy == "" {
-		return nil, fmt.Errorf("source is required")
+		return nil, w, fmt.Errorf("source is required")
 	}
 	if source == "" {
-		return nil, fmt.Errorf("source is required")
+		return nil, w, fmt.Errorf("source is required")
 	}
 	if localeLength == 0 && localeHint == nil {
-		return nil, fmt.Errorf("No locales")
+		return nil, w, fmt.Errorf("No locales")
 	}
 	mv, err := getMapPaths(input)
 	if err != nil {
-		return nil, err
+		return nil, w, err
 	}
 	// We dont need to sort, but it is nice to have idempotency where we can
 	sort.Slice(mv, sortMapPath(mv))
@@ -54,7 +87,7 @@ func ImportI18NTranslation(
 	for i := 0; i < len(mv); i++ {
 		node := getNode(mv[i])
 		if node.Value == "" && node.Root == "" && node.MidPath == "" {
-			return nil, fmt.Errorf("one of the values failed to parse: %s", strings.Join(mv[i], "."))
+			return nil, w, fmt.Errorf("one of the values failed to parse: %s", strings.Join(mv[i], "."))
 		}
 
 		var locale types.Locale
@@ -72,7 +105,7 @@ func ImportI18NTranslation(
 				}
 			}
 			if locale.ID == "" {
-				return nil, fmt.Errorf("Failed to resolve as locale, attempted to parse '%s' as locale from value. You can add a locale as input-hint, or specify the locale within the body. The first value that failed to parse was: '%s'", split[0], strings.Join(mv[i], "."))
+				return nil, w, fmt.Errorf("Failed to resolve as locale, attempted to parse '%s' as locale from value. You can add a locale as input-hint, or specify the locale within the body. The first value that failed to parse was: '%s'", split[0], strings.Join(mv[i], "."))
 			}
 			category := ""
 
@@ -119,6 +152,89 @@ func ImportI18NTranslation(
 			} else {
 				tv.Value = translationValue
 			}
+
+			// Attempt to infer variables and nested references from the translation-values used.
+			parsed, parseErr := parso.Parse(translationValue)
+			if parseErr != nil {
+				warn := newWarning("There was a problem parsing the translation-value.", WarningKindTranslationVariables, WarningLevelMajor)
+				warn.Error = parseErr
+			}
+			for i, n := range parsed.Nodes {
+				switch n.Token.Kind {
+				case lexer.TokenNestingPrefix:
+					if n.Left == nil {
+						warn := newWarning(
+							fmt.Sprintf(
+								"Attempted to interpret a translation-value and infer any references, but failed. %s (%d) did not have a left-node. This occured in category %s translation %s value %s at %d-%d",
+								n.Token.Kind, i, category, translation, translationValue, n.Token.Start, n.Token.End),
+							WarningKindTranslationReference,
+							WarningLevelMinor,
+						)
+						warn.Details = parsed.Nodes
+						w = append(w, warn)
+						continue
+					}
+					key := strings.TrimSpace(n.Left.Token.Literal)
+					if key == "" {
+						warn := newWarning(
+							fmt.Sprintf(
+								"Attempted to interpred a translation-value and infer any references, but the value was empty. %s (%d.Left). This occured in category %s translation %s value %s at %d-%d",
+								n.Token.Kind, i, category, translation, translationValue, n.Left.Token.Start, n.Left.Token.End),
+							WarningKindTranslationVariables,
+							WarningLevelMinor,
+						)
+						warn.Details = parsed.Nodes
+						w = append(w, warn)
+						continue
+
+					}
+					if t.Variables == nil {
+						t.Variables = make(map[string]interface{})
+					}
+					fmt.Println(internal.MustJSON(n))
+					if _, ok := t.Variables["_refs:"+key]; !ok {
+						if n.Right != nil {
+							t.Variables["_refs:"+key] = n.Right.Token.Literal
+						} else {
+							t.Variables["_refs:"+key] = nil
+
+						}
+
+					}
+
+				case lexer.TokenPrefix:
+					if n.Left == nil {
+						warn := newWarning(
+							fmt.Sprintf(
+								"Attempted to interpret a translation-value and infer any variables used, but failed. %s (%d) did not have a left-node. This occured in category %s translation %s value %s at %d-%d",
+								n.Token.Kind, i, category, translation, translationValue, n.Token.Start, n.Token.End),
+							WarningKindTranslationVariables,
+							WarningLevelMinor,
+						)
+						warn.Details = parsed.Nodes
+						w = append(w, warn)
+						continue
+					}
+					key := strings.TrimSpace(n.Left.Token.Literal)
+					if key == "" {
+						warn := newWarning(
+							fmt.Sprintf(
+								"Attempted to interpred a translation-value and infer any variables used, but the value was empty. %s (%d.Left). This occured in category %s translation %s value %s at %d-%d",
+								n.Token.Kind, i, category, translation, translationValue, n.Left.Token.Start, n.Left.Token.End),
+							WarningKindTranslationVariables,
+							WarningLevelMinor,
+						)
+						warn.Details = parsed.Nodes
+						w = append(w, warn)
+						continue
+
+					}
+					if t.Variables == nil {
+						t.Variables = make(map[string]interface{})
+					}
+					t.Variables[key] = getValueForVariableKey(key)
+				}
+			}
 			tv.LocaleID = locale.ID
 			tv.CreatedBy = createdBy
 			tv.Source = source
@@ -130,7 +246,14 @@ func ImportI18NTranslation(
 
 	}
 
-	return &imp, nil
+	return &imp, w, nil
+}
+func getValueForVariableKey(key string) interface{} {
+	key = strings.ToLower(key)
+	if val, ok := interpolator.DefaultInterpolationExamples[key]; ok {
+		return val
+	}
+	return "???"
 }
 
 func cutLast(s, sep string) (string, string) {
