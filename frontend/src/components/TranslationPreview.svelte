@@ -29,9 +29,6 @@
       {myT(key, variables)}
     </span>
   </div>
-  <code>Key: {key}</code>
-  <code>Locale: {locale}</code>
-  <code>Project: {ns}</code>
 {/if}
 
 {#if !ns}

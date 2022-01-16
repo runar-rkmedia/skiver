@@ -107,21 +107,18 @@ func (p *Parser) parse() (ast Ast, err error) {
 		switch p.curToken.Kind {
 		case lexer.TokenLiteral:
 			ast.Nodes = append(ast.Nodes, node)
-			break
 		case lexer.TokenPrefix:
 			node, err = p.parseInterpolation(node)
 			if err != nil {
 				return ast, err
 			}
 			ast.Nodes = append(ast.Nodes, node)
-			break
 		case lexer.TokenNestingPrefix:
 			node, err = p.parseNesting(node)
 			if err != nil {
 				return ast, err
 			}
 			ast.Nodes = append(ast.Nodes, node)
-			break
 		default:
 			if len(ast.Nodes) == 0 {
 				return ast, node.err("unexpected token-kind")

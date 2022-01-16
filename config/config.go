@@ -38,7 +38,10 @@ type ApiConfig struct {
 
 func GetConfig() *Config {
 	var cfg Config
-	viper.Unmarshal(&cfg)
+	err := (viper.Unmarshal(&cfg))
+	if err != nil {
+		panic(err)
+	}
 	return &cfg
 }
 
@@ -64,7 +67,10 @@ func InitConfig() error {
 			if err != nil {
 				panic(err)
 			}
-			os.WriteFile("skiver.toml", b, 0644)
+			err = os.WriteFile("skiver.toml", b, 0644)
+			if err != nil {
+				panic(err)
+			}
 		} else {
 			return fmt.Errorf("Fatal error config file: %w \n", err)
 		}

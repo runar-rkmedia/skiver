@@ -1,0 +1,58 @@
+{{- $root := . -}}
+{{- if .Category.Key }}
+{{- if .Category.Description}}
+/**
+ * {{ .Category.Title | wrap 80 }}
+ *
+ * {{.Category.Description | wrap 80}}
+*/
+  {{- else -}}
+/** {{ .Category.Title | wrap 80 }} */
+  {{- end}}
+  {{ .Category.Path | last | jsKeyQuote }}: {
+{{- end -}}
+    {{- range $translation := .Category.Translations}}
+    /**
+     * {{ $translation.Title | wrap 80}}
+       {{- if $translation.Description}}
+     *
+     * {{$translation.Description | wrap 80}}
+       {{- end}}
+     {{- if $translation.Variables }}
+     *
+     * ### Variables (with example-values):
+     *
+     * ```yaml
+{{$translation.Variables | toYaml | sindent 5 "* " }}```
+     *
+{{- end}}
+        {{-  range $translation.Values}}
+          {{- $locale := getLocale $root.Root.Project.Locales .LocaleID  }}
+          {{- if $locale.Title}}
+     * ### {{ $locale.Title }}
+     *
+     * {{ .Value }}
+       {{- range $k, $v := .Context }}
+     * 
+     * ####  context `{{ $k }}`:
+     * {{ $v }}
+            {{- end }}
+          {{- end }}
+        {{- end}}
+     */
+    {{$translation.Key | jsKeyQuote }}: {{if $root.AsValue -}} 
+    {{ range $translation.Values}}
+        {{ .Value | quote}},
+    {{- end}}
+        {{- end}}
+        {{- if not $root.AsValue -}}
+          '{{$root.Category.Key}}.{{$translation.Key}}',
+      {{ end -}}
+    {{- end }}
+
+    {{- range $sc := .Category.Categories }}
+  {{ include "typescript_category.tmpl" (dict "Root" $root.Root "Category" $sc "AsValue" $root.AsValue "Path" (join "." $root.Path $sc.Key))  | indent ($root.Category.Path | len | max 0 | mul 2 | int ) }}
+     {{- end -}}
+{{- if .Category.Key }}
+  },
+{{- end -}}

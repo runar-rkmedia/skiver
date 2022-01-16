@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
+	"github.com/runar-rkmedia/gabyoall/logger"
 	"github.com/runar-rkmedia/skiver/types"
 )
 
@@ -40,7 +41,10 @@ func NewUserSessionInMemory(options UserSessionOptions, tokenCreator func() stri
 		now := time.Now()
 		for k, v := range sessions {
 			if v.Expires.Before(now) {
-				persistor.EvictSession(k)
+				err = persistor.EvictSession(k)
+				if err != nil {
+					return u, fmt.Errorf("failed to evict prior sessions: %w", err)
+				}
 			}
 			items[k] = cache.Item{
 				Object:     v,
@@ -48,7 +52,13 @@ func NewUserSessionInMemory(options UserSessionOptions, tokenCreator func() stri
 			}
 		}
 		u.c = cache.NewFrom(options.TTL, 10*time.Minute+7717*time.Millisecond, items)
-		u.c.OnEvicted(func(s string, i interface{}) { persistor.EvictSession(s) })
+		u.c.OnEvicted(func(s string, i interface{}) {
+			err := persistor.EvictSession(s)
+			if err != nil {
+				l := logger.GetLogger("UserSessionInMemory.OnEvicted")
+				l.Error().Err(err).Msg("failed to evict prior sessions")
+			}
+		})
 	} else {
 		u.c = cache.New(options.TTL, 10*time.Minute+7717*time.Millisecond)
 	}
@@ -56,22 +66,43 @@ func NewUserSessionInMemory(options UserSessionOptions, tokenCreator func() stri
 	return u, nil
 }
 
-func (us UserSessionInMemory) NewSession(user types.User, userAgent string) (s types.Session) {
+func (us UserSessionInMemory) NewSession(user types.User, organization types.Organization, userAgent string) (s types.Session) {
 	token := us.t()
 	now := time.Now()
 	s = types.Session{
-		Token:     token,
-		User:      user,
-		UserAgent: userAgent,
-		Issued:    now,
-		Expires:   now.Add(us.TTL),
+		Token:        token,
+		User:         user,
+		Organization: organization,
+		UserAgent:    userAgent,
+		Issued:       now,
+		Expires:      now.Add(us.TTL),
 	}
 
 	us.c.Set(token, s, us.TTL)
 	if us.persistor != nil {
-		us.persistor.CreateSession(token, s)
+		s, err := us.persistor.CreateSession(token, s)
+		if err != nil {
+			l := logger.GetLogger("UserSessionInMemory.NewSession")
+			l.Error().Err(err).Msg("failed to evict prior sessions")
+		}
+		return s
 	}
 	return s
+}
+func (us UserSessionInMemory) ClearSession(token string) error {
+	_, err := us.GetSession(token)
+	us.c.Delete(token)
+	if err != nil && err == ErrNotFound {
+		return nil
+	}
+	return err
+}
+func (us UserSessionInMemory) ClearAllSessionsForUser(userId string) error {
+	s := us.SessionsForUser(userId)
+	for _, v := range s {
+		us.c.Delete(v.Token)
+	}
+	return nil
 }
 func (us UserSessionInMemory) SessionsForUser(userId string) (s []types.Session) {
 	v := us.c.Items()

@@ -28,7 +28,7 @@ func (b *BBolter) CreateProject(project types.Project) (types.Project, error) {
 
 		return *existing, fmt.Errorf("Already exists")
 	}
-	project.Entity, err = b.NewEntity(project.CreatedBy)
+	project.Entity, err = b.NewEntity(project.Entity)
 	if err != nil {
 		return project, err
 	}

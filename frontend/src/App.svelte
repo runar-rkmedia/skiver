@@ -64,6 +64,7 @@
     {#if $db.login.ok}
       <div class="user-welcome">
         Welcome, {$db.login.userName}
+        <Button color="tertiary" on:click={api.logout}>Logout</Button>
       </div>
     {/if}
   </header>
@@ -73,7 +74,7 @@
     <div class="login" transition:scale|local>
       <paper>
         <h2>Login</h2>
-        {#if $db.responseStates.login.loading}pa
+        {#if $db.responseStates.login.loading}
           <Spinner />
         {/if}
         {#if $db.responseStates.login?.error}

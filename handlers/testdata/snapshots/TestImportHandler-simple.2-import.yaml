@@ -1,0 +1,23 @@
+Categories:
+  "":
+    createdAt: "0001-01-01T00:00:00Z"
+    createdBy: jim
+    exists: true
+    key: ""
+    project_id: id-7
+    title: Root
+    translations:
+      foo:
+        Values:
+          id-3:
+            createdAt: "0001-01-01T00:00:00Z"
+            createdBy: jim
+            locale_id: id-3
+            source: user-import
+            value: bar
+        category: id-8
+        createdAt: "0001-01-01T00:00:00Z"
+        createdBy: jim
+        exists: true
+        key: foo
+        title: Foo

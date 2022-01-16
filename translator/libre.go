@@ -1,15 +1,12 @@
 package translator
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"sync"
 )
 
 type Translator struct {
-	ctx context.Context
-	// g   *translate.Client
 	SupportedLanguages map[string]string
 	sync.RWMutex
 	LibreOptions

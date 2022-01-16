@@ -20,7 +20,7 @@ type Locale struct {
 // swagger:model Translation
 type Translation struct {
 	Entity
-	Aliases             []string               `json:"aliases"`
+	Aliases             []string               `json:"aliases,omitempty"`
 	ParentTranslationID string                 `json:"parent_translation,omitempty"`
 	Description         string                 `json:"description,omitempty"`
 	Key                 string                 `json:"key,omitempty"`
@@ -44,6 +44,13 @@ type TranslationValue struct {
 	// Indicating from where the value was created from, usually user, but could be a tranlator-service, like Bing.
 	Source  CreatorSource     `json:"source,omitempty"`
 	Context map[string]string `json:"context,omitempty"`
+}
+
+func (e TranslationValue) Namespace() string {
+	return e.Kind()
+}
+func (e TranslationValue) Kind() string {
+	return string(PubTypeTranslationValue)
 }
 
 type CreatorSource string

@@ -7,24 +7,108 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-func (b *BBolter) GetCategory(ID string) (*types.Category, error) {
-	var u types.Category
-	err := b.GetItem(BucketCategory, ID, &u)
-	return &u, err
+func (bb *BBolter) GetCategory(ID string) (*types.Category, error) {
+	return Get[types.Category](bb, BucketCategory, ID)
 }
 
+func (bb *BBolter) FindOneCategory(filter ...types.CategoryFilter) (*types.Category, error) {
+	return FindOne(bb, BucketCategory, func(t types.Category) bool {
+		for _, f := range filter {
+			if f.OrganizationID == "" {
+				bb.l.Warn().Msg("Received a Category without organization-id")
+			}
+			if t.Filter(f) {
+				return true
+			}
+		}
+		return false
+	})
+}
+func (bb *BBolter) FindCategories(max int, filter ...types.CategoryFilter) (map[string]types.Category, error) {
+	return Find(bb, BucketCategory, max, func(cat types.Category) bool {
+		if len(filter) == 0 {
+			return true
+		}
+		for _, f := range filter {
+			if cat.Filter(f) {
+				return true
+			}
+		}
+		return false
+	})
+}
+
+// TODO: complete implementation
+func (b *BBolter) UpdateCategory(id string, category types.Category) (types.Category, error) {
+	if id == "" {
+		return category, ErrMissingIdArg
+	}
+	existing, err := b.GetCategory(id)
+	if err != nil {
+		return *existing, err
+	}
+	var c types.Category
+	err = b.Update(func(tx *bolt.Tx) error {
+
+		bucket := tx.Bucket(BucketCategory)
+		existing := bucket.Get([]byte(id))
+		if existing == nil {
+			return ErrNotFound
+		}
+		err := b.Unmarshal(existing, &c)
+		if err != nil {
+			return err
+		}
+		needsUpdate := false
+		// TODO: ensure key-uniqueness
+		if category.Key != c.Key {
+			c.Key = category.Key
+			needsUpdate = true
+		}
+		if category.Title != c.Title {
+			c.Title = category.Title
+			needsUpdate = true
+		}
+		if category.Description != c.Description {
+			c.Description = category.Description
+			needsUpdate = true
+		}
+
+		if !needsUpdate {
+			return ErrNoFieldsChanged
+		}
+		c.UpdatedAt = nowPointer()
+
+		bytes, err := b.Marshal(c)
+		if err != nil {
+			return err
+		}
+		err = bucket.Put([]byte(c.ID), bytes)
+
+		return nil
+	})
+
+	return c, err
+
+}
 func (b *BBolter) CreateCategory(category types.Category) (types.Category, error) {
-	existing, err := b.GetCategoryFilter(category)
+	if category.ProjectID == "" {
+		return category, ErrMissingProject
+	}
+	existing, err := b.FindOneCategory(category.AsUniqueFilter())
 	if err != nil {
 		return *existing, err
 	}
 	if existing != nil {
 		b.l.Warn().Interface("existing", existing).Interface("input", category).Err(err).Msg("category already exists")
-		return *existing, fmt.Errorf("Category already exists")
+		return *existing, fmt.Errorf("Category-create-error: %w", ErrDuplicate)
 	}
-	category.Entity, err = b.NewEntity(category.CreatedBy)
+	category.Entity, err = b.NewEntity(category.Entity)
 	if err != nil {
 		return category, err
+	}
+	if category.Key == "" {
+		category.Key = types.RootCategory
 	}
 
 	var p types.Project
@@ -84,30 +168,4 @@ func (bb *BBolter) GetCategories() (map[string]types.Category, error) {
 		return us, nil
 	}
 	return us, err
-}
-
-func (bb *BBolter) GetCategoryFilter(filter ...types.Category) (*types.Category, error) {
-	var u *types.Category
-	err := bb.Iterate(BucketCategory, func(key, b []byte) bool {
-		var uu types.Category
-		err := bb.Unmarshal(b, &uu)
-		if err != nil {
-			bb.l.Error().Err(err).Msg("failed to unmarshal user")
-			return false
-		}
-		for _, f := range filter {
-			if f.ProjectID != "" && f.ProjectID != uu.ProjectID {
-				continue
-			}
-			// rootCategory is an empty string, complicating things... perhaps we should make it a constant non-empty value?
-
-			if f.Key != "" && f.Key != uu.Key {
-				continue
-			}
-			u = &uu
-			return true
-		}
-		return false
-	})
-	return u, err
 }
