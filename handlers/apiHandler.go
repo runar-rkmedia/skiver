@@ -793,6 +793,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					Variables:   j.Variables,
 				}
 				t.CreatedBy = session.User.ID
+				t.OrganizationID = session.Organization.ID
 				translation, err := ctx.DB.CreateTranslation(t)
 				rc.WriteAuto(translation, err, requestContext.CodeErrCreateTranslation)
 				return
@@ -821,6 +822,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					Title:       *j.Title,
 				}
 				c.CreatedBy = session.User.ID
+				c.OrganizationID = session.Organization.ID
 				category, err := ctx.DB.CreateCategory(c)
 				rc.WriteAuto(category, err, requestContext.CodeErrCategory)
 				return
@@ -848,6 +850,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					Value:         *j.Value,
 				}
 				tv.CreatedBy = session.User.ID
+				tv.OrganizationID = session.Organization.ID
 				translationValue, err := ctx.DB.CreateTranslationValue(tv)
 				rc.WriteAuto(translationValue, err, requestContext.CodeErrCreateTranslationValue)
 				return
@@ -908,6 +911,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					Title:    *j.Title,
 				}
 				l.CreatedBy = session.User.ID
+				l.OrganizationID = session.Organization.ID
 				locale, err := ctx.DB.CreateLocale(l)
 				if err != nil {
 					rc.WriteErr(err, requestContext.CodeErrDBCreateLocale)

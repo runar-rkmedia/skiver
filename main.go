@@ -128,6 +128,7 @@ func (m *translationHook) Publish(kind, variant string, contents interface{}) {
 			m.l.Error().Interface("content", contents).Msg("Failed to convert contents to TranslationValue")
 			return
 		}
+		orgId := tv.OrganizationID
 		if tv.Source == types.CreatorSourceTranslator {
 			if debug {
 				m.l.Debug().Interface("content", contents).Msg("ignoring TranslationValue since it was sourced from me")
@@ -192,6 +193,7 @@ func (m *translationHook) Publish(kind, variant string, contents interface{}) {
 				Source:        types.CreatorSourceTranslator,
 			}
 			tv.CreatedBy = string(tv.Source)
+			tv.OrganizationID = orgId
 			_, err = m.db.CreateTranslationValue(tv)
 
 			if err != nil {

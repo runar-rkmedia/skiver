@@ -93,11 +93,19 @@ func (b *BBolter) ReportMissing(key types.MissingTranslation) (*types.MissingTra
 		return &key, fmt.Errorf("Missing Locale: %w", ErrMissingIdArg)
 	}
 	entity, err := b.NewEntity(key.Entity)
-	if err != nil {
+
+	switch err {
+	case nil:
+		break
+	case ErrMissingOrganizationID:
+		// OrganizationID is filled later on, if possible
+		break
+	default:
 		return nil, err
 	}
 	key.Entity = entity
 	key.ID = strings.Join([]string{key.Project, key.Locale, key.Category, key.Translation}, " / ")
+	// TODO: make sure this is isolated per OrganizationID
 
 	if key.ProjectID == "" {
 		project, err := b.GetProjectByShortName(key.Project)
@@ -106,7 +114,13 @@ func (b *BBolter) ReportMissing(key types.MissingTranslation) (*types.MissingTra
 		}
 		if project != nil {
 			key.ProjectID = project.ID
+			if key.OrganizationID == "" {
+				key.OrganizationID = project.OrganizationID
+			}
 		}
+	}
+	if key.OrganizationID == "" {
+		return nil, ErrMissingOrganizationID
 	}
 	if key.LocaleID == "" {
 		locale, err := b.GetLocaleByFirstMatch(key.Locale)
