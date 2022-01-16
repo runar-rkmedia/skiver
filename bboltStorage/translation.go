@@ -24,7 +24,7 @@ func (b *BBolter) CreateTranslation(translation types.Translation) (types.Transl
 	if existing != nil {
 		return *existing, fmt.Errorf("Translation already exists")
 	}
-	translation.Entity, err = b.NewEntity(translation.CreatedBy)
+	translation.Entity, err = b.NewEntity(translation.Entity)
 	if err != nil {
 		return translation, err
 	}

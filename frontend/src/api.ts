@@ -19,6 +19,7 @@ export function objectKeys<T extends object>(obj: T) {
 export type DB = {
   missingTranslation: Record<string, ApiDef.MissingTranslation>
   project: Record<string, ApiDef.Project>
+  organization: Record<string, ApiDef.Organization>
   category: Record<string, ApiDef.Category>
   translationValue: Record<string, ApiDef.TranslationValue>
   locale: Record<string, ApiDef.Locale>
@@ -29,6 +30,10 @@ export type DB = {
 }
 
 export const api = {
+  join: {
+    get: (id: string) => fetchApi<ApiDef.Organization>('join/' + id, () => null, { method: 'GET' }),
+    post: (id: string, payload: ApiDef.JoinInput) => fetchApi<ApiDef.Organization>('join/' + id, () => null, { method: 'POST', body: payload }),
+  },
   serverInfo: (options?: ApiFetchOptions) =>
     fetchApi<ApiDef.ServerInfo>(
       'serverInfo',
@@ -42,6 +47,7 @@ export const api = {
     list: apiGetListFactory<'missingTranslation'>('missing', 'missingTranslation')
   },
   project: CrudFactory<ApiDef.ProjectInput, 'project'>('project'),
+  organization: CrudFactory<ApiDef.OrganizationInput, 'organization'>('organization'),
   category: CrudFactory<ApiDef.CategoryInput, 'category'>('category'),
   translationValue: CrudFactory<
     ApiDef.TranslationValueInput,
@@ -195,7 +201,7 @@ export const projects = derived(db, ($db) =>
               rtv[tv.locale_id!] = tv
               // This might be really performance intesive, depending on how i18next has implemented it.
               // The reason we do this is to add every resource as a previewable item.
-              // addPreviewTranslationResource(tv.locale_id, project.short_name || project.id, c.key, t.key, tv.value, t.context)
+              addPreviewTranslationResource(tv.locale_id || "", project.short_name || project.id, c.key || '', t.key || '', tv.value || "", (t as any).context)
               return rtv
             }, {})
             rt[t.id] = t
@@ -381,7 +387,7 @@ function apiCreateFactory<Payload extends {}, K extends DBKeyValue>(
     }))
     const result = await fetchApi<DB[K]['s']>(
       subPath,
-      (e) => replaceField(storeKey, e, e.id),
+      (e) => e.id && replaceField(storeKey, e, e.id),
       {
         method: methods.POST,
         body,
@@ -411,7 +417,7 @@ function apiUpdateFactory<Payload extends {}, K extends DBKeyValue>(
   return (id: string, body: Payload, options?: ApiFetchOptions) =>
     fetchApi<DB[K]['s']>(
       subPath + '/' + id,
-      (e) => replaceField(storeKey, e, e.id),
+      (e) => e.id && replaceField(storeKey, e, e.id),
       {
         method: methods.PUT,
         body,
@@ -437,7 +443,7 @@ function apiDeleteFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
   return (id: string, options?: ApiFetchOptions) =>
     fetchApi<DB[K]['s']>(
       subPath + '/' + id,
-      (e) => replaceField(storeKey, e, e.id),
+      (e) => e.id && replaceField(storeKey, e, e.id),
       {
         method: methods.DELETE,
         ...options,

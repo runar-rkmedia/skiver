@@ -37,7 +37,7 @@ func NewBbolt(l logger.AppLogger, path string, pubsub PubSubPublisher) (bb BBolt
 	bb.pubsub = pubsub
 	bb.Marshaller = Gob{}
 	err = bb.Update(func(t *bolt.Tx) error {
-		buckets := [][]byte{BucketUser, BucketLocale, BucketTranslation, BucketProject, BucketSession, BucketCategory, BucketTranslationValue, BucketMissing}
+		buckets := [][]byte{BucketUser, BucketLocale, BucketTranslation, BucketProject, BucketSession, BucketCategory, BucketTranslationValue, BucketMissing, BucketOrganization}
 		for i := 0; i < len(buckets); i++ {
 			_, err := t.CreateBucketIfNotExists(buckets[i])
 			if err != nil {
@@ -78,9 +78,13 @@ func (s *BBolter) GetItem(bucket []byte, id string, j interface{}) error {
 
 	return err
 }
-func (s *BBolter) NewEntity(createdBy string) (types.Entity, error) {
-	if createdBy == "" {
+func (s *BBolter) NewEntity(base types.Entity) (types.Entity, error) {
+
+	if base.CreatedBy == "" {
 		return types.Entity{}, fmt.Errorf("CreatedBy was empty")
+	}
+	if base.OrganizationID == "" {
+		return types.Entity{}, fmt.Errorf("organizationID was empty")
 	}
 	// ForceNewEntity may return an error, but it guarantees the the Entity is still usable.
 	// The error should be logged, though.
@@ -88,7 +92,8 @@ func (s *BBolter) NewEntity(createdBy string) (types.Entity, error) {
 	if err != nil {
 		s.l.Error().Err(err).Str("id", e.ID).Msg("An error occured while creating entity. ")
 	}
-	e.CreatedBy = createdBy
+	e.CreatedBy = base.CreatedBy
+	e.OrganizationID = base.OrganizationID
 	return e, nil
 }
 
@@ -162,6 +167,7 @@ var (
 	BucketLocale           = []byte("locales")
 	BucketTranslation      = []byte("translations")
 	BucketProject          = []byte("projects")
+	BucketOrganization     = []byte("organizations")
 	BucketTranslationValue = []byte("translationValues")
 	BucketCategory         = []byte("categories")
 	BucketMissing          = []byte("missing")

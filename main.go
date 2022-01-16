@@ -317,14 +317,19 @@ func main() {
 	// TODO: consider using a buffered channel.
 	handler.Handle("/ws/", handlers.NewWsHandler(logger.GetLoggerWithLevel("ws", "debug"), pubsub.Ch, handlers.WsOptions{}))
 
-	err = types.SeedUsers(&db, nil, pw.Hash)
-	if err != nil {
-		panic(err)
-	}
-	err = types.SeedLocales(&db, nil)
-	if err != nil {
-		panic(err)
-	}
+	go func() {
+
+		org, err := types.SeedUsers(&db, nil, pw.Hash)
+		if err != nil {
+			l.Fatal().Err(err).Msg("Failed to seed users")
+		}
+		if org != nil {
+			err = types.SeedLocales(&db, org.ID, nil)
+			if err != nil {
+				l.Fatal().Err(err).Msg("Failed to seed Locale")
+			}
+		}
+	}()
 	handler.Handle("/api/ping", handlers.PingHandler(handler))
 
 	info := types.ServerInfo{

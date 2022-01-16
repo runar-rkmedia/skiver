@@ -15,6 +15,7 @@ import (
 	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/requestContext"
 	"github.com/runar-rkmedia/skiver/types"
+	"github.com/runar-rkmedia/skiver/utils"
 )
 
 var (
@@ -263,6 +264,101 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				rc.WriteAuto(serverInfo, err, "serverInfo")
 				return
 			}
+		case "join":
+			if isGet || isPost {
+				joinId := getStringSliceIndex(paths, 1)
+				if joinId == "" {
+					rc.WriteError("Missing join-id", requestContext.CodeErrIDEmpty)
+					return
+				}
+
+				orgs, err := ctx.DB.GetOrganizations()
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrOrganization)
+					return
+				}
+				var org *types.Organization
+				for _, o := range orgs {
+					if o.JoinID == joinId {
+						org = &o
+						break
+					}
+				}
+				if org == nil {
+					rc.WriteError("Not found", requestContext.CodeErrOrganizationNotFound)
+					return
+				}
+				if org.JoinIDExpires.Before(time.Now()) {
+					rc.WriteError("Not found", requestContext.CodeErrOrganizationNotFound)
+					return
+				}
+				if isPost {
+					var joinInput models.JoinInput
+					err := rc.ValidateBytes(body, &joinInput)
+					if err != nil {
+						return
+					}
+
+					pass, err := pw.Hash(*joinInput.Password)
+					if err != nil {
+						rc.L.Error().Err(err).Msg("there was an error with hashing the password")
+						rc.WriteError("Failure in password-creation", requestContext.CodeErrPasswordHashing)
+						return
+					}
+					u := types.User{
+						Entity: types.Entity{
+							CreatedAt:      time.Time{},
+							CreatedBy:      "join",
+							OrganizationID: org.ID,
+						},
+						UserName:              *joinInput.Username,
+						Active:                true,
+						Store:                 types.UserStoreLocal,
+						TemporaryPassword:     false,
+						PW:                    pass,
+						CanCreateOrganization: false,
+						CanCreateUsers:        false,
+						CanCreateProjects:     true,
+						CanCreateTranslations: true,
+						CanCreateLocales:      false,
+						CanUpdateOrganization: false,
+						CanUpdateUsers:        false,
+						CanUpdateProjects:     true,
+						CanUpdateTranslations: true,
+						CanUpdateLocales:      false,
+					}
+					existingUsers := false
+					{
+						orgUsers, err := ctx.DB.GetUsers(1, types.User{Entity: types.Entity{OrganizationID: org.ID}})
+						if err != nil {
+							rc.WriteErr(err, requestContext.CodeErrNotFoundUser)
+							return
+						}
+						existingUsers = len(orgUsers) > 0
+					}
+					if existingUsers {
+						u.CanUpdateOrganization = true
+						// user is the first to join, should have organization-administrative permissions
+					}
+
+					user, err := ctx.DB.CreateUser(u)
+					if err != nil {
+						rc.WriteErr(err, requestContext.CodeErrNotFoundUser)
+						return
+					}
+					// TODO: loginUser
+					rc.WriteOutput(types.LoginResponse{
+						User:         user,
+						Organization: *org,
+						Ok:           true,
+					}, http.StatusOK)
+					return
+				}
+
+				rc.WriteOutput(org, http.StatusOK)
+				return
+
+			}
 		case "login":
 			if isGet {
 				if session == nil {
@@ -271,10 +367,11 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				}
 				expiresD := session.Expires.Sub(time.Now())
 				rc.WriteOutput(types.LoginResponse{
-					User:      session.User,
-					Ok:        true,
-					Expires:   session.Expires,
-					ExpiresIn: expiresD.String(),
+					Organization: session.Organization,
+					User:         session.User,
+					Ok:           true,
+					Expires:      session.Expires,
+					ExpiresIn:    expiresD.String(),
 				}, http.StatusOK)
 				return
 			}
@@ -344,7 +441,16 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 			}
 
 			if session.UserAgent == "" {
-				session = userSessions.NewSession(*user, userAgent)
+				organization, err := ctx.DB.GetOrganization(user.OrganizationID)
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrOrganization)
+					return
+				}
+				if organization == nil {
+					rc.WriteError("Could not find the users organzation. Please contact your administrator", requestContext.CodeErrOrganization)
+					return
+				}
+				session = userSessions.NewSession(*user, *organization, userAgent)
 			}
 
 			expiresD := session.Expires.Sub(now)
@@ -385,6 +491,10 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 		switch paths[0] {
 		case "import":
 			if isPost {
+				if !session.User.CanCreateTranslations {
+					rc.WriteError("You are not authorizatiod to create translations", requestContext.CodeErrAuthoriziation)
+					return
+				}
 				kind := getStringSliceIndex(paths, 1)
 				projectLike := getStringSliceIndex(paths, 2)
 				localeLike := getStringSliceIndex(paths, 3)
@@ -604,6 +714,33 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				rc.WriteError("Only post is allowed here", requestContext.CodeErrMethodNotAllowed)
 				return
 			}
+		case "organization":
+			if isGet {
+				orgs, err := ctx.DB.GetOrganizations()
+				rc.WriteAuto(orgs, err, requestContext.CodeErrProject)
+				return
+			}
+			if isPost {
+				if !session.User.CanCreateOrganization {
+					rc.WriteError("You are not authorizatiod to create organizations", requestContext.CodeErrAuthoriziation)
+					return
+				}
+				var j models.OrganizationInput
+				if err := rc.ValidateBytes(body, &j); err != nil {
+					return
+				}
+
+				l := types.Organization{
+					Title: *j.Title,
+					// Initially set to expire within 30 days.
+					JoinIDExpires: time.Now().Add(30 * 24 * time.Hour),
+				}
+				l.JoinID = utils.GetRandomName()
+				l.CreatedBy = session.User.ID
+				org, err := ctx.DB.CreateOrganization(l)
+				rc.WriteAuto(org, err, requestContext.CodeErrCreateProject)
+				return
+			}
 		case "project":
 			if isGet {
 				projects, err := ctx.DB.GetProjects()
@@ -611,6 +748,10 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				return
 			}
 			if isPost {
+				if !session.User.CanCreateProjects {
+					rc.WriteError("You are not authorizatiod to create projects", requestContext.CodeErrAuthoriziation)
+					return
+				}
 				var j models.ProjectInput
 				if err := rc.ValidateBytes(body, &j); err != nil {
 					return
@@ -622,6 +763,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					ShortName:   *j.ShortName,
 				}
 				l.CreatedBy = session.User.ID
+				l.OrganizationID = session.Organization.ID
 				locale, err := ctx.DB.CreateProject(l)
 				rc.WriteAuto(locale, err, requestContext.CodeErrCreateProject)
 				return
@@ -633,6 +775,10 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				return
 			}
 			if isPost {
+				if !session.User.CanCreateTranslations {
+					rc.WriteError("You are not authorizatiod to create translations", requestContext.CodeErrAuthoriziation)
+					return
+				}
 				var j models.TranslationInput
 				if err := rc.ValidateBytes(body, &j); err != nil {
 					return
@@ -658,6 +804,10 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				return
 			}
 			if isPost {
+				if !session.User.CanCreateTranslations {
+					rc.WriteError("You are not authorizatiod to create categories", requestContext.CodeErrAuthoriziation)
+					return
+				}
 				var j models.CategoryInput
 				if err := rc.ValidateBytes(body, &j); err != nil {
 					return
@@ -682,6 +832,10 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				return
 			}
 			if isPost {
+				if !session.User.CanCreateTranslations {
+					rc.WriteError("You are not authorizatiod to create translation-values", requestContext.CodeErrAuthoriziation)
+					return
+				}
 				var j models.TranslationValueInput
 				if err := rc.ValidateBytes(body, &j); err != nil {
 					return
@@ -699,6 +853,11 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				return
 			}
 			if isPut {
+				if !session.User.CanCreateTranslations {
+					rc.WriteError("You are not authorizatiod to update translation-values", requestContext.CodeErrAuthoriziation)
+					return
+				}
+
 				id := getStringSliceIndex(paths, 1)
 				if id == "" {
 					rc.WriteError("Missing id", requestContext.CodeErrIDEmpty)
@@ -733,6 +892,10 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				return
 			}
 			if isPost {
+				if !session.User.CanCreateTranslations {
+					rc.WriteError("You are not authorizatiod to create locales", requestContext.CodeErrAuthoriziation)
+					return
+				}
 				var j models.LocaleInput
 				if err := rc.ValidateBytes(body, &j); err != nil {
 					return

@@ -22,7 +22,7 @@ func (b *BBolter) CreateCategory(category types.Category) (types.Category, error
 		b.l.Warn().Interface("existing", existing).Interface("input", category).Err(err).Msg("category already exists")
 		return *existing, fmt.Errorf("Category already exists")
 	}
-	category.Entity, err = b.NewEntity(category.CreatedBy)
+	category.Entity, err = b.NewEntity(category.Entity)
 	if err != nil {
 		return category, err
 	}

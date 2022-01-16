@@ -6,10 +6,13 @@
   import LocalePage from './pages/LocalePage.svelte'
   import ProjectsPage from './pages/ProjectsPage.svelte'
   import MissingTranslationsPage from './pages/MissingTranslationsPage.svelte'
+  import OrganizationPage from 'pages/OrganizationPage.svelte'
+  import JoinPage from 'pages/JoinPage.svelte'
   let mainRoute = ''
   let routeArgs = ''
   $: {
     routeArgs = $router.hash.replace('#', '').split('/')
+    console.log(routeArgs)
     mainRoute = routeArgs[0]
     routeArgs = routeArgs.slice(1)
   }
@@ -41,12 +44,17 @@
   {:else}
     <ProjectsPage />
   {/if}
+{:else if mainRoute === 'join'}
+  <JoinPage joinID={routeArgs[0]} />
 {:else if mainRoute === ''}
   <h2>Welcome to Skiver!</h2>
   <p>
     Skiver is a management-system for translations. It aims to be simple, and
     convinient to use.
   </p>
+  {#if $db.login?.can_create_organization}
+    <OrganizationPage />
+  {/if}
 {:else}
   Not found
 {/if}

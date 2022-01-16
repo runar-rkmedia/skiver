@@ -92,7 +92,7 @@ func (b *BBolter) ReportMissing(key types.MissingTranslation) (*types.MissingTra
 	if key.Locale == "" {
 		return &key, fmt.Errorf("Missing Locale: %w", ErrMissingIdArg)
 	}
-	entity, err := b.NewEntity(key.CreatedBy)
+	entity, err := b.NewEntity(key.Entity)
 	if err != nil {
 		return nil, err
 	}

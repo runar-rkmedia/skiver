@@ -56,15 +56,16 @@ func NewUserSessionInMemory(options UserSessionOptions, tokenCreator func() stri
 	return u, nil
 }
 
-func (us UserSessionInMemory) NewSession(user types.User, userAgent string) (s types.Session) {
+func (us UserSessionInMemory) NewSession(user types.User, organization types.Organization, userAgent string) (s types.Session) {
 	token := us.t()
 	now := time.Now()
 	s = types.Session{
-		Token:     token,
-		User:      user,
-		UserAgent: userAgent,
-		Issued:    now,
-		Expires:   now.Add(us.TTL),
+		Token:        token,
+		User:         user,
+		Organization: organization,
+		UserAgent:    userAgent,
+		Issued:       now,
+		Expires:      now.Add(us.TTL),
 	}
 
 	us.c.Set(token, s, us.TTL)

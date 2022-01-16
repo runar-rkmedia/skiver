@@ -18,6 +18,7 @@ const (
 	PubTypeCategory           PubType = "category"
 	PubTypeLocale             PubType = "locale"
 	PubTypeProject            PubType = "project"
+	PubTypeOrganization       PubType = "organization"
 
 	PubVerbCreate PubVerb = "create"
 	PubVerbUpdate PubVerb = "update"

@@ -21,7 +21,7 @@ func (b *BBolter) CreateLocale(locale types.Locale) (types.Locale, error) {
 	if existing != nil {
 		return *existing, fmt.Errorf("Locale already exists")
 	}
-	locale.Entity, err = b.NewEntity(locale.CreatedBy)
+	locale.Entity, err = b.NewEntity(locale.Entity)
 	if err != nil {
 		return locale, err
 	}

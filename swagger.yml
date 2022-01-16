@@ -138,6 +138,9 @@ definitions:
   ImportInput:
     additionalProperties: true
     type: object
+  JoinInput:
+    allOf:
+    - $ref: '#/definitions/LoginInput'
   Locale:
     description: |-
       # See https://en.wikipedia.org/wiki/Language_code for more information
@@ -254,6 +257,36 @@ definitions:
         description: If not active, the account cannot be used until any issues are
           resolved.
         type: boolean
+      can_create_locales:
+        type: boolean
+        x-go-name: CanCreateLocales
+      can_create_organization:
+        type: boolean
+        x-go-name: CanCreateOrganization
+      can_create_projects:
+        type: boolean
+        x-go-name: CanCreateProjects
+      can_create_translations:
+        type: boolean
+        x-go-name: CanCreateTranslations
+      can_create_users:
+        type: boolean
+        x-go-name: CanCreateUsers
+      can_update_locales:
+        type: boolean
+        x-go-name: CanUpdateLocales
+      can_update_organization:
+        type: boolean
+        x-go-name: CanUpdateOrganization
+      can_update_projects:
+        type: boolean
+        x-go-name: CanUpdateProjects
+      can_update_translations:
+        type: boolean
+        x-go-name: CanUpdateTranslations
+      can_update_users:
+        type: boolean
+        x-go-name: CanUpdateUsers
       createdAt:
         description: Time of which the entity was created in the database
         format: date-time
@@ -284,6 +317,8 @@ definitions:
       ok:
         type: boolean
         x-go-name: Ok
+      organization:
+        $ref: '#/definitions/Organization'
       temporary_password:
         description: If set, the user must change the password before the account
           can be used
@@ -382,6 +417,56 @@ definitions:
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
+  Organization:
+    properties:
+      createdAt:
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      createdBy:
+        type: string
+        x-go-name: CreatedBy
+      deleted:
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      description:
+        type: string
+        x-go-name: Description
+      id:
+        type: string
+        x-go-name: ID
+      join_id:
+        description: |-
+          This will allow anybody with the id to create a standard user, and join the organization
+          The first user to join, gets priviliges to administer the organization.
+        type: string
+        x-go-name: JoinID
+      join_id_expires:
+        format: date-time
+        type: string
+        x-go-name: JoinIDExpires
+      title:
+        type: string
+        x-go-name: Title
+      updatedAt:
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updatedBy:
+        type: string
+        x-go-name: UpdatedBy
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
+  OrganizationInput:
+    properties:
+      title:
+        maxLength: 300
+        minLength: 3
+        type: string
+    required:
+    - title
+    type: object
   Project:
     properties:
       category_ids:
@@ -813,6 +898,48 @@ paths:
       summary: Import translations
       tags:
       - import
+  /join/{id}:
+    get:
+      operationId: getOrgByJoinID
+      parameters:
+      - description: |
+          The join-id.
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          $ref: '#/responses/OrganizationResponse'
+        "404":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Check if a join-id is valid.
+      tags:
+      - organization
+    post:
+      operationId: joinOrganiztaion
+      parameters:
+      - description: |
+          The join-id.
+        in: path
+        name: id
+        required: true
+        type: string
+      - in: body
+        name: JoinInput
+        required: true
+        schema:
+          $ref: '#/definitions/JoinInput'
+      responses:
+        "200":
+          $ref: '#/responses/JoinResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Join organization
+      tags:
+      - organization
   /locale/:
     get:
       operationId: getLocale
@@ -872,6 +999,20 @@ paths:
       summary: Login
       tags:
       - auth
+  /logout/:
+    post:
+      description: Logs out the current user.
+      operationId: logout
+      responses:
+        "200":
+          $ref: '#/responses/loginResponse'
+        "403":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Logout
+      tags:
+      - auth
   /missing/{locale}/{project}:
     post:
       operationId: reportMissing
@@ -902,6 +1043,33 @@ paths:
       summary: Missing translations reported by users
       tags:
       - translation
+  /organization/:
+    get:
+      operationId: getOrganizations
+      responses:
+        "200":
+          $ref: '#/responses/OrganizationsResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: List organizations
+      tags:
+      - organization
+    post:
+      operationId: createOrganization
+      parameters:
+      - in: body
+        name: OrganizationInput
+        required: true
+        schema:
+          $ref: '#/definitions/OrganizationInput'
+      responses:
+        "200":
+          $ref: '#/responses/OrganizationResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Create a new organization
+      tags:
+      - organization
   /project/:
     get:
       operationId: getProject
@@ -1004,11 +1172,27 @@ responses:
     schema:
       $ref: '#/definitions/Category'
       type: object
+  JoinResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/LoginResponse'
+      type: object
   LocalesResponse:
     description: ""
     schema:
       items:
         $ref: '#/definitions/Locale'
+      type: array
+  OrganizationResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/Organization'
+      type: object
+  OrganizationsResponse:
+    description: ""
+    schema:
+      items:
+        $ref: '#/definitions/Organization'
       type: array
   ProjectResponse:
     description: ""

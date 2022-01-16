@@ -12,7 +12,7 @@ type localeSeeder interface {
 // We should use this list: https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
 // See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl
 
-func SeedLocales(db localeSeeder, locales []Locale) error {
+func SeedLocales(db localeSeeder, organizationID string, locales []Locale) error {
 	if locales == nil || len(locales) == 0 {
 		// TODO: build this data from som external api/resours
 		// For now, it is just a tiny sample of what I persionally am going to need now.
@@ -59,6 +59,9 @@ func SeedLocales(db localeSeeder, locales []Locale) error {
 	for i := 0; i < len(locales); i++ {
 		if locales[i].CreatedBy == "" {
 			locales[i].CreatedBy = "seeder"
+		}
+		if locales[i].OrganizationID == "" {
+			locales[i].OrganizationID = organizationID
 		}
 		if _, err := db.CreateLocale(locales[i]); err != nil {
 			return fmt.Errorf("failed to create locale %s: %w", locales[i].IETF, err)

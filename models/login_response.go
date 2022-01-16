@@ -22,6 +22,36 @@ type LoginResponse struct {
 	// If not active, the account cannot be used until any issues are resolved.
 	Active bool `json:"Active,omitempty"`
 
+	// can create locales
+	CanCreateLocales bool `json:"can_create_locales,omitempty"`
+
+	// can create organization
+	CanCreateOrganization bool `json:"can_create_organization,omitempty"`
+
+	// can create projects
+	CanCreateProjects bool `json:"can_create_projects,omitempty"`
+
+	// can create translations
+	CanCreateTranslations bool `json:"can_create_translations,omitempty"`
+
+	// can create users
+	CanCreateUsers bool `json:"can_create_users,omitempty"`
+
+	// can update locales
+	CanUpdateLocales bool `json:"can_update_locales,omitempty"`
+
+	// can update organization
+	CanUpdateOrganization bool `json:"can_update_organization,omitempty"`
+
+	// can update projects
+	CanUpdateProjects bool `json:"can_update_projects,omitempty"`
+
+	// can update translations
+	CanUpdateTranslations bool `json:"can_update_translations,omitempty"`
+
+	// can update users
+	CanUpdateUsers bool `json:"can_update_users,omitempty"`
+
 	// Time of which the entity was created in the database
 	// Required: true
 	// Format: date-time
@@ -61,6 +91,9 @@ type LoginResponse struct {
 
 	// user name
 	UserName string `json:"userName,omitempty"`
+
+	// organization
+	Organization *Organization `json:"organization,omitempty"`
 }
 
 // Validate validates this login response
@@ -84,6 +117,10 @@ func (m *LoginResponse) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateUpdatedAt(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateOrganization(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -151,8 +188,52 @@ func (m *LoginResponse) validateUpdatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this login response based on context it is used
+func (m *LoginResponse) validateOrganization(formats strfmt.Registry) error {
+	if swag.IsZero(m.Organization) { // not required
+		return nil
+	}
+
+	if m.Organization != nil {
+		if err := m.Organization.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("organization")
+			} else if ce, ok := err.(*errors.CompositeError); ok {
+				return ce.ValidateName("organization")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ContextValidate validate this login response based on the context it is used
 func (m *LoginResponse) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.contextValidateOrganization(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *LoginResponse) contextValidateOrganization(ctx context.Context, formats strfmt.Registry) error {
+
+	if m.Organization != nil {
+		if err := m.Organization.ContextValidate(ctx, formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("organization")
+			} else if ce, ok := err.(*errors.CompositeError); ok {
+				return ce.ValidateName("organization")
+			}
+			return err
+		}
+	}
+
 	return nil
 }
 

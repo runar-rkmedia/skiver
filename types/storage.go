@@ -8,8 +8,13 @@ type Storage interface {
 	Size() (int64, error)
 
 	GetUser(userId string) (User, error)
+	GetUsers(max int, filter ...User) (map[string]User, error)
 	GetUserByUserName(userName string) (*User, error)
 	CreateUser(user User) (User, error)
+
+	GetOrganization(organizationID string) (*Organization, error)
+	GetOrganizations() (map[string]Organization, error)
+	CreateOrganization(organization Organization) (Organization, error)
 
 	GetLocale(ID string) (Locale, error)
 	CreateLocale(locale Locale) (Locale, error)
@@ -59,4 +64,6 @@ type Entity struct {
 	// If set, the item is considered deleted. The item will normally not get deleted from the database,
 	// but it may if cleanup is required.
 	Deleted *time.Time `json:"deleted,omitempty"`
+	// Organizations are completely seperate from each-other.
+	OrganizationID string `json:"-"`
 }

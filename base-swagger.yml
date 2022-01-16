@@ -58,6 +58,18 @@ definitions:
         additionalProperties:
           type: object
         
+  OrganizationInput:
+    type: object
+    required:
+      - title
+    properties:
+      title:
+        type: string
+        minLength: 3
+        maxLength: 300
+  JoinInput:
+    allOf:
+      - $ref: '#/definitions/LoginInput'
   LocaleInput:
     type: object
     required: 
@@ -358,6 +370,76 @@ paths:
           $ref: '#/responses/apiError'
       tags:
       - server
+  /organization/:
+    get:
+      summary: List organizations
+      operationId: getOrganizations
+      responses:
+        "200":
+          $ref: '#/responses/OrganizationsResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - organization
+    post:
+      summary: Create a new organization
+      operationId: createOrganization
+      parameters:
+      - in: body
+        required: true
+        name: OrganizationInput
+        schema:
+          $ref: '#/definitions/OrganizationInput'
+      responses:
+        "200":
+          $ref: '#/responses/OrganizationResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - organization
+  /join/{id}:
+    get:
+      summary: Check if a join-id is valid. 
+      operationId: getOrgByJoinID
+      parameters:
+        - in: path
+          name: id
+          type: string
+          required: true
+          description: >
+            The join-id.
+      responses:
+        "200":
+          $ref: '#/responses/OrganizationResponse'
+        "404":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - organization
+    post:
+      summary: Join organization
+      operationId: joinOrganiztaion
+      parameters:
+      - in: path
+        name: id
+        type: string
+        required: true
+        description: >
+          The join-id.
+      - in: body
+        required: true
+        name: JoinInput
+        schema:
+          $ref: '#/definitions/JoinInput'
+      responses:
+        "200":
+          $ref: '#/responses/JoinResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - organization
+     
   /project/:
     get:
       summary: List projects
@@ -465,6 +547,21 @@ paths:
           $ref: '#/responses/apiError'
       tags:
       - translationValue
+  /logout/:
+    post:
+      summary: Logout
+      description: Logs out the current user.
+      operationId: logout
+      responses:
+        "200":
+          $ref: '#/responses/loginResponse'
+        "403":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - auth
+
   /login/:
     get:
       summary: Get login-information
@@ -566,6 +663,21 @@ responses:
     schema:
       items:
         $ref: '#/definitions/Project'
+      type: array
+  OrganizationResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/Organization'
+      type: object
+  JoinResponse:
+    schema:
+      $ref: '#/definitions/LoginResponse'
+      type: object
+  OrganizationsResponse:
+    description: ""
+    schema:
+      items:
+        $ref: '#/definitions/Organization'
       type: array
   CategoryResponse:
     description: ""

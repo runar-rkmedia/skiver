@@ -2,11 +2,6 @@
   import Button from '../components/Button.svelte'
 
   import { slide } from 'svelte/transition'
-  export let ID: string
-  export let editDisabled: boolean = false
-  export let deleteDisabled: boolean = false
-  export let onEdit: ((ID: string) => void) | undefined = undefined
-  export let onDelete: ((ID: string) => void) | undefined = undefined
   export let deleted: boolean
 </script>
 
@@ -31,28 +26,7 @@
     </div>
   </div>
   <div class="item-actions">
-    {#if onEdit}
-      <Button
-        color={'secondary'}
-        disabled={deleted || editDisabled}
-        icon="edit"
-        on:click={() => onEdit?.(ID)}>Edit</Button
-      >
-    {/if}
-    {#if onDelete}
-      <Button
-        color={'danger'}
-        disabled={deleteDisabled}
-        icon="delete"
-        on:click={() => onDelete?.(ID)}
-      >
-        {#if deleted}
-          Undelete
-        {:else}
-          Delete
-        {/if}
-      </Button>
-    {/if}
+    <slot name="actions" />
   </div>
 </li>
 

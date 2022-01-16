@@ -73,7 +73,7 @@ func (b *BBolter) CreateTranslationValue(tv types.TranslationValue) (types.Trans
 		}
 		return *existing, fmt.Errorf("Translationvalue already exists")
 	}
-	tv.Entity, err = b.NewEntity(tv.CreatedBy)
+	tv.Entity, err = b.NewEntity(tv.Entity)
 	if err != nil {
 		return tv, err
 	}
