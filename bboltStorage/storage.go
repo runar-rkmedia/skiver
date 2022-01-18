@@ -141,7 +141,7 @@ func (s *BBolter) updater(id string, bucket []byte, f func(b []byte) ([]byte, er
 }
 
 // iterates over objects within a bucket.
-// The function-parameter is will receive each item as key/value
+// The function-parameter will receive each item as key/value
 // Returning true within this function will stop the iteration
 func (bb *BBolter) Iterate(bucket []byte, f func(key, b []byte) bool) error {
 	err := bb.View(func(t *bbolt.Tx) error {

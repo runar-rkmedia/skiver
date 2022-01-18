@@ -46,6 +46,13 @@ type TranslationValue struct {
 	Context map[string]string `json:"context,omitempty"`
 }
 
+func (e TranslationValue) Namespace() string {
+	return e.Kind()
+}
+func (e TranslationValue) Kind() string {
+	return string(PubTypeTranslationValue)
+}
+
 type CreatorSource string
 
 var (

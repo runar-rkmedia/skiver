@@ -76,14 +76,14 @@ type TokenKind string
 
 const (
 	TokenEOF     TokenKind = "EOF"
-	TokenPrefix            = "TokenPrefixInterpolation"
-	TokenSuffix            = "TokenSuffixInterpolation"
-	TokenLiteral           = "TokenLiteral"
+	TokenPrefix  TokenKind = "TokenPrefixInterpolation"
+	TokenSuffix  TokenKind = "TokenSuffixInterpolation"
+	TokenLiteral TokenKind = "TokenLiteral"
 	// Can follow TokenPrefix, or TokenNestingPrefix
-	TokenFormatSeperator  = "(Format)/Nesting seperator" // These two Seperators are often, but not always the same token...
-	TokenNestingSeperator = "Format/(Nesting) seperator"
-	TokenNestingPrefix    = "NestingPrefix"
-	TokenNestingSuffix    = "NestingSuffix"
+	TokenFormatSeperator  TokenKind = "(Format)/Nesting seperator" // These two Seperators are often, but not always the same token...
+	TokenNestingSeperator TokenKind = "Format/(Nesting) seperator"
+	TokenNestingPrefix    TokenKind = "NestingPrefix"
+	TokenNestingSuffix    TokenKind = "NestingSuffix"
 )
 
 func newToken(kind TokenKind, ch string, start, end int) Token {

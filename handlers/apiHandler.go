@@ -329,7 +329,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					}
 					existingUsers := false
 					{
-						orgUsers, err := ctx.DB.GetUsers(1, types.User{Entity: types.Entity{OrganizationID: org.ID}})
+						orgUsers, err := ctx.DB.FindUsers(1, types.User{Entity: types.Entity{OrganizationID: org.ID}})
 						if err != nil {
 							rc.WriteErr(err, requestContext.CodeErrNotFoundUser)
 							return
@@ -358,6 +358,25 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				rc.WriteOutput(org, http.StatusOK)
 				return
 
+			}
+		case "logout":
+			{
+				if isPost {
+					cookie := &http.Cookie{
+						Name:     "token",
+						Path:     "/api/",
+						MaxAge:   0,
+						HttpOnly: true,
+					}
+					http.SetCookie(rw, cookie)
+					if session == nil {
+						rc.WriteError("Not logged in", requestContext.CodeErrAuthenticationRequired)
+						return
+					}
+					userSessions.SessionsForUser(session.User.ID)
+					rc.WriteOutput(struct{ OK bool }{true}, http.StatusOK)
+					return
+				}
 			}
 		case "login":
 			if isGet {
@@ -399,7 +418,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				return
 			}
 
-			user, err := ctx.DB.GetUserByUserName(*j.Username)
+			user, err := ctx.DB.FindUserByUserName("", *j.Username)
 			if err != nil {
 				rc.WriteErr(err, "Err:login")
 				return
@@ -483,9 +502,11 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 			rc.WriteError("Not logged in", requestContext.CodeErrAuthenticationRequired)
 			return
 		}
+		orgId := session.Organization.ID
 		rc.L.Debug().
 			Str("path", path).
 			Str("username", session.User.UserName).
+			Str("orgId", orgId).
 			Msg("User is perorming action on route")
 
 		switch paths[0] {
@@ -529,6 +550,11 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					rc.WriteErr(err, requestContext.CodeErrProject)
 					return
 				}
+				if project.OrganizationID != orgId {
+					rc.WriteErr(err, requestContext.CodeErrProject)
+					return
+				}
+
 				if project == nil {
 					rc.WriteError("Project was not found", requestContext.CodeErrNotFoundProject)
 					return
@@ -561,7 +587,11 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					localesSlice[i] = v
 					i++
 				}
-				imp, warnings, err := ImportI18NTranslation(localesSlice, locale, project.ID, session.User.ID, types.CreatorSourceImport, input)
+				base := types.Project{}
+				base.ID = project.ID
+				base.CreatedBy = session.User.ID
+				base.OrganizationID = orgId
+				imp, warnings, err := ImportI18NTranslation(localesSlice, locale, base, types.CreatorSourceImport, input)
 				if err != nil {
 					rc.WriteErr(err, requestContext.CodeErrImport)
 					return
@@ -735,7 +765,11 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					// Initially set to expire within 30 days.
 					JoinIDExpires: time.Now().Add(30 * 24 * time.Hour),
 				}
-				l.JoinID = utils.GetRandomName()
+				l.JoinID, err = utils.GetRandomName()
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrOrganization)
+					return
+				}
 				l.CreatedBy = session.User.ID
 				org, err := ctx.DB.CreateOrganization(l)
 				rc.WriteAuto(org, err, requestContext.CodeErrCreateProject)

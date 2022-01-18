@@ -23,7 +23,7 @@ var (
 func Compare(name string, got, want interface{}, options ...CompareOptions) error {
 
 	opts := DefaultCompareOptions
-	if options != nil && len(options) > 0 {
+	if len(options) > 0 {
 		opts = options[0]
 	}
 
@@ -39,7 +39,6 @@ func Compare(name string, got, want interface{}, options ...CompareOptions) erro
 		if diff := deep.Equal(got, want); diff != nil {
 			var g interface{} = got
 			var w interface{} = want
-			var d interface{} = diff
 			if opts.Yaml {
 				g = MustYaml(got)
 				w = MustYaml(want)
@@ -56,7 +55,7 @@ func Compare(name string, got, want interface{}, options ...CompareOptions) erro
 				w = MustToml(want)
 			}
 			// Toml looks great on diffs!
-			d = MustToml(diff)
+			d := MustToml(diff)
 			return fmt.Errorf("YAML: %s: \n%v\ndiff:\n%s\nwant:\n%v", cName(name), cGot(g), cDiff(d), cWant(w))
 		}
 	}
@@ -119,6 +118,5 @@ func MustToml(j interface{}) string {
 	if err != nil {
 		panic(fmt.Errorf("Failed to marshal: %w\n\n%v", err, s))
 	}
-	fmt.Println("ok", k)
 	return string(b)
 }

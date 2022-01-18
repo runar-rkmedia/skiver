@@ -77,16 +77,28 @@ func (rc ReqContext) WriteAuto(output interface{}, error error, errCode ErrorCod
 	}
 }
 func (rc ReqContext) WriteError(msg string, errCode ErrorCodes, details ...interface{}) {
-	WriteError(msg, errCode, rc.Req, rc.Rw, details...)
+	_err := WriteError(msg, errCode, rc.Req, rc.Rw, details...)
+	if _err != nil {
+		rc.L.Error().Err(_err).Msg("Failure in WriteErr")
+	}
 }
 func (rc ReqContext) WriteNotFound(errCode ErrorCodes) {
-	WriteErr(errors.New("Not found"), errCode, rc.Req, rc.Rw)
+	_err := WriteErr(errors.New("Not found"), errCode, rc.Req, rc.Rw)
+	if _err != nil {
+		rc.L.Error().Err(_err).Msg("Failure in WriteErr")
+	}
 }
 func (rc ReqContext) WriteErr(err error, errCode ErrorCodes) {
-	WriteErr(err, errCode, rc.Req, rc.Rw)
+	_err := WriteErr(err, errCode, rc.Req, rc.Rw)
+	if _err != nil {
+		rc.L.Error().Err(_err).Msg("Failure in WriteErr")
+	}
 }
 func (rc ReqContext) WriteOutput(output interface{}, statusCode int) {
-	WriteOutput(false, statusCode, output, rc.Req, rc.Rw)
+	_err := WriteOutput(false, statusCode, output, rc.Req, rc.Rw)
+	if _err != nil {
+		rc.L.Error().Err(_err).Msg("Failure in WriteErr")
+	}
 }
 func (rc ReqContext) ValidateStruct(input interface{}) error {
 	if rc.L.HasDebug() {

@@ -137,6 +137,9 @@ func (p Project) Extend(db Storage, options ...ExtendOptions) (ep ExtendedProjec
 			continue
 		}
 		ec, err := cat.Extend(db, opts)
+		if err != nil {
+			return ep, err
+		}
 		key := cid
 		if opts.ByKeyLike {
 			key = ec.Key

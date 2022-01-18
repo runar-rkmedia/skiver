@@ -54,6 +54,15 @@ export const api = {
     'translationValue'
   >('translationValue'),
   locale: CrudFactory<ApiDef.LocaleInput, 'locale'>('locale'),
+  logout: () => fetchApi<ApiDef.LogoutResponse>('logout', () => {
+    return db.update(({ login, ...s }) => {
+      login.ok = false
+      localStorage.setItem('login-response', JSON.stringify(login))
+
+      return { ...s, login }
+    })
+  }, { method: "POST" }),
+
   login: {
     get: () =>
       fetchApi<ApiDef.LoginResponse>(

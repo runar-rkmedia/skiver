@@ -13,7 +13,7 @@ type localeSeeder interface {
 // See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl
 
 func SeedLocales(db localeSeeder, organizationID string, locales []Locale) error {
-	if locales == nil || len(locales) == 0 {
+	if len(locales) == 0 {
 		// TODO: build this data from som external api/resours
 		// For now, it is just a tiny sample of what I persionally am going to need now.
 		locales = []Locale{

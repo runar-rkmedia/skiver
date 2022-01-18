@@ -73,3 +73,10 @@ type Organization struct {
 	JoinID        string    `json:"join_id,omitempty"`
 	JoinIDExpires time.Time `json:"join_id_expires"`
 }
+
+func (e User) Namespace() string {
+	return e.Kind()
+}
+func (e Entity) Kind() string {
+	return string(PubTypeUser)
+}

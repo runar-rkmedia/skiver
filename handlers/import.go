@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/gobeam/stringy"
-	"github.com/runar-rkmedia/skiver/internal"
 	"github.com/runar-rkmedia/skiver/interpolator"
 	"github.com/runar-rkmedia/skiver/interpolator/lexer"
 	"github.com/runar-rkmedia/skiver/interpolator/parser"
@@ -51,8 +50,7 @@ func newWarning(msg string, kind WarningKind, level WarningLevel) Warning {
 func ImportI18NTranslation(
 	locales []types.Locale,
 	localeHint *types.Locale,
-	projectID string,
-	createdBy string,
+	base types.Project,
 	source types.CreatorSource,
 	input map[string]interface{},
 ) (*Import, []Warning, error) {
@@ -63,11 +61,14 @@ func ImportI18NTranslation(
 	if input == nil || len(input) == 0 {
 		return nil, w, fmt.Errorf("Empty input")
 	}
-	if projectID == "" {
-		return nil, w, fmt.Errorf("ProjectID is required")
+	if base.ID == "" {
+		return nil, w, fmt.Errorf("base.projectId (ProjectID) is required")
 	}
-	if createdBy == "" {
-		return nil, w, fmt.Errorf("source is required")
+	if base.CreatedBy == "" {
+		return nil, w, fmt.Errorf("base.createdBy is required")
+	}
+	if base.OrganizationID == "" {
+		return nil, w, fmt.Errorf("base.organizationID is required")
 	}
 	if source == "" {
 		return nil, w, fmt.Errorf("source is required")
@@ -124,8 +125,9 @@ func ImportI18NTranslation(
 			cat := imp.Categories[category]
 			cat.Key = category
 			cat.Title = InferTitle(category)
-			cat.ProjectID = projectID
-			cat.CreatedBy = createdBy
+			cat.ProjectID = base.ID
+			cat.CreatedBy = base.CreatedBy
+			cat.OrganizationID = base.OrganizationID
 			if cat.Translations == nil {
 				cat.Translations = make(map[string]types.ExtendedTranslation)
 			}
@@ -134,7 +136,8 @@ func ImportI18NTranslation(
 			}
 			t := cat.Translations[translation]
 			t.Key = translation
-			t.CreatedBy = createdBy
+			t.CreatedBy = base.CreatedBy
+			t.OrganizationID = base.OrganizationID
 			t.Title = InferTitle(translation)
 			if t.Values == nil {
 				t.Values = make(map[string]types.TranslationValue)
@@ -191,7 +194,6 @@ func ImportI18NTranslation(
 					if t.Variables == nil {
 						t.Variables = make(map[string]interface{})
 					}
-					fmt.Println(internal.MustJSON(n))
 					if _, ok := t.Variables["_refs:"+key]; !ok {
 						if n.Right != nil {
 							t.Variables["_refs:"+key] = n.Right.Token.Literal
@@ -236,7 +238,8 @@ func ImportI18NTranslation(
 				}
 			}
 			tv.LocaleID = locale.ID
-			tv.CreatedBy = createdBy
+			tv.CreatedBy = base.CreatedBy
+			tv.OrganizationID = base.OrganizationID
 			tv.Source = source
 
 			t.Values[tvId] = tv

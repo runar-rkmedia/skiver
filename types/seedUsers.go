@@ -5,9 +5,8 @@ import "fmt"
 type userSeeder interface {
 	CreateOrganization(org Organization) (Organization, error)
 	GetOrganizations() (map[string]Organization, error)
-
 	CreateUser(user User) (User, error)
-	GetUserByUserName(userName string) (*User, error)
+	FindUserByUserName(organizationID, userName string) (*User, error)
 }
 
 // Creates users and the initial organization.
@@ -31,7 +30,7 @@ func SeedUsers(db userSeeder, users []User, pwHasher func(s string) ([]byte, err
 	}
 
 	organizationID := org.ID
-	if users == nil || len(users) == 0 {
+	if len(users) == 0 {
 		users = []User{{
 			UserName:              "admin",
 			Active:                true,
@@ -40,7 +39,7 @@ func SeedUsers(db userSeeder, users []User, pwHasher func(s string) ([]byte, err
 			CanCreateUsers:        true,
 		}}
 	}
-	if v, _ := db.GetUserByUserName(users[0].UserName); v != nil {
+	if v, _ := db.FindUserByUserName(org.ID, users[0].UserName); v != nil {
 		return &org, nil
 	}
 	for i := 0; i < len(users); i++ {

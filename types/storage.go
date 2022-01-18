@@ -4,13 +4,16 @@ import (
 	"time"
 )
 
-type Storage interface {
-	Size() (int64, error)
-
-	GetUser(userId string) (User, error)
-	GetUsers(max int, filter ...User) (map[string]User, error)
-	GetUserByUserName(userName string) (*User, error)
+type UserStorage interface {
+	GetUser(userId string) (*User, error)
+	FindUsers(max int, filter ...User) (map[string]User, error)
+	FindUserByUserName(organizationID, userName string) (*User, error)
 	CreateUser(user User) (User, error)
+}
+
+type Storage interface {
+	UserStorage
+	Size() (int64, error)
 
 	GetOrganization(organizationID string) (*Organization, error)
 	GetOrganizations() (map[string]Organization, error)
@@ -66,4 +69,8 @@ type Entity struct {
 	Deleted *time.Time `json:"deleted,omitempty"`
 	// Organizations are completely seperate from each-other.
 	OrganizationID string `json:"-"`
+}
+
+func (e Entity) IDString() string {
+	return e.ID
 }

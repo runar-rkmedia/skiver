@@ -39,7 +39,8 @@ en:
 				Categories: map[string]types.ExtendedCategory{"general": {
 					Category: types.Category{
 						Entity: types.Entity{
-							CreatedBy: "jim",
+							CreatedBy:      "jim",
+							OrganizationID: "org-123",
 						},
 						Title:       "General",
 						Description: "",
@@ -51,7 +52,8 @@ en:
 						"_strangeNonContext": {
 							Translation: types.Translation{
 								Entity: types.Entity{
-									CreatedBy: "jim",
+									CreatedBy:      "jim",
+									OrganizationID: "org-123",
 								},
 								Key:   "_strangeNonContext",
 								Title: "Strange non context",
@@ -59,7 +61,8 @@ en:
 							Values: map[string]types.TranslationValue{
 								"loc-en": {
 									Entity: types.Entity{
-										CreatedBy: "jim",
+										CreatedBy:      "jim",
+										OrganizationID: "org-123",
 									},
 									Value:    "foo",
 									LocaleID: "loc-en",
@@ -71,7 +74,8 @@ en:
 						"_strange": {
 							Translation: types.Translation{
 								Entity: types.Entity{
-									CreatedBy: "jim",
+									CreatedBy:      "jim",
+									OrganizationID: "org-123",
 								},
 								Key:   "_strange",
 								Title: "Strange",
@@ -79,7 +83,8 @@ en:
 							Values: map[string]types.TranslationValue{
 								"loc-en": {
 									Entity: types.Entity{
-										CreatedBy: "jim",
+										CreatedBy:      "jim",
+										OrganizationID: "org-123",
 									},
 									LocaleID: "loc-en",
 									Source:   "test-import",
@@ -91,7 +96,8 @@ en:
 						"thisIsFine": {
 							Translation: types.Translation{
 								Entity: types.Entity{
-									CreatedBy: "jim",
+									CreatedBy:      "jim",
+									OrganizationID: "org-123",
 								},
 								Key:   "thisIsFine",
 								Title: "This is fine",
@@ -99,7 +105,8 @@ en:
 							Values: map[string]types.TranslationValue{
 								"loc-en": {
 									Entity: types.Entity{
-										CreatedBy: "jim",
+										CreatedBy:      "jim",
+										OrganizationID: "org-123",
 									},
 									Value:    "Great",
 									LocaleID: "loc-en",
@@ -110,7 +117,8 @@ en:
 								},
 								"loc-no": {
 									Entity: types.Entity{
-										CreatedBy: "jim",
+										CreatedBy:      "jim",
+										OrganizationID: "org-123",
 									},
 									Value:    "",
 									LocaleID: "loc-no",
@@ -140,7 +148,8 @@ en:
 				Categories: map[string]types.ExtendedCategory{types.RootCategory: {
 					Category: types.Category{
 						Entity: types.Entity{
-							CreatedBy: "jim",
+							CreatedBy:      "jim",
+							OrganizationID: "org-123",
 						},
 						Title:       "Root",
 						Description: "",
@@ -151,7 +160,8 @@ en:
 						"meaningOfLife": {
 							Translation: types.Translation{
 								Entity: types.Entity{
-									CreatedBy: "jim",
+									CreatedBy:      "jim",
+									OrganizationID: "org-123",
 								},
 								Key:   "meaningOfLife",
 								Title: "Meaning of life",
@@ -163,7 +173,8 @@ en:
 							Values: map[string]types.TranslationValue{
 								"loc-en": {
 									Entity: types.Entity{
-										CreatedBy: "jim",
+										CreatedBy:      "jim",
+										OrganizationID: "org-123",
 									},
 									Value:    "The meaning of $t(life) is {{count}}",
 									LocaleID: "loc-en",
@@ -174,7 +185,8 @@ en:
 						"life": {
 							Translation: types.Translation{
 								Entity: types.Entity{
-									CreatedBy: "jim",
+									CreatedBy:      "jim",
+									OrganizationID: "org-123",
 								},
 								Key:   "life",
 								Title: "Life",
@@ -182,7 +194,8 @@ en:
 							Values: map[string]types.TranslationValue{
 								"loc-en": {
 									Entity: types.Entity{
-										CreatedBy: "jim",
+										CreatedBy:      "jim",
+										OrganizationID: "org-123",
 									},
 									Value:    "life",
 									LocaleID: "loc-en",
@@ -206,7 +219,11 @@ en:
 				t.Errorf("TEST-INPUT_ERROR: Failed to unmarshal: %s %s", err, tt.fields)
 				return
 			}
-			got, warnings, err := ImportI18NTranslation(_test_locales, tt.localeHint, "proj-123", "jim", "test-import", j)
+			base := types.Project{}
+			base.ID = "proj-123"
+			base.CreatedBy = "jim"
+			base.OrganizationID = "org-123"
+			got, warnings, err := ImportI18NTranslation(_test_locales, tt.localeHint, base, "test-import", j)
 			if !tt.wantErr {
 				testza.AssertNoError(t, err)
 			} else if got == nil {

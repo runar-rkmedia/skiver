@@ -55,19 +55,16 @@ func WriteOutput(isError bool, statusCode int, output interface{}, r *http.Reque
 		if jmesPath != "" {
 			b, err := json.Marshal(output)
 			if err != nil {
-				WriteErr(err, CodeErrMarshal, r, rw)
-				return err
+				return combineErr(WriteErr(err, CodeErrMarshal, r, rw))
 			}
 			var JSON map[string]interface{}
 			err = json.Unmarshal(b, &JSON)
 			if err != nil {
-				WriteErr(err, CodeErrUnmarshal, r, rw)
-				return err
+				return combineErr(WriteErr(err, CodeErrUnmarshal, r, rw))
 			}
 			result, err := jmespath.Search(jmesPath, JSON)
 			if err != nil {
-				WriteErr(fmt.Errorf("failed in jmes-path '%s': %w", jmesPath, err), CodeErrJmesPath, r, rw)
-				return err
+				return combineErr(WriteErr(fmt.Errorf("failed in jmes-path '%s': %w", jmesPath, err), CodeErrJmesPath, r, rw))
 			}
 
 			if o == OutputToml {
@@ -77,8 +74,7 @@ func WriteOutput(isError bool, statusCode int, output interface{}, r *http.Reque
 					// rw.Write([]byte(result.(string)))
 					// return
 				case int, int8, int16, int32, int64:
-					rw.Write([]byte(fmt.Sprintf("%d", result)))
-					return err
+					return combineErr(unpackErr(rw.Write([]byte(fmt.Sprintf("%d", result)))))
 				}
 			}
 			// Technically not an error, but we dont want to run jmes-path-again
@@ -92,39 +88,48 @@ func WriteOutput(isError bool, statusCode int, output interface{}, r *http.Reque
 	case OutputJson:
 		b, err := json.Marshal(output)
 		if err != nil {
-			WriteErr(err, CodeErrMarshal, r, rw)
-			return err
+			return combineErr(WriteErr(err, CodeErrMarshal, r, rw))
 		}
-		rw.Write(b)
+		return unpackErr(rw.Write(b))
 	case OutputYaml:
 		b, err := yaml.Marshal(output)
 		if err != nil {
-			WriteErr(err, CodeErrMarshal, r, rw)
-			return err
+			return combineErr(WriteErr(err, CodeErrMarshal, r, rw))
 		}
-		rw.Write(b)
+		return unpackErr(rw.Write(b))
 	case OutputToml:
 		// toml does not use json-tags.
 		// This is basically the same as what yaml does
 		// E.g. it first uses json-marshaller/unmarshal then toml-marshal.
 		jb, err := json.Marshal(output)
 		if err != nil {
-			WriteErr(err, CodeErrMarshal, r, rw)
-			return err
+			return combineErr(WriteErr(err, CodeErrMarshal, r, rw))
 		}
 
 		var JSON map[string]interface{}
 		err = json.Unmarshal(jb, &JSON)
 		if err != nil {
-			WriteErr(err, CodeErrMarshal, r, rw)
-			return err
+			return combineErr(WriteErr(err, CodeErrMarshal, r, rw))
 		}
 		b, err := toml.Marshal(JSON)
 		if err != nil {
-			WriteErr(err, CodeErrMarshal, r, rw)
-			return err
+			return combineErr(err, WriteErr(err, CodeErrMarshal, r, rw))
 		}
-		rw.Write(b)
+		return unpackErr(rw.Write(b))
 	}
 	return nil
+}
+
+func unpackErr(i int, err error) error {
+	return err
+}
+func combineErr(errs ...error) error {
+	l := len(errs)
+	if l == 0 {
+		return nil
+	}
+	if l == 1 {
+		return errs[0]
+	}
+	return fmt.Errorf("Multiple errors: %w, %v", errs[0], errs[1:])
 }
