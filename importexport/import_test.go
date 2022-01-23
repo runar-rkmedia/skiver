@@ -1,4 +1,4 @@
-package handlers
+package importexport
 
 import (
 	"strings"
@@ -27,10 +27,15 @@ func TestImport(t *testing.T) {
 en:
   general:
     thisIsFine: Great
-    thisIsFine: Great
     thisIsFine_superb: Fantastic
     _strangeNonContext: foo
     _strange_context: baz
+		form: 
+		  buttons: 
+			  submit: "Submit {{count}} items"
+		  inputLabel: 
+			  email: "Email"
+			  age: "Between {{minAge}} and {{maxAge}}"
 'no': # Fun with norwegian in yaml!
   general:
     thisIsFine_superb: Fantastisk
@@ -46,6 +51,140 @@ en:
 						Description: "",
 						Key:         "general",
 						ProjectID:   "proj-123",
+						SubCategories: []types.Category{
+							{
+								Entity: types.Entity{
+									CreatedBy:      "jim",
+									OrganizationID: "org-123",
+								},
+								Title:       "Form",
+								Description: "",
+								Key:         "form",
+								ProjectID:   "proj-123",
+								SubCategories: []types.Category{
+									{
+										Entity: types.Entity{
+											CreatedBy:      "jim",
+											OrganizationID: "org-123",
+										},
+										Title:       "Buttons",
+										Description: "",
+										Key:         "buttons",
+										ProjectID:   "proj-123",
+									},
+									{
+										Entity: types.Entity{
+											CreatedBy:      "jim",
+											OrganizationID: "org-123",
+										},
+										Title:       "Input Labels",
+										Description: "",
+										Key:         "inputLabels",
+										ProjectID:   "proj-123",
+									},
+								},
+							},
+						},
+					},
+					SubCategories: []types.ExtendedCategory{
+						{
+							Category: types.Category{
+								Entity: types.Entity{
+									CreatedBy:      "jim",
+									OrganizationID: "org-123",
+								},
+								Title:       "Buttons",
+								Description: "",
+								Key:         "buttons",
+								ProjectID:   "proj-123",
+							},
+							Translations: map[string]types.ExtendedTranslation{
+								"submit": {
+									Translation: types.Translation{
+										Entity: types.Entity{
+											CreatedBy:      "jim",
+											OrganizationID: "org-123",
+										},
+										Key:   "submit",
+										Title: "Submit",
+										Variables: map[string]interface{}{
+											"count": 42,
+										},
+									},
+									Values: map[string]types.TranslationValue{
+										"loc-en": {
+											Entity: types.Entity{
+												CreatedBy:      "jim",
+												OrganizationID: "org-123",
+											},
+											Value:    "Submit {{count}} items",
+											LocaleID: "loc-en",
+											Source:   "test-import",
+										},
+									},
+								},
+							},
+						},
+						{
+							Category: types.Category{
+								Entity: types.Entity{
+									CreatedBy:      "jim",
+									OrganizationID: "org-123",
+								},
+								Title:       "Input Labels",
+								Description: "",
+								Key:         "inputLabels",
+								ProjectID:   "proj-123",
+							},
+							Translations: map[string]types.ExtendedTranslation{
+								"age": {
+									Translation: types.Translation{
+										Entity: types.Entity{
+											CreatedBy:      "jim",
+											OrganizationID: "org-123",
+										},
+										Key:   "age",
+										Title: "Age",
+										Variables: map[string]interface{}{
+											"minAge": "???",
+											"maxAge": "???",
+										},
+									},
+									Values: map[string]types.TranslationValue{
+										"loc-en": {
+											Entity: types.Entity{
+												CreatedBy:      "jim",
+												OrganizationID: "org-123",
+											},
+											Value:    "Between {{minAge}} and {{maxAge}}",
+											LocaleID: "loc-en",
+											Source:   "test-import",
+										},
+									},
+								},
+								"email": {
+									Translation: types.Translation{
+										Entity: types.Entity{
+											CreatedBy:      "jim",
+											OrganizationID: "org-123",
+										},
+										Key:   "submit",
+										Title: "Submit",
+									},
+									Values: map[string]types.TranslationValue{
+										"loc-en": {
+											Entity: types.Entity{
+												CreatedBy:      "jim",
+												OrganizationID: "org-123",
+											},
+											Value:    "Email",
+											LocaleID: "loc-en",
+											Source:   "test-import",
+										},
+									},
+								},
+							},
+						},
 					},
 					Translations: map[string]types.ExtendedTranslation{
 

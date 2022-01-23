@@ -12,6 +12,7 @@
     "dev": "sh -c 'yarn build -d & serve dist & wait' ",
     "gen": "yarn dtsgen --out src/apiTypes.d.ts ../swagger.yml",
     "gogen": "go generate ../...",
+    "build:prettier": "esbuild prettier.mjs --bundle --platform=node --target=node16 --outfile=prettier.js --minify --legal-comments=none",
     "build": "node build.mjs"
   },
   "dependencies": {
@@ -43,6 +44,7 @@
     "esbuild-svelte": "^0.6.0",
     "pollen-css": "^2.1.0",
     "prettier": "^2.5.1",
+    "prettier-plugin-jsdoc": "^0.3.30",
     "prettier-plugin-svelte": "^2.5.1",
     "sass": "^1.45.1",
     "simplytyped": "^3.3.0",

@@ -1,4 +1,4 @@
-package handlers
+package importexport
 
 import (
 	"fmt"
@@ -76,7 +76,7 @@ func ImportI18NTranslation(
 	if localeLength == 0 && localeHint == nil {
 		return nil, w, fmt.Errorf("No locales")
 	}
-	mv, err := getMapPaths(input)
+	mv, err := GetMapPaths(input)
 	if err != nil {
 		return nil, w, err
 	}
@@ -320,7 +320,7 @@ func getNode(mapPath []string) (n Node) {
 
 // returns the map as a slice of paths where the last item in the path is the value.
 // Fot translations, this is ok, since they are strings in any case.
-func getMapPaths(input interface{}, paths ...string) (n [][]string, err error) {
+func GetMapPaths(input interface{}, paths ...string) (n [][]string, err error) {
 	switch input.(type) {
 	case nil:
 		return
@@ -340,7 +340,7 @@ func getMapPaths(input interface{}, paths ...string) (n [][]string, err error) {
 			p := make([]string, len(paths)+1)
 			copy(p, paths)
 			p[len(p)-1] = k
-			nn, err := getMapPaths(v, p...)
+			nn, err := GetMapPaths(v, p...)
 			if err != nil {
 				return n, err
 			}

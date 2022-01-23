@@ -1,0 +1,52 @@
+{{- $root := . -}}
+  /**
+  {{ .Category.Title | wrap 80 }}
+  {{- if .Category.Description}}
+
+  {{.Category.Description | wrap 80}}
+  {{- end}}
+  */
+  {{ .Category.Key }}: {
+    {{- if .Category.HasTranslationForLocale $root.LocaleID }}
+    {{- range $translation := .Category.Translations}}
+      /**
+        * {{ $translation.Title | wrap 80}}
+        {{- if $translation.Description}}
+        *
+        * {{$translation.Description | wrap 80}}
+      {{- end}}
+        {{ if $translation.Variables }}
+
+# Variables (with example-values):
+
+```yaml
+{{$translation.Variables | toYaml}}
+```
+
+        {{end}}
+        {{-  range $translation.Values}}
+        {{- if eq .LocaleID $root.LocaleID }}
+          *
+          * Value: {{ .Value | wrap 80 }}
+        {{- end}}
+      {{- end}}
+      */
+      {{$translation.Key}}: {{if $root.AsValue -}}
+          {{ range $translation.Values}}
+            {{- if eq .LocaleID $root.LocaleID }}
+              {{- .Value | quote}},
+            {{- end}}
+          {{- end}}
+        {{- end}}
+        {{- if not $root.AsValue -}}
+          "{{$root.Path}}.{{$translation.Key}}",
+      {{ end -}}
+    {{- end }}
+    {{- end }}
+
+    {{- range $sc := .Category.SubCategories }}
+    {{- if $sc.HasTranslationForLocaleDeep $root.LocaleID -}}
+    {{ template "typescript_category.tmpl" dict "Category" $sc "LocaleID" $root.LocaleID "AsValue" $root.AsValue "Path" (join "." $root.Path $sc.Key)  -}}
+    {{- end -}}
+     {{- end -}}
+  }

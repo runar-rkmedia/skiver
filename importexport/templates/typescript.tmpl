@@ -1,0 +1,29 @@
+/** 
+         Title:   {{.Project.Title}}
+  Generated on:   {{dateInZone "2006-01-02" now "UTC" }}
+{{- if .Project.UpdatedAt}}
+Last update on:   {{dateInZone "2006-01-02" .Project.UpdatedAt "UTC" }}
+{{- end }}
+*/
+
+{{$root := .}}
+{{range $k, $locale := .Locales}}
+
+/** 
+{{$locale.Title}}
+
+{{- if $locale.Fallbacks}}
+Fallbacks: {{ range $locale.Fallbacks }}
+  - {{ . }} {{ getLocale $root.Project.Locales . | jmes "title" -}}
+{{ end }}
+{{end}}
+*/
+const {{ $locale.Title | camelcase }} = {
+  {{- range $category := $locale.Categories}}
+    {{- if $category.HasTranslationForLocaleDeep $locale.ID}}
+      {{ template "typescript_category.tmpl" (dict "Category" $category "LocaleID" $locale.ID "AsValue" false "Path" $category.Key )}}
+    {{- end -}}
+  {{- end -}}
+  }
+
+{{end}}

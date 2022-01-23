@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"strings"
 )
 
 type ExtendedProject struct {
@@ -11,31 +10,22 @@ type ExtendedProject struct {
 	Categories map[string]ExtendedCategory
 	Locales    map[string]Locale
 }
+
 type ExtendedCategory struct {
 	Category
-	Exists       *bool `json:"exists,omitempty"`
-	Translations map[string]ExtendedTranslation
+	SubCategories []ExtendedCategory
+	Exists        *bool `json:"exists,omitempty"`
+	Translations  map[string]ExtendedTranslation
 }
 type ExtendedTranslation struct {
 	Translation
 	Exists *bool `json:"exists,omitempty"`
 	Values map[string]TranslationValue
 }
-
-type ExportI18NOptions struct {
-	// Must be a key of locale
-	LocaleKey    LocaleKey
-	LocaleFilter []string
+type ExtendedLocale struct {
+	Locale
+	Categories map[string]ExtendedCategory
 }
-
-type LocaleKey string
-
-const (
-	LocaleKeyIETF LocaleKey = "ietf"
-	LocaleKeyISO1 LocaleKey = "iso1"
-	LocaleKeyISO2 LocaleKey = "iso2"
-	LocaleKeyISO3 LocaleKey = "iso3"
-)
 
 func (t Translation) Extend(db Storage, options ...ExtendOptions) (et ExtendedTranslation, err error) {
 	opts, err := getExtendOptions(options)
@@ -149,82 +139,74 @@ func (p Project) Extend(db Storage, options ...ExtendOptions) (ep ExtendedProjec
 	return
 }
 
-func ExportI18N(ex ExtendedProject, options ExportI18NOptions) (i18n I18N, err error) {
-	i18n = make(I18N)
-	if options.LocaleKey == "" {
-		options.LocaleKey = LocaleKeyISO1
-	}
-	for _, l := range ex.Locales {
-		key := getLocaleKey(options.LocaleKey, l)
-		if key == "" {
-			err = fmt.Errorf("the locale-key was empty")
-			return
-		}
-		if len(options.LocaleFilter) > 0 {
-			found := false
-		inner:
-			for _, v := range options.LocaleFilter {
-				if key == v {
-					found = true
-					break inner
-				}
-			}
-			if !found {
-				continue
-			}
-		}
-		i18n[key] = map[string]map[string]string{}
-	}
-	for _, c := range ex.Categories {
-		cKey := strings.TrimSpace(c.Key)
-		for _, l := range ex.Locales {
-			key := getLocaleKey(options.LocaleKey, l)
-			if i18n[key] == nil {
-				continue
-			}
-			i18n[key][cKey] = map[string]string{}
-		}
-		for _, t := range c.Translations {
-			tKey := t.Key
-			for _, v := range t.Values {
-				if v.Value == "" {
-					continue
-				}
-				locale, ok := ex.Locales[v.LocaleID]
+func (ep ExtendedProject) ByLocales() (map[string]ExtendedLocale, error) {
+	el := map[string]ExtendedLocale{}
+
+	// TODO: needs improvement... It should only add leafnodes that match the language
+	for _, c := range ep.Categories {
+		for _, l := range ep.Locales {
+			if c.HasTranslationForLocaleDeep(l.ID) {
+				loc, ok := el[l.ID]
 				if !ok {
-					err = fmt.Errorf("the locale was not found in the export")
-					return
+					loc = ExtendedLocale{Locale: l, Categories: map[string]ExtendedCategory{}}
 				}
-				localeKey := getLocaleKey(options.LocaleKey, locale)
-				if i18n[localeKey] == nil {
-					continue
-				}
+				loc.Categories[c.ID] = c
+				el[loc.ID] = loc
+			}
 
-				i18n[localeKey][cKey][tKey] = v.Value
-				if v.Context != nil {
-					for context, v := range v.Context {
-						tKey = tKey + "_" + context
-						i18n[localeKey][cKey][tKey] = v
-					}
-				}
+		}
+	}
+
+	return el, nil
+}
+
+func (el ExtendedCategory) HasTranslationForLocale(localeID string) bool {
+
+	for _, t := range el.Translations {
+		for _, tv := range t.Values {
+			if tv.LocaleID == localeID {
+				return true
 			}
 		}
 	}
-	return
+	return false
 }
-
-func getLocaleKey(key LocaleKey, locale Locale) string {
-	switch key {
-	case LocaleKeyIETF:
-		return locale.IETF
-	case LocaleKeyISO1:
-		return locale.Iso639_1
-	case LocaleKeyISO2:
-		return locale.Iso639_2
-	case LocaleKeyISO3:
-		return locale.Iso639_3
+func (el ExtendedCategory) HasTranslationForLocaleDeep(localeID string) bool {
+	if el.HasTranslationForLocale(localeID) {
+		return true
 	}
-	return locale.Iso639_1
+	for _, c := range el.SubCategories {
+		if c.HasTranslationForLocaleDeep(localeID) {
+			return true
+		}
+	}
+	return false
 }
 
-type I18N map[string]map[string]map[string]string
+// TOOD: this just replaces earlier categories with the leaf-category.
+func (ep ExtendedProject) traverseCategory(c ExtendedCategory, el map[string]ExtendedLocale) error {
+
+	for _, t := range c.Translations {
+		for _, tv := range t.Values {
+			loc, ok := el[tv.LocaleID]
+			if !ok {
+				if l, ok := ep.Locales[tv.LocaleID]; !ok {
+
+					return fmt.Errorf("Could not find locale for id %s", tv.LocaleID)
+				} else {
+					loc = ExtendedLocale{Locale: l, Categories: map[string]ExtendedCategory{}}
+				}
+			}
+			loc.Categories[c.ID] = c
+			el[tv.LocaleID] = loc
+		}
+	}
+	for _, cc := range c.SubCategories {
+		err := ep.traverseCategory(cc, el)
+		if err != nil {
+			return err
+		}
+
+	}
+	return nil
+}

@@ -11,6 +11,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/google/uuid"
 	"github.com/runar-rkmedia/skiver/bboltStorage"
+	"github.com/runar-rkmedia/skiver/importexport"
 	"github.com/runar-rkmedia/skiver/localuser"
 	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/requestContext"
@@ -214,20 +215,26 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				out[v.ID] = ep
 			}
 			if format == "i18n" {
-				out := map[string]types.I18N{}
+				out := map[string]interface{}{}
 				for _, p := range ps {
 					ep, err := p.Extend(ctx.DB)
 					if err != nil {
 						rc.WriteErr(err, requestContext.CodeErrProject)
 						return
 					}
-					i18n, err := types.ExportI18N(ep, types.ExportI18NOptions{
+					i18nodes, err := importexport.ExportI18N(ep, importexport.ExportI18NOptions{
 						LocaleFilter: locales,
-						LocaleKey:    types.LocaleKey(localeKey)})
+						LocaleKey:    importexport.LocaleKey(localeKey)})
 					if err != nil {
 						rc.WriteErr(err, requestContext.CodeErrProject)
 						return
 					}
+					i18n, err := importexport.I18NNodeToI18Next(i18nodes)
+					if err != nil {
+						rc.WriteErr(err, requestContext.CodeErrProject)
+						return
+					}
+
 					// If the user requested just a single project, we dont want to return a map
 					if flatten && projectsLength == 1 {
 						if len(locales) == 1 {
@@ -550,192 +557,20 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					rc.WriteErr(err, requestContext.CodeErrProject)
 					return
 				}
-				if project.OrganizationID != orgId {
-					rc.WriteErr(err, requestContext.CodeErrProject)
-					return
-				}
 
 				if project == nil {
 					rc.WriteError("Project was not found", requestContext.CodeErrNotFoundProject)
 					return
 				}
-				var locale *types.Locale
-				if localeLike != "" {
-					if true {
-
-						rc.WriteError("Locale from url is not yet implemented. Please add the locale as the root-key in the body", requestContext.CodeErrNotImplemented)
-						return
-					}
-					locale, err := ctx.DB.GetLocaleByIDOrShortName(localeLike)
-					if err != nil {
-						rc.WriteErr(err, requestContext.CodeErrLocale)
-						return
-					}
-					if locale == nil {
-						rc.WriteError("Locale not found", requestContext.CodeErrNotFoundLocale, localeLike)
-						return
-					}
-				}
-				locales, err := ctx.DB.GetLocales()
-				if err != nil {
-					rc.WriteErr(err, requestContext.CodeErrLocale)
-					return
-				}
-				localesSlice := make([]types.Locale, len(locales))
-				i := 0
-				for _, v := range locales {
-					localesSlice[i] = v
-					i++
-				}
-				base := types.Project{}
-				base.ID = project.ID
-				base.CreatedBy = session.User.ID
-				base.OrganizationID = orgId
-				imp, warnings, err := ImportI18NTranslation(localesSlice, locale, base, types.CreatorSourceImport, input)
-				if err != nil {
-					rc.WriteErr(err, requestContext.CodeErrImport)
-					return
-				}
-				if imp == nil {
-					rc.WriteError("Import resulted in null", requestContext.CodeErrImport)
-					return
-				}
-
-				extendOptions := types.ExtendOptions{ByKeyLike: true}
-				ex, err := project.Extend(ctx.DB, extendOptions)
-				if err != nil {
+				if project.OrganizationID != orgId {
 					rc.WriteErr(err, requestContext.CodeErrProject)
 					return
 				}
-				type Updates struct {
-					TranslationValueUpdates    map[string]types.TranslationValue
-					TranslationsValueCreations map[string]types.TranslationValue
-					TranslationCreations       map[string]types.Translation
-					CategoryCreations          map[string]types.Category
-				}
 
-				updates := Updates{
-					map[string]types.TranslationValue{},
-					map[string]types.TranslationValue{},
-					map[string]types.Translation{},
-					map[string]types.Category{},
-				}
-				// TODO: this should ideally all be done in a single atomic commit.
-				// TODO: handle changes to translation-values
-				for cKey, cat := range imp.Categories {
-					exCat, catExists := ex.Categories[cat.Key]
-					cat.Exists = &catExists
-					if !catExists {
-						if !dry {
-							created, err := ctx.DB.CreateCategory(cat.Category)
-							if err != nil {
-								rc.WriteError(err.Error(), requestContext.CodeErrCreateCategory, cat)
-								return
-							}
-							esc, err := created.Extend(ctx.DB, extendOptions)
-							if err != nil {
-								rc.WriteErr(err, requestContext.CodeErrCategory)
-								return
-							}
-							exCat = esc
-							catExists = true
-							updates.CategoryCreations[created.ID] = created
-						} else {
-							updates.CategoryCreations["_toCreate_"+cKey+""] = cat.Category
-						}
-					}
-					for tKey, t := range cat.Translations {
-						var exT *types.ExtendedTranslation
-						if exCat.ID == "" {
-							t.Exists = boolPointer(false)
-						} else {
-							ex, tExists := exCat.Translations[t.Key]
-							t.Exists = &tExists
-							t.CategoryID = exCat.ID
-							if tExists {
-								exT = &ex
-							} else {
-								if !dry {
-									created, err := ctx.DB.CreateTranslation(t.Translation)
-									if err != nil {
-										rc.WriteError(err.Error(), requestContext.CodeErrTranslation, t.Translation)
-										return
-									}
-									esc, err := created.Extend(ctx.DB, extendOptions)
-									if err != nil {
-										rc.WriteErr(err, requestContext.CodeErrTranslation)
-										return
-									}
-									ex = esc
-									exT = &esc
-									tExists = *boolPointer(true)
-									updates.TranslationCreations[created.ID] = created
-								} else {
-									updates.TranslationCreations["_toCreate_in_Category_'"+cKey+"'_"+tKey] = t.Translation
-								}
-							}
-						}
-						if exT == nil {
-							if dry {
-								exT = &t
-								exT.Exists = boolPointer(false)
-							} else {
-								// TODO: Create translationValue
-								rc.WriteError("condition not implemented: translation did not resolve", requestContext.CodeErrNotImplemented, map[string]interface{}{"translation": t})
-								return
-							}
-						}
-						for k, tv := range t.Values {
-							tv.TranslationID = exT.ID
-							exTv, existsTV := exT.Values[tv.LocaleID]
-							if existsTV {
-								if exTv.Value != tv.Value {
-									exTv.Value = tv.Value
-									if !dry {
-										updated, err := ctx.DB.UpdateTranslationValue(exTv)
-										if err != nil {
-											rc.WriteError(err.Error(), requestContext.CodeErrUpdateTranslationValue, tv)
-											return
-										}
-										updates.TranslationValueUpdates[updated.ID] = updated
-									} else {
-										updates.TranslationValueUpdates[exTv.ID] = exTv
-									}
-								}
-							} else {
-								if !dry {
-									created, err := ctx.DB.CreateTranslationValue(tv)
-									if err != nil {
-										details := struct {
-											Input    types.TranslationValue
-											Response types.TranslationValue
-										}{tv, created}
-										rc.WriteError(err.Error(), requestContext.CodeErrCreateTranslationValue, details)
-										return
-									}
-									updates.TranslationsValueCreations[created.ID] = created
-								} else {
-									updates.TranslationsValueCreations["_toCreate_in_Category_"+cKey+"_"+"under_Translation_"+tKey+"_"+k] = tv
-								}
-							}
-						}
-						imp.Categories[cKey].Translations[tKey] = t
-
-					}
-					imp.Categories[cKey] = cat
-				}
-
-				out := struct {
-					Changes  Updates
-					Imp      Import
-					Ex       types.ExtendedProject
-					Warnings []Warning
-				}{
-
-					Changes:  updates,
-					Imp:      *imp,
-					Ex:       ex,
-					Warnings: warnings,
+				out, Err := ImportIntoProject(ctx.DB, kind, session.User.ID, *project, localeLike, dry, input)
+				if Err != nil {
+					rc.WriteErr(Err, Err.GetCode())
+					return
 				}
 				rc.WriteOutput(out, http.StatusOK)
 				return

@@ -178,3 +178,4 @@ temp/
 !.yarn/sdks
 !.yarn/versions
 src/api.d.ts
+prettier.js
