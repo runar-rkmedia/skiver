@@ -374,7 +374,7 @@ en:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if !strings.Contains(tt.fields, "meaningOfLife") {
-				return
+				// return
 			}
 			var j map[string]interface{}
 			err := yamlUnmarshalAllowTabs(tt.fields, &j)

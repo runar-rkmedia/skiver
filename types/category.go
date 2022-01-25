@@ -15,7 +15,7 @@ type Category struct {
 	ProjectID      string   `json:"project_id,omitempty"`
 	TranslationIDs []string `json:"translation_ids,omitempty"`
 	// A category may have one or more Child-categories.
-	SubCategories []Category
+	SubCategories []Category `json:"sub_categories,omitempty"`
 }
 
 // Splits the key into multiple keys. Root-values are removed

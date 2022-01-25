@@ -20,7 +20,7 @@ type Locale struct {
 // swagger:model Translation
 type Translation struct {
 	Entity
-	Aliases             []string               `json:"aliases"`
+	Aliases             []string               `json:"aliases,omitempty"`
 	ParentTranslationID string                 `json:"parent_translation,omitempty"`
 	Description         string                 `json:"description,omitempty"`
 	Key                 string                 `json:"key,omitempty"`

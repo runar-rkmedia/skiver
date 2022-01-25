@@ -13,7 +13,6 @@ import (
 	"testing"
 
 	"github.com/MarvinJWendt/testza"
-	"github.com/andreyvit/diff"
 	"github.com/ghodss/yaml"
 	"github.com/go-test/deep"
 	"github.com/gookit/color"
@@ -105,9 +104,14 @@ func Compare(name string, got, want interface{}, options ...CompareOptions) erro
 					w = MustToml(want)
 				}
 			}
-			d = MustToml(diff)
 			// Toml looks great on diffs!
-			return fmt.Errorf("YAML: %s: \n%v\ndiff:\n%s\nwant:\n%v", cName(name), cGot(g), cDiff(d), cWant(w))
+
+			if true {
+
+				return fmt.Errorf("%s", lineDiff(g, w))
+			}
+			d = MustToml(diff)
+			return fmt.Errorf("YAML: %s: \n%v\n%s\n\ndiff:\n%s\nwant:\n%v", cName(name), cGot(withLineNumbers(g)), lineDiff(g, w), cDiff(d), cWant(withLineNumbers(w)))
 		}
 	}
 	if opts.Reflect {
@@ -173,6 +177,23 @@ func MustToml(j interface{}) string {
 	return string(b)
 }
 
+func withLineNumbers(si interface{}) string {
+	s, ok := si.(string)
+	if !ok {
+		return "Failed to add line-numbers"
+	}
+
+	split := strings.Split(s, "\n")
+	str := ""
+	for i := 0; i < len(split); i++ {
+		if split[i] == "" && i == len(split)-1 {
+			continue
+		}
+		str += fmt.Sprintf("%02d: %s\n", i+1, split[i])
+	}
+	return str
+}
+
 func MatchSnapshot(t *testing.T, extension string, b interface{}) {
 	var v []byte
 	switch val := b.(type) {
@@ -183,7 +204,7 @@ func MatchSnapshot(t *testing.T, extension string, b interface{}) {
 	}
 	switch {
 	case strings.HasSuffix(extension, "json"):
-		bb, err := json.Marshal(b)
+		bb, err := json.MarshalIndent(b, "", "  ")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -269,6 +290,58 @@ func matchSnapshot(t *testing.T, extension string, b []byte, overWrite bool) {
 	t.Error(StringCompare(t, want, got))
 }
 
+func lineDiff(goti, wanti interface{}) string {
+	got := goti.(string)
+	want := wanti.(string)
+	if got == want {
+		return ""
+	}
+	return LineDiff(got, want)
+}
+
+func LineDiff(got, want string) string {
+	if got == want {
+		return ""
+	}
+	gotLines := strings.Split(got, "\n")
+	wantLines := strings.Split(want, "\n")
+	lenGot := len(gotLines)
+	lenWant := len(wantLines)
+	smallest := lenGot
+	longest := lenGot
+	if lenWant < smallest {
+		smallest = lenWant
+	} else {
+		longest = lenWant
+	}
+
+	var errs []string
+	for lineNumber := 0; lineNumber < longest; lineNumber++ {
+		g := ""
+		w := ""
+		if lenGot > lineNumber {
+			g = gotLines[lineNumber]
+		}
+		if lenWant > lineNumber {
+			w = wantLines[lineNumber]
+		}
+		ln := fmt.Sprintf("%2d: ", lineNumber+1)
+		if g == w {
+			errs = append(errs, color.Gray.Render(ln+g))
+			continue
+		}
+		errs = append(errs, fmt.Sprintf("%s%s", cDiff(ln), cGot(g)))
+		errs = append(errs, fmt.Sprintf("%s%s", cDiff(ln), cWant(w)))
+	}
+	if lenWant != lenGot {
+		errs = append(errs, fmt.Sprintf("(...Linenumbers differ %d vs %d)", lenGot, lenWant))
+	}
+	if len(errs) > 0 {
+		return strings.Join(errs, "\n")
+	}
+	return fmt.Sprintf("%s | %s", got, want)
+}
+
 func StringCompare(t *testing.T, want, got string) error {
 
 	if want != got {
@@ -280,7 +353,7 @@ func StringCompare(t *testing.T, want, got string) error {
 		diffs = dmp.DiffCleanupSemantic(diffs)
 
 		// t.Errorf("Result was not as expected: %s", diffs)
-		return fmt.Errorf("Result not as expected:\n%v", diff.LineDiff(want, got))
+		return fmt.Errorf("Result not as expected:\n%v", LineDiff(want, got))
 	}
 	return nil
 }

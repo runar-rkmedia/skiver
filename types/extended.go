@@ -13,8 +13,8 @@ type ExtendedProject struct {
 
 type ExtendedCategory struct {
 	Category
-	SubCategories []ExtendedCategory
-	Exists        *bool `json:"exists,omitempty"`
+	SubCategories []ExtendedCategory `json:"sub_categories,omitempty"`
+	Exists        *bool              `json:"exists,omitempty"`
 	Translations  map[string]ExtendedTranslation
 }
 type ExtendedTranslation struct {

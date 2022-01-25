@@ -2,7 +2,6 @@ package importexport
 
 import (
 	"bytes"
-	"encoding/json"
 	"testing"
 	"time"
 
@@ -107,9 +106,9 @@ func Test_Export(t *testing.T) {
 			i18n, err := ExportI18N(tt.project, tt.options)
 
 			testza.AssertNoError(t, err)
-			b, err := json.MarshalIndent(i18n.ToMap(), "", "  ")
-			testza.AssertNoError(t, err)
-			internal.MatchSnapshot(t, "json", b)
+			// b, err := json.MarshalIndent(i18n.ToMap(), "", "  ")
+			// testza.AssertNoError(t, err)
+			internal.MatchSnapshot(t, "json", i18n.ToMap())
 			// testza.AssertEqual(t, tt.wantI18n, i18n)
 
 			var w bytes.Buffer

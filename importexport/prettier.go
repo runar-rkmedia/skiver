@@ -1,7 +1,6 @@
 package importexport
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -15,13 +14,13 @@ func Prettier(s string) (string, error) {
 	// proc := exec.Command("node", "../frontend/prettier.js", "--stdin-filepath", "out.ts")
 	r := strings.NewReader(s)
 	proc.Stdin = r
-	stdErr := bytes.NewBufferString("")
-	proc.Stderr = stdErr
+	// stdErr := bytes.NewBufferString("")
+	// proc.Stderr = stdErr
 
 	buff, err := proc.Output()
 
 	if err != nil {
-		return string(buff), fmt.Errorf("Failed to prettify input: %w %s", err, stdErr.String())
+		return string(buff), fmt.Errorf("Failed to prettify input: %w", err)
 	}
 	return string(buff), nil
 }
