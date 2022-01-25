@@ -282,6 +282,9 @@ en:
 en:
 	meaningOfLife: The meaning of $t(life) is {{count}}
 	life: life
+"no":
+	meaningOfLife: Meningen med $t(life) er {{count}}
+	life: livet
 `,
 			&Import{
 				Categories: map[string]types.ExtendedCategory{types.RootCategory: {
@@ -319,6 +322,15 @@ en:
 									LocaleID: "loc-en",
 									Source:   "test-import",
 								},
+								"loc-no": {
+									Entity: types.Entity{
+										CreatedBy:      "jim",
+										OrganizationID: "org-123",
+									},
+									Value:    "Meningen med $t(life) er {{count}}",
+									LocaleID: "loc-no",
+									Source:   "test-import",
+								},
 							},
 						},
 						"life": {
@@ -340,6 +352,15 @@ en:
 									LocaleID: "loc-en",
 									Source:   "test-import",
 								},
+								"loc-no": {
+									Entity: types.Entity{
+										CreatedBy:      "jim",
+										OrganizationID: "org-123",
+									},
+									Value:    "livet",
+									LocaleID: "loc-no",
+									Source:   "test-import",
+								},
 							},
 						},
 					},
@@ -352,22 +373,42 @@ en:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if !strings.Contains(tt.fields, "meaningOfLife") {
+				return
+			}
 			var j map[string]interface{}
 			err := yamlUnmarshalAllowTabs(tt.fields, &j)
 			if err != nil {
 				t.Errorf("TEST-INPUT_ERROR: Failed to unmarshal: %s %s", err, tt.fields)
 				return
 			}
+			node, err := importAsI18Nodes(j)
+			testza.AssertNoError(t, err)
+			// testza.AssertEqualValues(t, nil, node)
+
+			nodeMap := node.ToMap()
+			testza.AssertEqual(t, nodeMap, j, "input -> i18nNodes -> nodeMap should equal the input-value")
+
+			if err := internal.Compare("result", nodeMap, j); err != nil {
+				t.Error(err)
+			}
+			merged, err := node.MergeAsIfRootIsLocale(_test_locales)
+			testza.AssertNoError(t, err)
+			internal.MatchSnapshot(t, "merged.yaml", merged)
+
 			base := types.Project{}
 			base.ID = "proj-123"
 			base.CreatedBy = "jim"
 			base.OrganizationID = "org-123"
 			got, warnings, err := ImportI18NTranslation(_test_locales, tt.localeHint, base, "test-import", j)
 			if !tt.wantErr {
+				t.Log(got, warnings)
 				testza.AssertNoError(t, err)
 			} else if got == nil {
 				t.Error("expected error, but none was returned")
 			}
+			// testza.AssertEqual(t, tt.expects, got)
+			// return
 			if err := internal.Compare("result", got, tt.expects, internal.CompareOptions{
 				Diff:    true,
 				Reflect: true,
@@ -398,7 +439,7 @@ func yamlUnmarshalAllowTabs(s string, j interface{}) error {
 }
 
 var (
-	_test_locales = []types.Locale{
+	_test_locales = Locales{
 		{
 			Entity:   types.Entity{ID: "loc-en"},
 			Iso639_1: "en",

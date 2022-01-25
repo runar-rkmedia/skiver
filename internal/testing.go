@@ -173,8 +173,35 @@ func MustToml(j interface{}) string {
 	return string(b)
 }
 
-func MatchSnapshot(t *testing.T, extension string, b []byte) {
-	matchSnapshot(t, extension, b, false)
+func MatchSnapshot(t *testing.T, extension string, b interface{}) {
+	var v []byte
+	switch val := b.(type) {
+	case []byte:
+		v = val
+	case string:
+		v = []byte(v)
+	}
+	switch {
+	case strings.HasSuffix(extension, "json"):
+		bb, err := json.Marshal(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		v = bb
+	case strings.HasSuffix(extension, "yaml"):
+		bb, err := yaml.Marshal(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		v = bb
+	case strings.HasSuffix(extension, "toml"):
+		bb, err := toml.Marshal(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		v = bb
+	}
+	matchSnapshot(t, extension, v, false)
 }
 func OverwriteSnapshot(t *testing.T, extension string, b []byte) {
 	matchSnapshot(t, extension, b, true)

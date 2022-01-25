@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gobeam/stringy"
+	"github.com/runar-rkmedia/skiver/internal"
 	"github.com/runar-rkmedia/skiver/interpolator"
 	"github.com/runar-rkmedia/skiver/interpolator/lexer"
 	"github.com/runar-rkmedia/skiver/interpolator/parser"
@@ -44,11 +45,154 @@ func newWarning(msg string, kind WarningKind, level WarningLevel) Warning {
 	}
 }
 
+func importAsI18Nodes(input interface{}) (I18N, error) {
+	node := I18N{}
+	switch t := input.(type) {
+	case string:
+		node.Value = t
+		return node, nil
+	case map[string]interface{}:
+		node.Nodes = map[string]I18N{}
+		for k, v := range t {
+			n, err := importAsI18Nodes(v)
+			if err != nil {
+				return node, err
+			}
+			node.Nodes[k] = n
+
+		}
+		return node, nil
+
+	}
+	return node, fmt.Errorf("Unhandled type for %#v", input)
+}
+
+type Locales []types.Locale
+
+func (t Locales) GetLocaleID(key string) string {
+	for _, l := range t {
+		if l.ID == key {
+			return l.ID
+		}
+		if l.IETF == key {
+			return l.ID
+		}
+		if l.Iso639_3 == key {
+			return l.ID
+		}
+		if l.Iso639_2 == key {
+			return l.ID
+		}
+		if l.Iso639_1 == key {
+			return l.ID
+		}
+	}
+
+	return ""
+}
+
+// non-Recursively traverses the node-tree to find all categories and fill any value in the import
+func importFromCategoryNode(base types.Project, source types.CreatorSource, cateogory string, key string, node I18NWithLocales) (types.ExtendedCategory, error) {
+
+	cat := types.ExtendedCategory{
+		Translations: map[string]types.ExtendedTranslation{},
+	}
+	cat.Key = cateogory
+	cat.Title = InferTitle(cateogory)
+	cat.ProjectID = base.ID
+	cat.CreatedBy = base.CreatedBy
+	cat.OrganizationID = base.OrganizationID
+
+	if len(node.Value) > 0 {
+
+		// Not really sure about any of this...
+		// Are we always at root here???
+		t := types.ExtendedTranslation{}
+		t.Key = key
+		t.Title = InferTitle(key)
+		t.CreatedBy = base.CreatedBy
+		t.OrganizationID = base.OrganizationID
+		t.Values = map[string]types.TranslationValue{}
+		nodeValueKeys := sortedMapKeys(node.Value)
+		for _, localeId := range nodeValueKeys {
+			// TODO: infer variables, etc.
+			value := node.Value[localeId]
+			tv := types.TranslationValue{LocaleID: localeId, Value: value}
+			tv.Source = source
+
+			tv.CreatedBy = base.CreatedBy
+			tv.OrganizationID = base.OrganizationID
+			t.Values[localeId] = tv
+		}
+
+		cat.Translations[t.Key] = t
+	}
+
+	if len(node.Nodes) > 0 {
+		cat.SubCategories = []types.ExtendedCategory{}
+		keys := make([]string, len(node.Nodes))
+		i := 0
+		for k := range node.Nodes {
+			keys[i] = k
+			i++
+		}
+		sort.Strings(keys)
+
+		for _, scKey := range keys {
+			// If the child-node does not itself have nodes, they are considered translations.
+			// E.g. it depends on the next level of nodes
+			childNode := node.Nodes[scKey]
+
+			if len(childNode.Value) > 0 {
+
+				t := types.ExtendedTranslation{}
+				t.Key = scKey
+				t.Title = InferTitle(scKey)
+				t.CreatedBy = base.CreatedBy
+				t.OrganizationID = base.OrganizationID
+				t.Values = map[string]types.TranslationValue{}
+				nodeValueKeys := sortedMapKeys(childNode.Value)
+				for _, localeId := range nodeValueKeys {
+					// TODO: infer variables, etc.
+					value := childNode.Value[localeId]
+					tv := types.TranslationValue{LocaleID: localeId, Value: value}
+					tv.Source = source
+
+					tv.CreatedBy = base.CreatedBy
+					tv.OrganizationID = base.OrganizationID
+					t.Values[localeId] = tv
+				}
+				cat.Translations[t.Key] = t
+			}
+			sc, err := importFromCategoryNode(base, source, scKey, scKey, childNode)
+			if err != nil {
+				return cat, fmt.Errorf("Error occured parsing subCategories for node %s: %w", internal.MustJSON(node), err)
+			}
+			cat.SubCategories = append(cat.SubCategories, sc)
+
+		}
+	}
+
+	return cat, nil
+}
+
+func sortedMapKeys[T any](input map[string]T) []string {
+	keys := make([]string, len(input))
+	i := 0
+	for k := range input {
+		keys[i] = k
+		i++
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 // i18n-translations are either:
 // a root-elemenent of type locale as key, or the category as key, or the translation as key.
 // Every leaf-node must be of type string
 func ImportI18NTranslation(
-	locales []types.Locale,
+	// TODO: check if we actually need the locales/localeHint here, or perhaps we should use a wrapper-func
+	locales Locales,
 	localeHint *types.Locale,
 	base types.Project,
 	source types.CreatorSource,
@@ -58,7 +202,7 @@ func ImportI18NTranslation(
 	var w []Warning
 
 	localeLength := len(locales)
-	if input == nil || len(input) == 0 {
+	if len(input) == 0 {
 		return nil, w, fmt.Errorf("Empty input")
 	}
 	if base.ID == "" {
@@ -76,176 +220,228 @@ func ImportI18NTranslation(
 	if localeLength == 0 && localeHint == nil {
 		return nil, w, fmt.Errorf("No locales")
 	}
-	mv, err := GetMapPaths(input)
-	if err != nil {
-		return nil, w, err
-	}
-	// We dont need to sort, but it is nice to have idempotency where we can
-	sort.Slice(mv, sortMapPath(mv))
 	var imp = Import{
 		Categories: make(map[string]types.ExtendedCategory),
 	}
-	for i := 0; i < len(mv); i++ {
-		node := getNode(mv[i])
-		if node.Value == "" && node.Root == "" && node.MidPath == "" {
-			return nil, w, fmt.Errorf("one of the values failed to parse: %s", strings.Join(mv[i], "."))
+	var locale types.Locale
+	if localeHint != nil {
+		locale = *localeHint
+	}
+
+	nodes_, err := importAsI18Nodes(input)
+	if err != nil {
+		return nil, w, err
+	}
+	// At root-level, we expect nodes to be set, and have values.
+	if len(nodes_.Nodes) == 0 {
+		return nil, w, fmt.Errorf("No nodes found in import")
+	}
+	if nodes_.Value != "" {
+		return nil, w, fmt.Errorf("Did not expect root.node.Value to be set: %#v", nodes_)
+	}
+	var nodes I18NWithLocales
+	if locale.ID == "" {
+		// We have an input with one or more locales, where the root-node is a locale-key
+		nodes, err = nodes_.MergeAsIfRootIsLocale(locales)
+	} else {
+		// The input does not include the locale, so we assign each node the locale
+		nodes = nodes_.ToLocaleAwere(locale.ID)
+	}
+
+	fmt.Println(internal.MustYaml(nodes))
+	// We dont need to sort, but it is nice to have idempotency where we can For
+	// instance, the same failing input will always fail at the same place. It is
+	// really annoying to deal with multiple errors if each time one submits one
+	// never knows if the changed input actually had any effect since it randomly
+	// shows an error from a different node
+	nodeKeys := sortedMapKeys(nodes.Nodes)
+	// The root-nodes are probably the key for the locale, so we unwind one level of the nodes-tree
+	for _, key := range nodeKeys {
+		node := nodes.Nodes[key]
+
+		fmt.Println("nodekeys", key, node)
+		category := key
+		if len(node.Nodes) > 0 {
+			// For root-level, we reassign the the Category's key, but we still use the original for the imp.Categories map-key (otherwise multiple root-levels would replace eachother)
+			category = types.RootCategory
 		}
+		fmt.Println("\n\n---", category, key, node)
+		cat, err := importFromCategoryNode(base, source, category, category, node)
+		if err != nil {
+			return &imp, w, err
+		}
+		if ex, ok := imp.Categories[key]; ok {
+			// We must merge... or rewrite our datstructure to include all locale-values in the leaf-nodes
+			return &imp, w, fmt.Errorf("Already exists! %#v", ex)
+
+		} else {
+			imp.Categories[category] = cat
+
+		}
+
+	}
+	return &imp, w, nil
+	if true {
+		return nil, w, fmt.Errorf("not implemented")
+	}
+
+	for key, node := range nodes.Nodes {
+		fmt.Println("\n\n----", key, internal.MustYaml(node))
 
 		var locale types.Locale
-		if localeHint != nil {
-			locale = *localeHint
+		// FIXME: we should only do this at the root-level
+		category := key
+		var subCategories []string
+
+		if category == "" {
+			category = types.RootCategory
 		}
-		if locale.ID == "" {
-			split := strings.Split(node.Root, ".")
-			for i := 0; i < localeLength; i++ {
-
-				switch split[0] {
-				case locales[i].ID, locales[i].IETF, locales[i].Iso639_3, locales[i].Iso639_2, locales[i].Iso639_1:
-					locale = locales[i]
-					break
-				}
-			}
-			if locale.ID == "" {
-				return nil, w, fmt.Errorf("Failed to resolve as locale, attempted to parse '%s' as locale from value. You can add a locale as input-hint, or specify the locale within the body. The first value that failed to parse was: '%s'", split[0], strings.Join(mv[i], "."))
-			}
-			category := ""
-
-			category = strings.Join(split[1:], ".")
-			if category == "" {
-				category = types.RootCategory
-			}
-			// if len(split) > 2 {
-			// }
-			// translation := node.MidPath
-			translation, context := cutLast(node.MidPath, "_")
-			translationValue := node.Value
-			if _, ok := imp.Categories[category]; !ok {
-				imp.Categories[category] = types.ExtendedCategory{}
-			}
-			cat := imp.Categories[category]
-			cat.Key = category
-			cat.Title = InferTitle(category)
-			cat.ProjectID = base.ID
-			cat.CreatedBy = base.CreatedBy
-			cat.OrganizationID = base.OrganizationID
-			if cat.Translations == nil {
-				cat.Translations = make(map[string]types.ExtendedTranslation)
-			}
-			if _, ok := cat.Translations[translation]; !ok {
-				cat.Translations[translation] = types.ExtendedTranslation{}
-			}
-			t := cat.Translations[translation]
-			t.Key = translation
-			t.CreatedBy = base.CreatedBy
-			t.OrganizationID = base.OrganizationID
-			t.Title = InferTitle(translation)
-			if t.Values == nil {
-				t.Values = make(map[string]types.TranslationValue)
-			}
-			tvId := locale.ID
-			if _, ok := t.Values[tvId]; !ok {
-				t.Values[tvId] = types.TranslationValue{}
-			}
-			tv := t.Values[tvId]
-			if context != "" {
-				if tv.Context == nil {
-					tv.Context = map[string]string{}
-				}
-				tv.Context[context] = translationValue
-			} else {
-				tv.Value = translationValue
-			}
-
-			// Attempt to infer variables and nested references from the translation-values used.
-			parsed, parseErr := parso.Parse(translationValue)
-			if parseErr != nil {
-				warn := newWarning("There was a problem parsing the translation-value.", WarningKindTranslationVariables, WarningLevelMajor)
-				warn.Error = parseErr
-			}
-			for i, n := range parsed.Nodes {
-				switch n.Token.Kind {
-				case lexer.TokenNestingPrefix:
-					if n.Left == nil {
-						warn := newWarning(
-							fmt.Sprintf(
-								"Attempted to interpret a translation-value and infer any references, but failed. %s (%d) did not have a left-node. This occured in category %s translation %s value %s at %d-%d",
-								n.Token.Kind, i, category, translation, translationValue, n.Token.Start, n.Token.End),
-							WarningKindTranslationReference,
-							WarningLevelMinor,
-						)
-						warn.Details = parsed.Nodes
-						w = append(w, warn)
-						continue
-					}
-					key := strings.TrimSpace(n.Left.Token.Literal)
-					if key == "" {
-						warn := newWarning(
-							fmt.Sprintf(
-								"Attempted to interpred a translation-value and infer any references, but the value was empty. %s (%d.Left). This occured in category %s translation %s value %s at %d-%d",
-								n.Token.Kind, i, category, translation, translationValue, n.Left.Token.Start, n.Left.Token.End),
-							WarningKindTranslationVariables,
-							WarningLevelMinor,
-						)
-						warn.Details = parsed.Nodes
-						w = append(w, warn)
-						continue
-
-					}
-					if t.Variables == nil {
-						t.Variables = make(map[string]interface{})
-					}
-					if _, ok := t.Variables["_refs:"+key]; !ok {
-						if n.Right != nil {
-							t.Variables["_refs:"+key] = n.Right.Token.Literal
-						} else {
-							t.Variables["_refs:"+key] = nil
-
-						}
-
-					}
-
-				case lexer.TokenPrefix:
-					if n.Left == nil {
-						warn := newWarning(
-							fmt.Sprintf(
-								"Attempted to interpret a translation-value and infer any variables used, but failed. %s (%d) did not have a left-node. This occured in category %s translation %s value %s at %d-%d",
-								n.Token.Kind, i, category, translation, translationValue, n.Token.Start, n.Token.End),
-							WarningKindTranslationVariables,
-							WarningLevelMinor,
-						)
-						warn.Details = parsed.Nodes
-						w = append(w, warn)
-						continue
-					}
-					key := strings.TrimSpace(n.Left.Token.Literal)
-					if key == "" {
-						warn := newWarning(
-							fmt.Sprintf(
-								"Attempted to interpred a translation-value and infer any variables used, but the value was empty. %s (%d.Left). This occured in category %s translation %s value %s at %d-%d",
-								n.Token.Kind, i, category, translation, translationValue, n.Left.Token.Start, n.Left.Token.End),
-							WarningKindTranslationVariables,
-							WarningLevelMinor,
-						)
-						warn.Details = parsed.Nodes
-						w = append(w, warn)
-						continue
-
-					}
-					if t.Variables == nil {
-						t.Variables = make(map[string]interface{})
-					}
-					t.Variables[key] = getValueForVariableKey(key)
-				}
-			}
-			tv.LocaleID = locale.ID
-			tv.CreatedBy = base.CreatedBy
-			tv.OrganizationID = base.OrganizationID
-			tv.Source = source
-
-			t.Values[tvId] = tv
-			cat.Translations[translation] = t
-			imp.Categories[category] = cat
+		// if len(split) > 2 {
+		// }
+		// translation := node.MidPath
+		translation, context := cutLast(category, "_")
+		translationValue := node.Value[locale.ID]
+		if _, ok := imp.Categories[category]; !ok {
+			imp.Categories[category] = types.ExtendedCategory{}
 		}
+		cat := imp.Categories[category]
+		if len(subCategories) > 0 {
+			// FIXME: Usikker på om vi kan bruke dette videre Denne delem må i alle
+			// fall være rekursiv Vi må ha tilgang til oversettelser for hvert nivå
+			// her, men det er mulig det ikke går med denne datastrukturen.
+			for _, scKey := range subCategories {
+				sc := types.ExtendedCategory{}
+				sc.Key = scKey
+				sc.Title = InferTitle(scKey)
+				cat.ProjectID = base.ID
+				cat.CreatedBy = base.CreatedBy
+				cat.OrganizationID = base.OrganizationID
+				cat.SubCategories = append(cat.SubCategories, sc)
+
+			}
+		}
+		cat.Key = category
+		cat.Title = InferTitle(category)
+		cat.ProjectID = base.ID
+		cat.CreatedBy = base.CreatedBy
+		cat.OrganizationID = base.OrganizationID
+		if cat.Translations == nil {
+			cat.Translations = make(map[string]types.ExtendedTranslation)
+		}
+		if _, ok := cat.Translations[translation]; !ok {
+			cat.Translations[translation] = types.ExtendedTranslation{}
+		}
+		t := cat.Translations[translation]
+		t.Key = translation
+		t.CreatedBy = base.CreatedBy
+		t.OrganizationID = base.OrganizationID
+		t.Title = InferTitle(translation)
+		if t.Values == nil {
+			t.Values = make(map[string]types.TranslationValue)
+		}
+		tvId := locale.ID
+		if _, ok := t.Values[tvId]; !ok {
+			t.Values[tvId] = types.TranslationValue{}
+		}
+		tv := t.Values[tvId]
+		if context != "" {
+			if tv.Context == nil {
+				tv.Context = map[string]string{}
+			}
+			tv.Context[context] = translationValue
+		} else {
+			tv.Value = translationValue
+		}
+
+		// Attempt to infer variables and nested references from the translation-values used.
+		parsed, parseErr := parso.Parse(translationValue)
+		if parseErr != nil {
+			warn := newWarning("There was a problem parsing the translation-value.", WarningKindTranslationVariables, WarningLevelMajor)
+			warn.Error = parseErr
+		}
+		for i, n := range parsed.Nodes {
+			switch n.Token.Kind {
+			case lexer.TokenNestingPrefix:
+				if n.Left == nil {
+					warn := newWarning(
+						fmt.Sprintf(
+							"Attempted to interpret a translation-value and infer any references, but failed. %s (%d) did not have a left-node. This occured in category %s translation %s value %s at %d-%d",
+							n.Token.Kind, i, category, translation, translationValue, n.Token.Start, n.Token.End),
+						WarningKindTranslationReference,
+						WarningLevelMinor,
+					)
+					warn.Details = parsed.Nodes
+					w = append(w, warn)
+					continue
+				}
+				key := strings.TrimSpace(n.Left.Token.Literal)
+				if key == "" {
+					warn := newWarning(
+						fmt.Sprintf(
+							"Attempted to interpred a translation-value and infer any references, but the value was empty. %s (%d.Left). This occured in category %s translation %s value %s at %d-%d",
+							n.Token.Kind, i, category, translation, translationValue, n.Left.Token.Start, n.Left.Token.End),
+						WarningKindTranslationVariables,
+						WarningLevelMinor,
+					)
+					warn.Details = parsed.Nodes
+					w = append(w, warn)
+					continue
+
+				}
+				if t.Variables == nil {
+					t.Variables = make(map[string]interface{})
+				}
+				if _, ok := t.Variables["_refs:"+key]; !ok {
+					if n.Right != nil {
+						t.Variables["_refs:"+key] = n.Right.Token.Literal
+					} else {
+						t.Variables["_refs:"+key] = nil
+
+					}
+
+				}
+
+			case lexer.TokenPrefix:
+				if n.Left == nil {
+					warn := newWarning(
+						fmt.Sprintf(
+							"Attempted to interpret a translation-value and infer any variables used, but failed. %s (%d) did not have a left-node. This occured in category %s translation %s value %s at %d-%d",
+							n.Token.Kind, i, category, translation, translationValue, n.Token.Start, n.Token.End),
+						WarningKindTranslationVariables,
+						WarningLevelMinor,
+					)
+					warn.Details = parsed.Nodes
+					w = append(w, warn)
+					continue
+				}
+				key := strings.TrimSpace(n.Left.Token.Literal)
+				if key == "" {
+					warn := newWarning(
+						fmt.Sprintf(
+							"Attempted to interpred a translation-value and infer any variables used, but the value was empty. %s (%d.Left). This occured in category %s translation %s value %s at %d-%d",
+							n.Token.Kind, i, category, translation, translationValue, n.Left.Token.Start, n.Left.Token.End),
+						WarningKindTranslationVariables,
+						WarningLevelMinor,
+					)
+					warn.Details = parsed.Nodes
+					w = append(w, warn)
+					continue
+
+				}
+				if t.Variables == nil {
+					t.Variables = make(map[string]interface{})
+				}
+				t.Variables[key] = getValueForVariableKey(key)
+			}
+		}
+		tv.LocaleID = locale.ID
+		tv.CreatedBy = base.CreatedBy
+		tv.OrganizationID = base.OrganizationID
+		tv.Source = source
+
+		t.Values[tvId] = tv
+		cat.Translations[translation] = t
+		imp.Categories[category] = cat
 
 	}
 

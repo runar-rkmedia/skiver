@@ -185,10 +185,9 @@ func getLocaleKey(key LocaleKey, locale types.Locale) string {
 }
 
 // type I18N map[string]map[string]map[string]string
-
 type I18N struct {
-	Value string
-	Nodes map[string]I18N
+	Value string          `json:"value,omitempty"`
+	Nodes map[string]I18N `json:"nodes,omitempty"`
 }
 
 func I18NNodeToI18Next(in I18N) (map[string]interface{}, error) {
@@ -216,4 +215,73 @@ func (in I18N) ToMap() interface{} {
 
 	return m
 
+}
+func (in I18NWithLocales) Merge(v I18NWithLocales) I18NWithLocales {
+	for k, v := range v.Value {
+		in.Value[k] = v
+	}
+	for k, v := range v.Nodes {
+		if ex, ok := in.Nodes[k]; ok {
+			in.Nodes[k] = ex.Merge(v)
+		} else {
+			in.Nodes[k] = v
+		}
+	}
+	return in
+}
+func (in I18N) ToLocaleAwere(locale string) I18NWithLocales {
+	node := I18NWithLocales{Value: map[string]string{}, Nodes: map[string]I18NWithLocales{}}
+
+	if in.Value != "" {
+		node.Value[locale] = in.Value
+	}
+
+	for k, v := range in.Nodes {
+		node.Nodes[k] = v.ToLocaleAwere(locale)
+	}
+	return node
+}
+
+// Aweseome name
+type LocaleLookerUpper interface {
+	GetLocaleID(string) string
+}
+
+func (in I18N) MergeAsIfRootIsLocale(localeGetter LocaleLookerUpper) (I18NWithLocales, error) {
+	node := I18NWithLocales{Nodes: map[string]I18NWithLocales{}}
+	if in.Value != "" {
+		return node, fmt.Errorf("did not expect values in root-node: %#v", node)
+	}
+	if len(in.Nodes) == 0 {
+		return node, nil
+	}
+
+	for localeKey, localeNode := range in.Nodes {
+		localeID := localeKey
+		if localeGetter != nil {
+			localeID = localeGetter.GetLocaleID(localeKey)
+			if localeID == "" {
+				return node, fmt.Errorf("Failed to look up locale-id for locale-key: %s", localeKey)
+			}
+		}
+
+		for k, v := range localeNode.Nodes {
+
+			newNode := v.ToLocaleAwere(localeID)
+			if ex, ok := node.Nodes[k]; ok {
+				// TODO: Merge
+				node.Nodes[k] = ex.Merge(newNode)
+				// return node, fmt.Errorf("Must merge \n%#v \n%#v", ex, v)
+			} else {
+				node.Nodes[k] = newNode
+			}
+		}
+	}
+	return node, nil
+}
+
+type I18NWithLocales struct {
+	// The keys should be the ID of the locale
+	Value map[string]string          `json:"value,omitempty"`
+	Nodes map[string]I18NWithLocales `json:"nodes,omitempty"`
 }
