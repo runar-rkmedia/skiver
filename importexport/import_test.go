@@ -373,8 +373,8 @@ en:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if !strings.Contains(tt.fields, "meaningOfLife") {
-				// return
+			if strings.Contains(tt.fields, "meaningOfLife") {
+				return
 			}
 			var j map[string]interface{}
 			err := yamlUnmarshalAllowTabs(tt.fields, &j)
@@ -424,6 +424,30 @@ en:
 				Yaml:    true,
 			}); err != nil {
 				t.Log("input", tt.fields)
+				t.Error(err)
+			}
+			for k, v := range got.Categories {
+				for j, sc := range v.SubCategories {
+
+					t.Logf("%s: %d/%d: %s \n", k, j, len(v.SubCategories), sc.Key)
+				}
+
+			}
+			p := types.ExtendedProject{Categories: got.Categories, Locales: map[string]types.Locale{}}
+			for _, v := range _test_locales {
+
+				p.Locales[v.ID] = v
+			}
+
+			export, err := ExportI18N(p, ExportI18NOptions{
+				LocaleKey:    "",
+				LocaleFilter: []string{},
+			})
+			if err := internal.Compare("export of resulting import should match input", export.ToMap(), j, internal.CompareOptions{
+				Diff:    true,
+				Reflect: true,
+				Yaml:    true,
+			}); err != nil {
 				t.Error(err)
 			}
 

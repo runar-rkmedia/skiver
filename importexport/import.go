@@ -104,50 +104,16 @@ func importFromCategoryNode(base types.Project, source types.CreatorSource, key 
 	cat.OrganizationID = base.OrganizationID
 
 	if len(node.Value) > 0 {
-		t := types.ExtendedTranslation{}
-		t.Key = key
-		tranlationKey, context := cutLast(key, "_")
-		t.Title = InferTitle(tranlationKey)
-		fmt.Println(context)
-		t.CreatedBy = base.CreatedBy
-		t.OrganizationID = base.OrganizationID
-		t.Values = map[string]types.TranslationValue{}
-		nodeValueKeys := sortedMapKeys(node.Value)
-		for _, localeId := range nodeValueKeys {
-			// TODO: infer variables, etc.
-			value := node.Value[localeId]
-			tv := types.TranslationValue{LocaleID: localeId, Value: value}
-			tv.Source = source
-
-			tv.CreatedBy = base.CreatedBy
-			tv.OrganizationID = base.OrganizationID
-			t.Values[localeId] = tv
-
-			w, variables := InferVariables(tv.Value, cat.Key, t.Key)
-			if len(variables) > 0 {
-				if t.Variables == nil {
-					t.Variables = map[string]interface{}{}
-				}
-				for k, v := range variables {
-					if ex, ok := t.Variables[k]; ok {
-						if ex == v {
-							continue
-						}
-						w = append(w, Warning{
-							Message: "duplicate inferred values with different values detected",
-							Details: struct {
-								A, B interface{}
-							}{A: ex, B: ex},
-							Level: WarningLevelMinor,
-							Kind:  WarningKindTranslationVariables,
-						})
-					}
-					t.Variables[k] = v
-
-				}
-			}
+		var t types.ExtendedTranslation
+		if tk, ok := cat.Translations[t.Key]; ok {
+			t = tk
+		} else {
+			t = types.ExtendedTranslation{}
 		}
-
+		translationFromNode(&t, key, base, source, node, cat.Key)
+		if _, ok := cat.Translations[t.Key]; ok {
+			panic("I existx")
+		}
 		cat.Translations[t.Key] = t
 	}
 
@@ -168,59 +134,19 @@ func importFromCategoryNode(base types.Project, source types.CreatorSource, key 
 
 			if len(childNode.Value) > 0 {
 
-				t := types.ExtendedTranslation{}
-				tranlationKey, context := cutLast(scKey, "_")
-				fmt.Println(context)
-				t.Key = tranlationKey
-				t.Title = InferTitle(tranlationKey)
-				t.CreatedBy = base.CreatedBy
-				t.OrganizationID = base.OrganizationID
-				t.Values = map[string]types.TranslationValue{}
-				nodeValueKeys := sortedMapKeys(childNode.Value)
-				for _, localeId := range nodeValueKeys {
-					// TODO: infer variables, etc.
-					value := childNode.Value[localeId]
-					tv := types.TranslationValue{LocaleID: localeId}
-					tv.Source = source
-
-					tv.CreatedBy = base.CreatedBy
-					tv.OrganizationID = base.OrganizationID
-					t.Values[localeId] = tv
-					w, variables := InferVariables(tv.Value, cat.Key, t.Key)
-					if context != "" {
-						if tv.Context == nil {
-							tv.Context = map[string]string{}
-						}
-						tv.Context[context] = value
-					} else {
-						tv.Value = value
-					}
-
-					if len(variables) > 0 {
-						if t.Variables == nil {
-							t.Variables = map[string]interface{}{}
-						}
-						for k, v := range variables {
-							if ex, ok := t.Variables[k]; ok {
-								if ex == v {
-									continue
-								}
-								w = append(w, Warning{
-									Message: "duplicate inferred values with different values detected",
-									Details: struct {
-										A, B interface{}
-									}{A: ex, B: ex},
-									Level: WarningLevelMinor,
-									Kind:  WarningKindTranslationVariables,
-								})
-							}
-							t.Variables[k] = v
-
-						}
-					}
-
+				tranlationKey, _ := cutLast(scKey, "_")
+				var t types.ExtendedTranslation
+				if tk, ok := cat.Translations[tranlationKey]; ok {
+					fmt.Println("---from\n", internal.MustToml(tk))
+					t = tk
+				} else {
+					t = types.ExtendedTranslation{}
 				}
-				cat.Translations[t.Key] = t
+				translationFromNode(&t, scKey, base, source, childNode, cat.Key)
+				if tk, ok := cat.Translations[tranlationKey]; ok {
+					fmt.Println("-----to\n", internal.MustToml(tk))
+				}
+				cat.Translations[tranlationKey] = t
 			}
 			sc, err := importFromCategoryNode(base, source, scKey, childNode)
 			if err != nil {
@@ -234,35 +160,41 @@ func importFromCategoryNode(base types.Project, source types.CreatorSource, key 
 	return cat, nil
 }
 
-func thing(key string, base types.Project, source types.CreatorSource, childNode I18NWithLocales, categoryKey string) types.ExtendedTranslation {
+func translationFromNode(t *types.ExtendedTranslation, key string, base types.Project, source types.CreatorSource, node I18NWithLocales, categoryKey string) {
 
-	t := types.ExtendedTranslation{}
 	tranlationKey, context := cutLast(key, "_")
-	fmt.Println(context)
-	t.Key = tranlationKey
-	t.Title = InferTitle(tranlationKey)
-	t.CreatedBy = base.CreatedBy
-	t.OrganizationID = base.OrganizationID
-	t.Values = map[string]types.TranslationValue{}
-	nodeValueKeys := sortedMapKeys(childNode.Value)
+	if t.Key == "" {
+
+		t.Key = tranlationKey
+		t.Title = InferTitle(tranlationKey)
+		t.CreatedBy = base.CreatedBy
+		t.OrganizationID = base.OrganizationID
+		t.Values = map[string]types.TranslationValue{}
+	}
+	nodeValueKeys := sortedMapKeys(node.Value)
 	for _, localeId := range nodeValueKeys {
-		// TODO: infer variables, etc.
-		value := childNode.Value[localeId]
-		tv := types.TranslationValue{LocaleID: localeId}
+		value := node.Value[localeId]
+		var tv types.TranslationValue
+		if tk, ok := t.Values[localeId]; ok {
+			tv = tk
+		} else {
+
+			tv = types.TranslationValue{LocaleID: localeId}
+		}
 		tv.Source = source
 
 		tv.CreatedBy = base.CreatedBy
 		tv.OrganizationID = base.OrganizationID
-		t.Values[localeId] = tv
-		w, variables := InferVariables(tv.Value, categoryKey, t.Key)
+		w, variables := InferVariables(value, categoryKey, t.Key)
 		if context != "" {
 			if tv.Context == nil {
 				tv.Context = map[string]string{}
 			}
 			tv.Context[context] = value
-		} else {
+		} else if value != "" {
 			tv.Value = value
 		}
+		t.Values[localeId] = tv
 
 		if len(variables) > 0 {
 			if t.Variables == nil {
@@ -288,7 +220,6 @@ func thing(key string, base types.Project, source types.CreatorSource, childNode
 		}
 
 	}
-	return t
 }
 
 func sortedMapKeys[T any](input map[string]T) []string {
