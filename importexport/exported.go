@@ -53,7 +53,14 @@ func addi18nnode(c types.ExtendedCategory, localeID string) (I18N, error) {
 				if node.Nodes == nil {
 					node.Nodes = make(map[string]I18N)
 				}
-				node.Nodes[t.Key] = I18N{Value: tv.Value}
+				in := I18N{Value: tv.Value}
+				node.Nodes[t.Key] = in
+				if len(tv.Context) > 0 {
+					for contextKey, val := range tv.Context {
+						node.Nodes[t.Key+"_"+contextKey] = I18N{Value: val}
+
+					}
+				}
 			}
 		}
 	}
@@ -210,7 +217,12 @@ func (in I18N) ToMap() interface{} {
 	m := map[string]interface{}{}
 
 	for k, v := range in.Nodes {
-		m[k] = v.ToMap()
+		val := v.ToMap()
+		if val == "" {
+			fmt.Println("kkk", k, v)
+			continue
+		}
+		m[k] = val
 	}
 
 	return m
