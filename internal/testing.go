@@ -104,13 +104,12 @@ func Compare(name string, got, want interface{}, options ...CompareOptions) erro
 					w = MustToml(want)
 				}
 			}
-			// Toml looks great on diffs!
 
-			if true {
+			if false {
 
 				return fmt.Errorf("%s", lineDiff(g, w))
 			}
-			d = MustToml(diff)
+			d = MustYaml(diff)
 			return fmt.Errorf("YAML: %s: \n%v\n%s\n\ndiff:\n%s\nwant:\n%v", cName(name), cGot(withLineNumbers(g)), lineDiff(g, w), cDiff(d), cWant(withLineNumbers(w)))
 		}
 	}
@@ -334,7 +333,7 @@ func LineDiff(got, want string) string {
 		errs = append(errs, fmt.Sprintf("%s%s", cDiff(ln), cWant(w)))
 	}
 	if lenWant != lenGot {
-		errs = append(errs, fmt.Sprintf("(...Linenumbers differ %d vs %d)", lenGot, lenWant))
+		errs = append(errs, fmt.Sprintf("(...Linenumbers differ %d vs %d)", lenGot-1, lenWant-1))
 	}
 	if len(errs) > 0 {
 		return strings.Join(errs, "\n")

@@ -50,7 +50,6 @@ func PrepareTemplates() *template.Template {
 		case "getHostByName", "genSignedCert", "bcrypt", "htpasswd", "genPrivateKey", "derivePassword", "buildCustomCert", "genCA", "genCAWithKey", "genSelfSignedCert", "genSelfSignedCertWithKey", "genSignedCertWithKey", "encryptAES", "decryptAES", "randBytes", "osBase", "osClean", "osDir", "osExt", "osIsAbs", "env", "expandenv":
 			continue
 		}
-		// fmt.Println("Added func", k)
 		templateFuncs[k] = v
 
 	}

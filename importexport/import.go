@@ -118,6 +118,7 @@ func importFromCategoryNode(base types.Project, source types.CreatorSource, key 
 	}
 
 	if len(node.Nodes) > 0 {
+		// Each node here may be either a subcategory, or translation.
 		cat.SubCategories = []types.ExtendedCategory{}
 		keys := make([]string, len(node.Nodes))
 		i := 0
@@ -134,25 +135,23 @@ func importFromCategoryNode(base types.Project, source types.CreatorSource, key 
 
 			if len(childNode.Value) > 0 {
 
-				tranlationKey, _ := cutLast(scKey, "_")
+				translationKey, _ := cutLast(scKey, "_")
 				var t types.ExtendedTranslation
-				if tk, ok := cat.Translations[tranlationKey]; ok {
-					fmt.Println("---from\n", internal.MustToml(tk))
+				if tk, ok := cat.Translations[translationKey]; ok {
 					t = tk
 				} else {
 					t = types.ExtendedTranslation{}
 				}
 				translationFromNode(&t, scKey, base, source, childNode, cat.Key)
-				if tk, ok := cat.Translations[tranlationKey]; ok {
-					fmt.Println("-----to\n", internal.MustToml(tk))
+				cat.Translations[translationKey] = t
+			} else {
+
+				sc, err := importFromCategoryNode(base, source, scKey, childNode)
+				if err != nil {
+					return cat, fmt.Errorf("Error occured parsing subCategories for node %s: %w", internal.MustJSON(node), err)
 				}
-				cat.Translations[tranlationKey] = t
+				cat.SubCategories = append(cat.SubCategories, sc)
 			}
-			sc, err := importFromCategoryNode(base, source, scKey, childNode)
-			if err != nil {
-				return cat, fmt.Errorf("Error occured parsing subCategories for node %s: %w", internal.MustJSON(node), err)
-			}
-			cat.SubCategories = append(cat.SubCategories, sc)
 
 		}
 	}

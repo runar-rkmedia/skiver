@@ -51,140 +51,6 @@ en:
 						Description: "",
 						Key:         "general",
 						ProjectID:   "proj-123",
-						SubCategories: []types.Category{
-							{
-								Entity: types.Entity{
-									CreatedBy:      "jim",
-									OrganizationID: "org-123",
-								},
-								Title:       "Form",
-								Description: "",
-								Key:         "form",
-								ProjectID:   "proj-123",
-								SubCategories: []types.Category{
-									{
-										Entity: types.Entity{
-											CreatedBy:      "jim",
-											OrganizationID: "org-123",
-										},
-										Title:       "Buttons",
-										Description: "",
-										Key:         "buttons",
-										ProjectID:   "proj-123",
-									},
-									{
-										Entity: types.Entity{
-											CreatedBy:      "jim",
-											OrganizationID: "org-123",
-										},
-										Title:       "Input Labels",
-										Description: "",
-										Key:         "inputLabels",
-										ProjectID:   "proj-123",
-									},
-								},
-							},
-						},
-					},
-					SubCategories: []types.ExtendedCategory{
-						{
-							Category: types.Category{
-								Entity: types.Entity{
-									CreatedBy:      "jim",
-									OrganizationID: "org-123",
-								},
-								Title:       "Buttons",
-								Description: "",
-								Key:         "buttons",
-								ProjectID:   "proj-123",
-							},
-							Translations: map[string]types.ExtendedTranslation{
-								"submit": {
-									Translation: types.Translation{
-										Entity: types.Entity{
-											CreatedBy:      "jim",
-											OrganizationID: "org-123",
-										},
-										Key:   "submit",
-										Title: "Submit",
-										Variables: map[string]interface{}{
-											"count": 42,
-										},
-									},
-									Values: map[string]types.TranslationValue{
-										"loc-en": {
-											Entity: types.Entity{
-												CreatedBy:      "jim",
-												OrganizationID: "org-123",
-											},
-											Value:    "Submit {{count}} items",
-											LocaleID: "loc-en",
-											Source:   "test-import",
-										},
-									},
-								},
-							},
-						},
-						{
-							Category: types.Category{
-								Entity: types.Entity{
-									CreatedBy:      "jim",
-									OrganizationID: "org-123",
-								},
-								Title:       "Input Labels",
-								Description: "",
-								Key:         "inputLabels",
-								ProjectID:   "proj-123",
-							},
-							Translations: map[string]types.ExtendedTranslation{
-								"age": {
-									Translation: types.Translation{
-										Entity: types.Entity{
-											CreatedBy:      "jim",
-											OrganizationID: "org-123",
-										},
-										Key:   "age",
-										Title: "Age",
-										Variables: map[string]interface{}{
-											"minAge": "???",
-											"maxAge": "???",
-										},
-									},
-									Values: map[string]types.TranslationValue{
-										"loc-en": {
-											Entity: types.Entity{
-												CreatedBy:      "jim",
-												OrganizationID: "org-123",
-											},
-											Value:    "Between {{minAge}} and {{maxAge}}",
-											LocaleID: "loc-en",
-											Source:   "test-import",
-										},
-									},
-								},
-								"email": {
-									Translation: types.Translation{
-										Entity: types.Entity{
-											CreatedBy:      "jim",
-											OrganizationID: "org-123",
-										},
-										Key:   "submit",
-										Title: "Submit",
-									},
-									Values: map[string]types.TranslationValue{
-										"loc-en": {
-											Entity: types.Entity{
-												CreatedBy:      "jim",
-												OrganizationID: "org-123",
-											},
-											Value:    "Email",
-											LocaleID: "loc-en",
-											Source:   "test-import",
-										},
-									},
-								},
-							},
-						},
 					},
 					Translations: map[string]types.ExtendedTranslation{
 
@@ -259,11 +125,121 @@ en:
 										CreatedBy:      "jim",
 										OrganizationID: "org-123",
 									},
-									Value:    "",
 									LocaleID: "loc-no",
 									Source:   "test-import",
 									Context: map[string]string{
 										"superb": "Fantastisk",
+									},
+								},
+							},
+						},
+					},
+					SubCategories: []types.ExtendedCategory{
+						{
+							Category: types.Category{
+								Entity:    types.Entity{CreatedBy: "jim", OrganizationID: "org-123"},
+								Title:     "Form",
+								Key:       "form",
+								ProjectID: "proj-123",
+							},
+							Translations: map[string]types.ExtendedTranslation{},
+							SubCategories: []types.ExtendedCategory{
+								{
+									Category: types.Category{
+										Entity: types.Entity{
+											CreatedBy:      "jim",
+											OrganizationID: "org-123",
+										},
+										Title:     "Buttons",
+										Key:       "buttons",
+										ProjectID: "proj-123",
+									},
+									SubCategories: make([]types.ExtendedCategory, 0),
+									Translations: map[string]types.ExtendedTranslation{
+										"submit": {
+											Translation: types.Translation{
+												Entity: types.Entity{
+													CreatedBy:      "jim",
+													OrganizationID: "org-123",
+												},
+												Key:   "submit",
+												Title: "Submit",
+												Variables: map[string]interface{}{
+													"count": 42,
+												},
+											},
+											Values: map[string]types.TranslationValue{
+												"loc-en": {
+													Entity: types.Entity{
+														CreatedBy:      "jim",
+														OrganizationID: "org-123",
+													},
+													Value:    "Submit {{count}} items",
+													LocaleID: "loc-en",
+													Source:   "test-import",
+												},
+											},
+										},
+									},
+								}, {
+									SubCategories: make([]types.ExtendedCategory, 0),
+									Category: types.Category{
+										Entity: types.Entity{
+											CreatedBy:      "jim",
+											OrganizationID: "org-123",
+										},
+										Title:       "Input label",
+										Description: "",
+										Key:         "inputLabel",
+										ProjectID:   "proj-123",
+									},
+									Translations: map[string]types.ExtendedTranslation{
+										"age": {
+											Translation: types.Translation{
+												Entity: types.Entity{
+													CreatedBy:      "jim",
+													OrganizationID: "org-123",
+												},
+												Key:   "age",
+												Title: "Age",
+												Variables: map[string]interface{}{
+													"minAge": "???",
+													"maxAge": "???",
+												},
+											},
+											Values: map[string]types.TranslationValue{
+												"loc-en": {
+													Entity: types.Entity{
+														CreatedBy:      "jim",
+														OrganizationID: "org-123",
+													},
+													Value:    "Between {{minAge}} and {{maxAge}}",
+													LocaleID: "loc-en",
+													Source:   "test-import",
+												},
+											},
+										},
+										"email": {
+											Translation: types.Translation{
+												Entity: types.Entity{
+													CreatedBy:      "jim",
+													OrganizationID: "org-123",
+												},
+												Key:   "email",
+												Title: "Email",
+											},
+											Values: map[string]types.TranslationValue{
+												"loc-en": {
+													Entity: types.Entity{
+														CreatedBy:      "jim",
+														OrganizationID: "org-123",
+													},
+													Value:    "Email",
+													LocaleID: "loc-en",
+													Source:   "test-import",
+												},
+											},
+										},
 									},
 								},
 							},
@@ -402,7 +378,6 @@ en:
 			base.OrganizationID = "org-123"
 			got, warnings, err := ImportI18NTranslation(_test_locales, tt.localeHint, base, "test-import", j)
 			if !tt.wantErr {
-				t.Log(got, warnings)
 				testza.AssertNoError(t, err)
 			} else if got == nil {
 				t.Error("expected error, but none was returned")
@@ -426,13 +401,6 @@ en:
 				t.Log("input", tt.fields)
 				t.Error(err)
 			}
-			for k, v := range got.Categories {
-				for j, sc := range v.SubCategories {
-
-					t.Logf("%s: %d/%d: %s \n", k, j, len(v.SubCategories), sc.Key)
-				}
-
-			}
 			p := types.ExtendedProject{Categories: got.Categories, Locales: map[string]types.Locale{}}
 			for _, v := range _test_locales {
 
@@ -443,7 +411,7 @@ en:
 				LocaleKey:    "",
 				LocaleFilter: []string{},
 			})
-			if err := internal.Compare("export of resulting import should match input", export.ToMap(), j, internal.CompareOptions{
+			if err := internal.Compare("export of resulting import should match input (ignoring order)", export.ToMap(), j, internal.CompareOptions{
 				Diff:    true,
 				Reflect: true,
 				Yaml:    true,
