@@ -77,6 +77,6 @@ type Organization struct {
 func (e User) Namespace() string {
 	return e.Kind()
 }
-func (e Entity) Kind() string {
+func (e User) Kind() string {
 	return string(PubTypeUser)
 }

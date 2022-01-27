@@ -36,3 +36,48 @@ const (
 func (c Category) IsRoot() bool {
 	return c.Key == RootCategory
 }
+func (e Category) Namespace() string {
+	return e.Kind()
+}
+func (e Category) Kind() string {
+	return string(PubTypeCategory)
+}
+
+// Used to filter and search along with Category.Filter(CategoryFilter)
+type CategoryFilter struct {
+	OrganizationID string
+	Key            string
+	ID             string
+	SubCategory    []CategoryFilter
+}
+
+// Used to filter and search
+func (cat Category) Filter(f CategoryFilter) bool {
+	if cat.OrganizationID != "" && cat.OrganizationID != f.OrganizationID {
+		return false
+	}
+	if cat.Key != "" && cat.Key != f.Key {
+		return false
+	}
+	if cat.ID != "" && cat.ID != f.ID {
+		return false
+	}
+	if len(f.SubCategory) != 0 {
+		for _, sf := range f.SubCategory {
+			match := cat.Filter(sf)
+			if match {
+				return true
+			}
+		}
+	}
+	return true
+}
+
+func (cat Category) AsUniqueFilter() CategoryFilter {
+	return CategoryFilter{
+		OrganizationID: cat.OrganizationID,
+		Key:            cat.Key,
+		ID:             cat.ID,
+		SubCategory:    []CategoryFilter{},
+	}
+}

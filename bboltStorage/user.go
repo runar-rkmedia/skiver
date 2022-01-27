@@ -63,9 +63,9 @@ func (b *BBolter) CreateUser(user types.User) (types.User, error) {
 }
 
 func (bb *BBolter) FindUserByUserName(organizationID string, userName string) (*types.User, error) {
-	return bb.FindOne(types.User{UserName: userName, Entity: types.Entity{OrganizationID: organizationID}})
+	return bb.FindOneUser(types.User{UserName: userName, Entity: types.Entity{OrganizationID: organizationID}})
 }
-func (bb *BBolter) FindOne(filter ...types.User) (*types.User, error) {
+func (bb *BBolter) FindOneUser(filter ...types.User) (*types.User, error) {
 	return FindOne(bb, BucketUser, func(t types.User) bool {
 		for _, f := range filter {
 			if f.OrganizationID == "" {

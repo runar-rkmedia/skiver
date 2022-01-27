@@ -132,7 +132,8 @@ func (b *BBolter) ReportMissing(key types.MissingTranslation) (*types.MissingTra
 		}
 	}
 	if key.CategoryID == "" {
-		category, err := b.GetCategoryFilter(types.Category{Key: key.Category})
+		// TODO: report missing on sub-categories!!!
+		category, err := b.FindOneCategory(types.CategoryFilter{Key: key.Category})
 		if err != nil {
 			return &key, fmt.Errorf("failed to lookup category: %w", err)
 		}

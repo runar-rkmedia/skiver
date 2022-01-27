@@ -7,14 +7,39 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-func (b *BBolter) GetCategory(ID string) (*types.Category, error) {
-	var u types.Category
-	err := b.GetItem(BucketCategory, ID, &u)
-	return &u, err
+func (bb *BBolter) GetCategory(ID string) (*types.Category, error) {
+	return Get[types.Category](bb, BucketCategory, ID)
+}
+
+func (bb *BBolter) FindOneCategory(filter ...types.CategoryFilter) (*types.Category, error) {
+	return FindOne(bb, BucketCategory, func(t types.Category) bool {
+		for _, f := range filter {
+			if f.OrganizationID == "" {
+				bb.l.Warn().Msg("Received a Category without organization-id")
+			}
+			if t.Filter(f) {
+				return true
+			}
+		}
+		return false
+	})
+}
+func (bb *BBolter) FindCategories(max int, filter ...types.CategoryFilter) (map[string]types.Category, error) {
+	return Find(bb, BucketCategory, max, func(cat types.Category) bool {
+		if len(filter) == 0 {
+			return true
+		}
+		for _, f := range filter {
+			if cat.Filter(f) {
+				return true
+			}
+		}
+		return false
+	})
 }
 
 func (b *BBolter) CreateCategory(category types.Category) (types.Category, error) {
-	existing, err := b.GetCategoryFilter(category)
+	existing, err := b.FindOneCategory(category.AsUniqueFilter())
 	if err != nil {
 		return *existing, err
 	}
@@ -84,30 +109,4 @@ func (bb *BBolter) GetCategories() (map[string]types.Category, error) {
 		return us, nil
 	}
 	return us, err
-}
-
-func (bb *BBolter) GetCategoryFilter(filter ...types.Category) (*types.Category, error) {
-	var u *types.Category
-	err := bb.Iterate(BucketCategory, func(key, b []byte) bool {
-		var uu types.Category
-		err := bb.Unmarshal(b, &uu)
-		if err != nil {
-			bb.l.Error().Err(err).Msg("failed to unmarshal user")
-			return false
-		}
-		for _, f := range filter {
-			if f.ProjectID != "" && f.ProjectID != uu.ProjectID {
-				continue
-			}
-			// rootCategory is an empty string, complicating things... perhaps we should make it a constant non-empty value?
-
-			if f.Key != "" && f.Key != uu.Key {
-				continue
-			}
-			u = &uu
-			return true
-		}
-		return false
-	})
-	return u, err
 }
