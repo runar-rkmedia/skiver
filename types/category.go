@@ -53,13 +53,13 @@ type CategoryFilter struct {
 
 // Used to filter and search
 func (cat Category) Filter(f CategoryFilter) bool {
-	if cat.OrganizationID != "" && cat.OrganizationID != f.OrganizationID {
+	if f.OrganizationID != "" && f.OrganizationID != cat.OrganizationID {
 		return false
 	}
-	if cat.Key != "" && cat.Key != f.Key {
+	if f.Key != "" && f.Key != cat.Key {
 		return false
 	}
-	if cat.ID != "" && cat.ID != f.ID {
+	if f.ID != "" && f.ID != cat.ID {
 		return false
 	}
 	if len(f.SubCategory) != 0 {

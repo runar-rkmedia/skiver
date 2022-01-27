@@ -3,6 +3,7 @@ package bboltStorage
 import (
 	"fmt"
 
+	"github.com/runar-rkmedia/skiver/internal"
 	"github.com/runar-rkmedia/skiver/types"
 	bolt "go.etcd.io/bbolt"
 )
@@ -37,8 +38,61 @@ func (bb *BBolter) FindCategories(max int, filter ...types.CategoryFilter) (map[
 		return false
 	})
 }
+func (bb *BBolter) CreateSubCategory(rootCategoryID, targetParentCategoryId string, category types.Category) (types.Category, error) {
+	var err error
+	if rootCategoryID == "" {
+		return category, fmt.Errorf("Missing root-category-id %w", ErrMissingIdArg)
+	}
+	if targetParentCategoryId == "" {
+		return category, fmt.Errorf("Missing target-parent-category-id %w", ErrMissingIdArg)
+	}
+	if category.Key == "" || category.Key == types.RootCategory {
+		return category, fmt.Errorf("A sub-category cannot be a root-category (empty category.key) (%w)", ErrDuplicate)
+	}
+	category.Entity, err = bb.NewEntity(category.Entity)
+	if err != nil {
+		return category, err
+	}
+
+	// Reads are less *expensive* than opening a write, so we first make sure the category exists
+	filter := types.CategoryFilter{ID: rootCategoryID}
+	if rootCategoryID != targetParentCategoryId {
+		filter.SubCategory = []types.CategoryFilter{{ID: targetParentCategoryId}}
+	}
+	c, err := bb.FindOneCategory(filter)
+	if err != nil {
+		return category, fmt.Errorf("error during CreateSubCategory: %w", err)
+	}
+	if c == nil {
+		return category, fmt.Errorf("failed to find category during CreateSubCategory: %w", err)
+	}
+
+	return Update(bb, BucketCategory, rootCategoryID, func(t types.Category) (types.Category, error) {
+
+		e, err := updateEntity(t.Entity, category.Entity)
+		if err != nil {
+			return t, err
+		}
+		if t.ID == targetParentCategoryId {
+			if t.SubCategories == nil {
+				t.SubCategories = []types.Category{}
+			}
+			// panic(t.SubCategories)
+			t.SubCategories = append(t.SubCategories, t)
+		}
+		fmt.Println(internal.MustYaml(t), "\n", targetParentCategoryId)
+		panic(internal.MustYaml(t))
+		t.Entity = e
+
+		return t, nil
+	})
+
+}
 
 func (b *BBolter) CreateCategory(category types.Category) (types.Category, error) {
+	if category.ProjectID == "" {
+		return category, ErrMissingProject
+	}
 	existing, err := b.FindOneCategory(category.AsUniqueFilter())
 	if err != nil {
 		return *existing, err
@@ -50,6 +104,9 @@ func (b *BBolter) CreateCategory(category types.Category) (types.Category, error
 	category.Entity, err = b.NewEntity(category.Entity)
 	if err != nil {
 		return category, err
+	}
+	if category.Key == "" {
+		category.Key = types.RootCategory
 	}
 
 	var p types.Project

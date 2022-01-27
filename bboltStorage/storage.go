@@ -13,7 +13,9 @@ import (
 )
 
 var (
-	ErrMissingIdArg = errors.New("Missing id as argument")
+	ErrDuplicate      = errors.New("Duplication of entities is disallowed")
+	ErrMissingIdArg   = errors.New("Missing id as argument")
+	ErrMissingProject = errors.New("Missing ProjectID as argument")
 	// deprecated. return pointer instead
 	ErrNotFound      = errors.New("Not found")
 	ErrMissingBucket = errors.New("Bucket not found")

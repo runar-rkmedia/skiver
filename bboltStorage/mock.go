@@ -28,6 +28,9 @@ func NewMockDB(t *testing.T) mockDB {
 		os.Remove(tmpFile.Name())
 	})
 	bb, err := NewBbolt(l, tmpFile.Name(), nil, BBoltOptions{IDGenerator: &mockIdGenerator{}})
+	if err != nil {
+		t.Fatal(err)
+	}
 	return mockDB{&bb, l}
 }
 

@@ -40,6 +40,8 @@ type Storage interface {
 	CreateCategory(category Category) (Category, error)
 	GetCategories() (map[string]Category, error)
 
+	CreateSubCategory(rootCategoryID, targetCategoryID string, category Category) (Category, error)
+
 	GetTranslationValue(ID string) (*TranslationValue, error)
 	CreateTranslationValue(translationValue TranslationValue) (TranslationValue, error)
 	UpdateTranslationValue(tv TranslationValue) (TranslationValue, error)
