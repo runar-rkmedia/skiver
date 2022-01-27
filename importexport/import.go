@@ -67,30 +67,6 @@ func importAsI18Nodes(input interface{}) (I18N, error) {
 	return node, fmt.Errorf("Unhandled type for %#v", input)
 }
 
-type Locales []types.Locale
-
-func (t Locales) GetLocaleID(key string) string {
-	for _, l := range t {
-		if l.ID == key {
-			return l.ID
-		}
-		if l.IETF == key {
-			return l.ID
-		}
-		if l.Iso639_3 == key {
-			return l.ID
-		}
-		if l.Iso639_2 == key {
-			return l.ID
-		}
-		if l.Iso639_1 == key {
-			return l.ID
-		}
-	}
-
-	return ""
-}
-
 // non-Recursively traverses the node-tree to find all categories and fill any value in the import
 func importFromCategoryNode(base types.Project, source types.CreatorSource, key string, node I18NWithLocales) (types.ExtendedCategory, error) {
 
@@ -319,7 +295,7 @@ func InferVariables(translationValue, category, translation string) ([]Warning, 
 // Every leaf-node must be of type string
 func ImportI18NTranslation(
 	// TODO: check if we actually need the locales/localeHint here, or perhaps we should use a wrapper-func
-	locales Locales,
+	locales types.Locales,
 	localeHint *types.Locale,
 	base types.Project,
 	source types.CreatorSource,
@@ -512,7 +488,6 @@ func GetMapPaths(input interface{}, paths ...string) (n [][]string, err error) {
 	return nil, fmt.Errorf("unhandled type: %t %#v", input, input)
 }
 
-// Use with sort.Slice()
 func sortMapPath(got [][]string) func(i, j int) bool {
 	return func(i, j int) bool {
 

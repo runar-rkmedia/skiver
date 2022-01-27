@@ -1,12 +1,5 @@
 package bboltStorage
 
-import (
-	"time"
-
-	"github.com/runar-rkmedia/gabyoall/utils"
-	"github.com/runar-rkmedia/skiver/types"
-)
-
 type PubType string
 type PubVerb string
 
@@ -29,15 +22,3 @@ const (
 	PubVerbClean       PubVerb = "clean"
 	PubVerbConnectItem PubVerb = "connect"
 )
-
-// Returns an entity for use by database, with id set and createdAt to current time.
-// It is guaranteeed to be created correctly, even if it errors.
-// The error should be logged.
-func ForceNewEntity() (types.Entity, error) {
-	id, err := utils.ForceCreateUniqueId()
-
-	return types.Entity{
-		ID:        id,
-		CreatedAt: time.Now(),
-	}, err
-}

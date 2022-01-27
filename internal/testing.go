@@ -17,7 +17,6 @@ import (
 	"github.com/go-test/deep"
 	"github.com/gookit/color"
 	"github.com/pelletier/go-toml"
-	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
 var (
@@ -110,7 +109,7 @@ func Compare(name string, got, want interface{}, options ...CompareOptions) erro
 				return fmt.Errorf("%s", lineDiff(g, w))
 			}
 			d = MustYaml(diff)
-			return fmt.Errorf("YAML: %s: \n%v\n%s\n\ndiff:\n%s\nwant:\n%v", cName(name), cGot(withLineNumbers(g)), lineDiff(g, w), cDiff(d), cWant(withLineNumbers(w)))
+			return fmt.Errorf("%s: \n%v\n%s\n\ndiff:\n%s\nwant:\n%v", cName(name), cGot(withLineNumbers(g)), lineDiff(g, w), cDiff(d), cWant(withLineNumbers(w)))
 		}
 	}
 	if opts.Reflect {
@@ -129,7 +128,7 @@ func Compare(name string, got, want interface{}, options ...CompareOptions) erro
 				g = MustToml(got)
 				w = MustToml(want)
 			}
-			return fmt.Errorf("YAML: %s: \n%v\nwant:\n%v", cName(name), cGot(g), cWant(w))
+			return fmt.Errorf("%s: \n%v\nwant:\n%v", cName(name), cGot(g), cWant(w))
 		}
 	}
 	return nil
@@ -227,6 +226,7 @@ func OverwriteSnapshot(t *testing.T, extension string, b []byte) {
 	matchSnapshot(t, extension, b, true)
 }
 func matchSnapshot(t *testing.T, extension string, b []byte, overWrite bool) {
+	t.Helper()
 	if overWrite {
 		ci, err := os.LookupEnv("CI")
 		if err {
@@ -345,14 +345,20 @@ func StringCompare(t *testing.T, want, got string) error {
 
 	if want != got {
 		testza.AssertEqual(t, want, got)
-		dmp := diffmatchpatch.New()
-		fileAdmp, fileBdmp, dmpStrings := dmp.DiffLinesToChars(want, got)
-		diffs := dmp.DiffMain(fileAdmp, fileBdmp, false)
-		diffs = dmp.DiffCharsToLines(diffs, dmpStrings)
-		diffs = dmp.DiffCleanupSemantic(diffs)
+		// dmp := diffmatchpatch.New()
+		// fileAdmp, fileBdmp, dmpStrings := dmp.DiffLinesToChars(want, got)
+		// diffs := dmp.DiffMain(fileAdmp, fileBdmp, false)
+		// diffs = dmp.DiffCharsToLines(diffs, dmpStrings)
+		// diffs = dmp.DiffCleanupSemantic(diffs)
 
 		// t.Errorf("Result was not as expected: %s", diffs)
 		return fmt.Errorf("Result not as expected:\n%v", LineDiff(want, got))
 	}
 	return nil
+}
+
+// Tabs are annoying in yaml, so lets just convert it.
+func YamlUnmarshalAllowTabs(s string, j interface{}) error {
+	s = strings.ReplaceAll(s, "\t", "  ")
+	return yaml.Unmarshal([]byte(s), j)
 }

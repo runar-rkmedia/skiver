@@ -1,0 +1,23 @@
+nodes:
+  en:
+    nodes:
+      General:
+        nodes:
+          Forms:
+            nodes:
+              Buttons:
+                nodes:
+                  GoToCheckout:
+                    value: Go to checkout ({{count}})
+          Welcome:
+            value: Welcome, {{user}}
+  nb:
+    nodes:
+      General:
+        nodes:
+          Forms:
+            nodes:
+              Buttons:
+                nodes:
+                  GoToCheckout:
+                    value: Gå til utsjekk ({{count}})

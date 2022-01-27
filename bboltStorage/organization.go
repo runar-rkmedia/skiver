@@ -29,10 +29,7 @@ func (b *BBolter) CreateOrganization(organization types.Organization) (types.Org
 			return v, fmt.Errorf("Organizations already exists with title: %s", organization.Title)
 		}
 	}
-	_ent, err := ForceNewEntity()
-	if err != nil {
-		b.l.Warn().Err(err).Msg("Failed to create entity")
-	}
+	_ent := b.newEntity()
 	organization.ID = _ent.ID
 	organization.CreatedAt = _ent.CreatedAt
 	if err != nil {

@@ -32,3 +32,7 @@ const (
 	// A bit dirty.
 	RootCategory = "___root___"
 )
+
+func (c Category) IsRoot() bool {
+	return c.Key == RootCategory
+}

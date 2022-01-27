@@ -1,29 +1,17 @@
 package bboltStorage
 
 import (
-	"io/ioutil"
-	"log"
-	"os"
 	"sort"
 	"testing"
 
 	"github.com/MarvinJWendt/testza"
-	"github.com/runar-rkmedia/gabyoall/logger"
 	"github.com/runar-rkmedia/skiver/types"
 )
 
 func TestUser(t *testing.T) {
 	t.Run("Basic test", func(t *testing.T) {
-		tmpFile, err := ioutil.TempFile(os.TempDir(), "prefix-")
-		if err != nil {
-			log.Fatal("Cannot create temporary file", err)
-		}
-		defer os.Remove(tmpFile.Name())
 
-		l := logger.GetLogger("test")
-
-		bb, err := NewBbolt(l, tmpFile.Name(), nil)
-		testza.AssertNoError(t, err, "bb-bolt-creation should not err")
+		bb := NewMockDB(t)
 
 		// Ensure there are no users
 		users, err := bb.FindUsers(0)

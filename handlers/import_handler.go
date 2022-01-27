@@ -61,6 +61,7 @@ type Updates struct {
 	TranslationsValueCreations map[string]types.TranslationValue
 	TranslationCreations       map[string]types.Translation
 	CategoryCreations          map[string]types.Category
+	// TODO: support category-updates
 }
 type ImportResult struct {
 	Changes  Updates

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/runar-rkmedia/gabyoall/logger"
+	"github.com/runar-rkmedia/gabyoall/utils"
 	"github.com/runar-rkmedia/skiver/types"
 	"go.etcd.io/bbolt"
 	bolt "go.etcd.io/bbolt"
@@ -22,8 +23,17 @@ type PubSubPublisher interface {
 	Publish(kind, variant string, contents interface{})
 }
 
+type BBoltOptions struct {
+	IDGenerator IDGenerator
+}
+
 // Caller must call close when ending
-func NewBbolt(l logger.AppLogger, path string, pubsub PubSubPublisher) (bb BBolter, err error) {
+func NewBbolt(l logger.AppLogger, path string, pubsub PubSubPublisher, options ...BBoltOptions) (bb BBolter, err error) {
+	var opts BBoltOptions
+	if len(options) > 0 {
+		opts = options[0]
+		bb.idgenerator = opts.IDGenerator
+	}
 
 	bb.l = l
 	db, err := bolt.Open(path, 0666, &bolt.Options{
@@ -83,6 +93,27 @@ var (
 	ErrMissingOrganizationID = errors.New("OrganizationID was empty")
 )
 
+func (s *BBolter) newUniqueID() string {
+	if s.idgenerator == nil {
+		str, err := utils.ForceCreateUniqueId()
+		if err != nil {
+			s.l.Error().Err(err).Msg("Failed during utils.ForceCreateUniqueId")
+		}
+		return str
+	}
+	return s.idgenerator.CreateUniqueID()
+}
+
+// Returns an entity for use by database, with id set and createdAt to current time.
+// It is guaranteeed to be created correctly, even if it errors.
+// The error should be logged.
+func (s *BBolter) newEntity() types.Entity {
+
+	return types.Entity{
+		ID:        s.newUniqueID(),
+		CreatedAt: time.Now(),
+	}
+}
 func (s *BBolter) NewEntity(base types.Entity) (e types.Entity, err error) {
 
 	if base.CreatedBy == "" {
@@ -93,10 +124,7 @@ func (s *BBolter) NewEntity(base types.Entity) (e types.Entity, err error) {
 	}
 	// ForceNewEntity may return an error, but it guarantees the the Entity is still usable.
 	// The error should be logged, though.
-	e, kerr := ForceNewEntity()
-	if kerr != nil {
-		s.l.Error().Err(err).Str("id", e.ID).Msg("An error occured while creating entity. ")
-	}
+	e = s.newEntity()
 	e.CreatedBy = base.CreatedBy
 	e.OrganizationID = base.OrganizationID
 	return e, err
@@ -164,6 +192,11 @@ type BBolter struct {
 	pubsub PubSubPublisher
 	l      logger.AppLogger
 	Marshaller
+	idgenerator IDGenerator
+}
+
+type IDGenerator interface {
+	CreateUniqueID() string
 }
 
 var (

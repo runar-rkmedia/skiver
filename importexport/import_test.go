@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/MarvinJWendt/testza"
-	"github.com/ghodss/yaml"
 	"github.com/runar-rkmedia/skiver/internal"
 	"github.com/runar-rkmedia/skiver/types"
 )
@@ -353,7 +352,7 @@ en:
 				return
 			}
 			var j map[string]interface{}
-			err := yamlUnmarshalAllowTabs(tt.fields, &j)
+			err := internal.YamlUnmarshalAllowTabs(tt.fields, &j)
 			if err != nil {
 				t.Errorf("TEST-INPUT_ERROR: Failed to unmarshal: %s %s", err, tt.fields)
 				return
@@ -368,7 +367,7 @@ en:
 			if err := internal.Compare("result", nodeMap, j); err != nil {
 				t.Error(err)
 			}
-			merged, err := node.MergeAsIfRootIsLocale(_test_locales)
+			merged, err := node.MergeAsIfRootIsLocale(types.Test_locales)
 			testza.AssertNoError(t, err)
 			internal.MatchSnapshot(t, "merged.yaml", merged)
 
@@ -376,7 +375,7 @@ en:
 			base.ID = "proj-123"
 			base.CreatedBy = "jim"
 			base.OrganizationID = "org-123"
-			got, warnings, err := ImportI18NTranslation(_test_locales, tt.localeHint, base, "test-import", j)
+			got, warnings, err := ImportI18NTranslation(types.Test_locales, tt.localeHint, base, "test-import", j)
 			if !tt.wantErr {
 				testza.AssertNoError(t, err)
 			} else if got == nil {
@@ -402,7 +401,7 @@ en:
 				t.Error(err)
 			}
 			p := types.ExtendedProject{Categories: got.Categories, Locales: map[string]types.Locale{}}
-			for _, v := range _test_locales {
+			for _, v := range types.Test_locales {
 
 				p.Locales[v.ID] = v
 			}
@@ -423,28 +422,3 @@ en:
 		})
 	}
 }
-
-// Tabs are annoying in yaml, so lets just convert it.
-func yamlUnmarshalAllowTabs(s string, j interface{}) error {
-	s = strings.ReplaceAll(s, "\t", "  ")
-	return yaml.Unmarshal([]byte(s), j)
-}
-
-var (
-	_test_locales = Locales{
-		{
-			Entity:   types.Entity{ID: "loc-en"},
-			Iso639_1: "en",
-			Iso639_2: "en",
-			Iso639_3: "eng",
-			IETF:     "en-US",
-		},
-		{
-			Entity:   types.Entity{ID: "loc-no"},
-			Iso639_1: "no",
-			Iso639_2: "no",
-			Iso639_3: "nor",
-			IETF:     "nb-NO",
-		},
-	}
-)

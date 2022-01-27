@@ -111,6 +111,11 @@ func Test_Export(t *testing.T) {
 			internal.MatchSnapshot(t, "json", i18n.ToMap())
 			// testza.AssertEqual(t, tt.wantI18n, i18n)
 
+			node, err := ExportI18N(tt.project, ExportI18NOptions{})
+			testza.AssertNoError(t, err)
+			internal.MatchSnapshot(t, "node.yaml", node)
+			internal.MatchSnapshot(t, "node-map.yaml", node.ToMap())
+
 			var w bytes.Buffer
 			err = ExportByGoTemplate("typescript.tmpl", tt.project, i18n, &w)
 			testza.AssertNoError(t, err)

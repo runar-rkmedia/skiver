@@ -104,76 +104,17 @@ func ExportI18N(ex types.ExtendedProject, options ExportI18NOptions) (node I18N,
 				continue
 			}
 			n, err := addi18nnode(v, l.ID)
+
 			if err != nil {
 				return node, err
 			}
-			node.Nodes[key].Nodes[v.Key] = n
-
+			if v.IsRoot() {
+				node.Nodes[key] = n
+			} else {
+				node.Nodes[key].Nodes[v.Key] = n
+			}
 		}
 	}
-
-	// if 1 == 1 {
-	// 	return i18n, err
-	// }
-	// if options.LocaleKey == "" {
-	// 	options.LocaleKey = LocaleKeyISO1
-	// }
-	// for _, l := range ex.Locales {
-	// 	key := getLocaleKey(options.LocaleKey, l)
-	// 	if key == "" {
-	// 		err = fmt.Errorf("the locale-key was empty")
-	// 		return
-	// 	}
-	// 	if len(options.LocaleFilter) > 0 {
-	// 		found := false
-	// 	inner:
-	// 		for _, v := range options.LocaleFilter {
-	// 			if key == v {
-	// 				found = true
-	// 				break inner
-	// 			}
-	// 		}
-	// 		if !found {
-	// 			continue
-	// 		}
-	// 	}
-	// 	i18n[key] = map[string]map[string]string{}
-	// }
-	// for _, c := range ex.Categories {
-	// 	cKey := strings.TrimSpace(c.Key)
-	// 	for _, l := range ex.Locales {
-	// 		key := getLocaleKey(options.LocaleKey, l)
-	// 		if i18n[key] == nil {
-	// 			continue
-	// 		}
-	// 		i18n[key][cKey] = map[string]string{}
-	// 	}
-	// 	for _, t := range c.Translations {
-	// 		tKey := t.Key
-	// 		for _, v := range t.Values {
-	// 			if v.Value == "" {
-	// 				continue
-	// 			}
-	// 			locale, ok := ex.Locales[v.LocaleID]
-	// 			if !ok {
-	// 				err = fmt.Errorf("the locale '%s' was not found in the export, %#v", v.LocaleID, ex.Locales)
-	// 				return
-	// 			}
-	// 			localeKey := getLocaleKey(options.LocaleKey, locale)
-	// 			if i18n[localeKey] == nil {
-	// 				continue
-	// 			}
-
-	// 			i18n[localeKey][cKey][tKey] = v.Value
-	// 			if v.Context != nil {
-	// 				for context, v := range v.Context {
-	// 					tKey = tKey + "_" + context
-	// 					i18n[localeKey][cKey][tKey] = v
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
 	return
 }
 
@@ -191,7 +132,6 @@ func getLocaleKey(key LocaleKey, locale types.Locale) string {
 	return locale.Iso639_1
 }
 
-// type I18N map[string]map[string]map[string]string
 type I18N struct {
 	Value string          `json:"value,omitempty"`
 	Nodes map[string]I18N `json:"nodes,omitempty"`

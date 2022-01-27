@@ -49,6 +49,7 @@ type Storage interface {
 
 	ReportMissing(key MissingTranslation) (*MissingTranslation, error)
 	GetMissingKeysFilter(max int, filter ...MissingTranslation) (map[string]MissingTranslation, error)
+	UpdateUser(id string, payload User) (User, error)
 }
 
 type Entity struct {
