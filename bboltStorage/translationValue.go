@@ -13,28 +13,6 @@ func (b *BBolter) GetTranslationValue(ID string) (*types.TranslationValue, error
 	return &u, err
 }
 
-// Updates an existing entity-struct with changes.
-// NOTE: This does NOT update the db-value itself., but is meant as a helper-func
-func updateEntity(existing, changes types.Entity) (types.Entity, error) {
-	if existing.ID == "" {
-		return existing, fmt.Errorf("The existing-value does not have an ID.")
-	}
-	updatedBy := changes.UpdatedBy
-	if updatedBy == "" {
-		updatedBy = changes.CreatedBy
-	}
-	if updatedBy == "" {
-		return existing, fmt.Errorf("UpdatedBy is not set")
-	}
-
-	if changes.UpdatedAt == nil {
-		changes.UpdatedAt = nowPointer()
-	}
-	existing.UpdatedAt = changes.UpdatedAt
-	existing.UpdatedBy = changes.UpdatedBy
-	return existing, nil
-}
-
 func (bb *BBolter) UpdateTranslationValue(tv types.TranslationValue) (types.TranslationValue, error) {
 	if tv.Value == "" {
 		return tv, fmt.Errorf("empty value")
@@ -45,11 +23,10 @@ func (bb *BBolter) UpdateTranslationValue(tv types.TranslationValue) (types.Tran
 		if err != nil {
 			return nil, err
 		}
-		entity, err := updateEntity(ex.Entity, tv.Entity)
+		err = ex.Entity.Update(tv.Entity)
 		if err != nil {
 			return nil, err
 		}
-		ex.Entity = entity
 		ex.Value = tv.Value
 		return bb.Marshal(ex)
 	})

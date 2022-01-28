@@ -3,9 +3,7 @@ package handlers
 import (
 	"strings"
 	"testing"
-	"time"
 
-	"bou.ke/monkey"
 	"github.com/MarvinJWendt/testza"
 	"github.com/runar-rkmedia/skiver/bboltStorage"
 	"github.com/runar-rkmedia/skiver/importexport"
@@ -53,12 +51,8 @@ nb:
 	}
 
 	for _, tt := range tests {
-		monkey.Patch(time.Now, func() time.Time { return time.Date(2022, 01, 23, 18, 24, 37, 0, time.UTC) })
+		internal.NewMockTimeNow()
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.name != "simple" {
-				return
-
-			}
 
 			// 1. Setup
 			bb := bboltStorage.NewMockDB(t)

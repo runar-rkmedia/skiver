@@ -17,14 +17,13 @@ type mockDB struct {
 }
 
 func NewMockDB(t *testing.T) mockDB {
+	t.Helper()
 	l := logger.GetLoggerWithLevel("test", "fatal")
 	tmpFile, err := ioutil.TempFile(os.TempDir(), "mockdb-skiver-")
 	if err != nil {
 		t.Fatal("Cannot create temporary file", err)
 	}
-	t.Logf("Created temporary db-file %s", tmpFile.Name())
 	t.Cleanup(func() {
-		t.Logf("Cleaned up temporary db-file %s", tmpFile.Name())
 		os.Remove(tmpFile.Name())
 	})
 	bb, err := NewBbolt(l, tmpFile.Name(), nil, BBoltOptions{IDGenerator: &mockIdGenerator{}})

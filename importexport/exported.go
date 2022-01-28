@@ -159,7 +159,6 @@ func (in I18N) ToMap() interface{} {
 	for k, v := range in.Nodes {
 		val := v.ToMap()
 		if val == "" {
-			fmt.Println("kkk", k, v)
 			continue
 		}
 		m[k] = val

@@ -3,9 +3,7 @@ package importexport
 import (
 	"bytes"
 	"testing"
-	"time"
 
-	"bou.ke/monkey"
 	"github.com/MarvinJWendt/testza"
 	"github.com/runar-rkmedia/skiver/internal"
 	"github.com/runar-rkmedia/skiver/types"
@@ -23,7 +21,7 @@ func LocaleListToDict(list []types.Locale) map[string]types.Locale {
 }
 
 func Test_Export(t *testing.T) {
-	monkey.Patch(time.Now, func() time.Time { return time.Date(2022, 01, 23, 18, 24, 37, 0, time.UTC) })
+	internal.NewMockTimeNow()
 
 	tests := []struct {
 		name    string

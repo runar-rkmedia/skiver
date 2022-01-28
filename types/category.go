@@ -1,6 +1,10 @@
 package types
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+	"time"
+)
 
 // A Category is a "folder" for grouping translation-keys together
 
@@ -49,6 +53,104 @@ type CategoryFilter struct {
 	Key            string
 	ID             string
 	SubCategory    []CategoryFilter
+}
+
+// Traverses the Category tree looking for a matching payload-category for the specified id and updates it in place
+func (cat *Category) UpdateSubCategory(payload Category) (*Category, error) {
+	if payload.ID == "" {
+		return nil, fmt.Errorf("Missing ID for payload to UpdateSubCategory")
+	}
+	if cat.ID == payload.ID {
+		err := cat.Update(payload, UpdateEntityOptions{IgnoreMissingFields: true, SkipUpdatingUpdatedAt: true})
+		return cat, err
+	}
+	for i, sc := range cat.SubCategories {
+		if sc.ID == payload.ID {
+			err := sc.Update(payload, UpdateEntityOptions{IgnoreMissingFields: true, SkipUpdatingUpdatedAt: true})
+			if err == nil {
+				cat.SubCategories[i] = sc
+			}
+			return &sc, err
+		}
+		found, err := sc.UpdateSubCategory(payload)
+		if err != nil {
+			return found, err
+		}
+		if found == nil {
+			continue
+		}
+		return found, err
+	}
+	return nil, nil
+}
+func (cat *Category) Update(payload Category, options ...UpdateEntityOptions) error {
+
+	err := cat.Entity.Update(payload.Entity, options...)
+	if err != nil {
+		return err
+	}
+	for _, v := range payload.SubCategories {
+		cat.SubCategories = append(cat.SubCategories, v)
+	}
+outer:
+	for _, v := range payload.TranslationIDs {
+		for _, vv := range cat.TranslationIDs {
+			if v == vv {
+				continue outer
+			}
+		}
+		cat.TranslationIDs = append(cat.TranslationIDs, v)
+	}
+	if payload.Key != "" {
+		cat.Key = payload.Key
+	}
+	if payload.Title != "" {
+		cat.Title = payload.Title
+	}
+	if payload.Description != "" {
+		cat.Description = payload.Description
+	}
+	if cat.ProjectID != "" {
+		cat.ProjectID = payload.ProjectID
+	}
+	return nil
+}
+
+type UpdateEntityOptions struct {
+	IgnoreMissingFields   bool
+	SkipUpdatingUpdatedAt bool
+}
+
+// Updates an existing entity-struct with changes.
+// NOTE: This does NOT update the db-value itself., but is meant as a helper-func
+func (existing *Entity) Update(changes Entity, options ...UpdateEntityOptions) error {
+	var opts UpdateEntityOptions
+	if len(options) > 0 {
+		opts = options[0]
+	}
+	if existing.ID == "" {
+		return fmt.Errorf("The existing-value does not have an ID.")
+	}
+	updatedBy := changes.UpdatedBy
+	if updatedBy == "" {
+		updatedBy = changes.CreatedBy
+	}
+	if updatedBy == "" {
+		if !opts.IgnoreMissingFields {
+			return fmt.Errorf("UpdatedBy is not set")
+
+		}
+	}
+
+	if changes.UpdatedAt == nil {
+		if !opts.SkipUpdatingUpdatedAt {
+			now := time.Now()
+			changes.UpdatedAt = &now
+		}
+	}
+	existing.UpdatedAt = changes.UpdatedAt
+	existing.UpdatedBy = changes.UpdatedBy
+	return nil
 }
 
 // Used to filter and search

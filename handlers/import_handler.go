@@ -82,7 +82,6 @@ func ImportIntoProject(db types.Storage, kind string, createdBy string, project 
 	var locale *types.Locale
 	if localeLike != "" {
 		if true {
-
 			return nil, NewError("Locale from url is not yet implemented. Please add the locale as the root-key in the body", requestContext.CodeErrNotImplemented)
 		}
 		locale, err := db.GetLocaleByIDOrShortName(localeLike)

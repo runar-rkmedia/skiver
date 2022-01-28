@@ -85,11 +85,10 @@ func (bb *BBolter) UpdateUser(id string, payload types.User) (types.User, error)
 		if payload.UserName != "" && payload.UserName != t.UserName {
 			t.UserName = payload.UserName
 			shouldUpdate = true
-			e, err := updateEntity(t.Entity, payload.Entity)
+			err := t.Entity.Update(payload.Entity)
 			if err != nil {
 				return t, err
 			}
-			t.Entity = e
 		}
 		if !shouldUpdate {
 			return t, ErrNoFieldsChanged
