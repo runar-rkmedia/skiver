@@ -358,24 +358,62 @@ func ImportI18NTranslation(
 	nodeKeys := sortedMapKeys(nodes.Nodes)
 	// The root-nodes are probably the key for the locale, so we unwind one level of the nodes-tree
 	rootNode := types.ExtendedCategory{Translations: map[string]types.ExtendedTranslation{}}
-	for _, key := range nodeKeys {
-		node := nodes.Nodes[key]
+	for _, key_ := range nodeKeys {
+		node := nodes.Nodes[key_]
 
-		cat, err := importFromCategoryNode(base, source, key, node)
+		cat, err := importFromCategoryNode(base, source, key_, node)
 		if err != nil {
 			return &imp, w, err
 		}
+		key := cat.Key
 		// special case for rootnodes
 		if len(node.Nodes) == 0 {
 			if len(cat.SubCategories) > 0 {
 				return &imp, w, fmt.Errorf("Did not expect root-category to have subcategories")
 			}
 			for k, v := range cat.Translations {
-				rootNode.Translations[k] = v
+				if ex, ok := rootNode.Translations[k]; ok {
+					// merge translation-values. We only care about the .Value and .Context.
+					for vk, v := range v.Values {
+						if exv, ok := ex.Values[vk]; ok {
+							if exv.Value == "" {
+								exv.Value = v.Value
+							}
+							if len(v.Context) > 0 {
+								if len(exv.Context) > 0 {
+									for ck, c := range v.Context {
+										exv.Context[ck] = c
+									}
+								} else {
+									exv.Context = v.Context
+								}
+
+							}
+							ex.Values[vk] = exv
+						} else {
+
+							ex.Values[vk] = v
+						}
+
+					}
+
+					rootNode.Translations[ex.Key] = ex
+
+				} else {
+
+					rootNode.Translations[v.Key] = v
+				}
 			}
 			continue
 		}
-		imp.Categories[key] = cat
+		if _, ok := imp.Categories[key]; ok {
+			// TODO: handle merge
+			panic("already exists a key for this category " + key)
+
+		} else {
+
+			imp.Categories[key] = cat
+		}
 	}
 	if len(rootNode.Translations) > 0 {
 		rootNode.Key = types.RootCategory

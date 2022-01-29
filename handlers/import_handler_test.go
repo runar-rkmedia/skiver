@@ -30,6 +30,15 @@ en:
 `,
 		},
 		{
+			"simple, single level",
+			nil,
+			`
+en:
+  foo: bar
+	foo_baz: foobar
+`,
+		},
+		{
 			"Nested categories",
 			nil,
 			`
@@ -53,7 +62,6 @@ nb:
 	for _, tt := range tests {
 		internal.NewMockTimeNow()
 		t.Run(tt.name, func(t *testing.T) {
-
 			// 1. Setup
 			bb := bboltStorage.NewMockDB(t)
 			err := bb.StandardSeed()
@@ -92,7 +100,7 @@ nb:
 			}
 
 			toMap := export.ToMap()
-			if err := internal.Compare("node-map", toMap, j); err != nil {
+			if err := internal.Compare("Export of result of import should match import-input", toMap, j); err != nil {
 				t.Error(err)
 			}
 		})

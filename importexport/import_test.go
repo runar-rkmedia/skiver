@@ -1,7 +1,6 @@
 package importexport
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/MarvinJWendt/testza"
@@ -348,9 +347,6 @@ en:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if strings.Contains(tt.fields, "meaningOfLife") {
-				return
-			}
 			var j map[string]interface{}
 			err := internal.YamlUnmarshalAllowTabs(tt.fields, &j)
 			if err != nil {
@@ -417,8 +413,6 @@ en:
 			}); err != nil {
 				t.Error(err)
 			}
-
-			// testza.AssertEqual(t, tt.expects, got)
 		})
 	}
 }

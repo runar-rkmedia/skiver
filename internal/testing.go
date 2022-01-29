@@ -362,3 +362,7 @@ func YamlUnmarshalAllowTabs(s string, j interface{}) error {
 	s = strings.ReplaceAll(s, "\t", "  ")
 	return yaml.Unmarshal([]byte(s), j)
 }
+
+func PrintMultiLineYaml(title, content interface{}) {
+	fmt.Printf("%s (%T)\n%s", color.Yellow.Render(title), content, color.Cyan.Render(withLineNumbers(MustYaml(content))))
+}

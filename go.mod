@@ -3,8 +3,8 @@ module github.com/runar-rkmedia/skiver
 go 1.18
 
 require (
+	bou.ke/monkey v1.0.2
 	github.com/MarvinJWendt/testza v0.2.12
-	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/go-openapi/errors v0.20.1
 	github.com/go-openapi/runtime v0.21.0
 	github.com/go-openapi/strfmt v0.21.1
@@ -13,11 +13,9 @@ require (
 	github.com/go-test/deep v1.0.8
 	github.com/gobeam/stringy v0.0.5
 	github.com/schollz/mnemonicode v1.0.1
-	github.com/sergi/go-diff v1.2.0
 )
 
 require (
-	bou.ke/monkey v1.0.2 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
