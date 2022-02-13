@@ -4,25 +4,74 @@
 
 ## Current feature-set
 
+### Exports
+
+You own your data. At any time, you can export all information recorded, and convert it to any supported format.
+
+#### Extended typescript-support
+
+The types generated for use in typescript-projects gives a better insight for developers as to what each key in the translation means.
+
+Depending on the tooling used, developers could only see the key for the translation, with very limited information about the meaning of the key without consulting
+a different system.
+
+With these types generated, the developer can see examples of the real translation directly in their editor, along with any parameters used.
+<style>
+  .vcenter,
+  .vcenter {
+      width: 100%;
+      display: flex;
+      gap: 20px;
+      flex-direction: row;
+      align-items: flex-end;
+    }
+  .vcenter img {
+      display: block;
+      border-radius: 16px;
+      height: 100%;
+      border: 2px solid hsla(220, 67%, 80%, 30%);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+  img+em {
+      display: block;
+      text-align: center;
+    }
+</style>
+
+<div class="vcenter">
+
+![VSCode example](./docs/ts_hover.png)
+*Hover-information in Visual Studio Code*
+
+
+![Vim example](./docs/ts_hover_vim.png)
+*Tooltip in VIM*
+
+</div>
+
 - [X] Multi-locale support
 - [X] Multi-project support
 - [X] i18n-compliant export
 - [X] Auto-translate via external translation-service (Bing Translate, Libre Translate)
+
 - [X] Report missing translation
+  - [X] Missing translations can easily be viewed and created from the UI.
+- [ ] Typescript-type-generation with rich comments
 - [ ] Import translations
   - [X] General AST
   - [X] Dry run, with preview of updates and creations
   - [ ] `i18next`-format
     - [X] multiple-language 
     - [X] context-support
-    - [ ] inferring of variables and nested keys. 
+    - [X] inferring of variables and nested keys. 
 - [ ] Multi-organization support
 
 ## Planned feature-set
 
-- [ ] Variables with examples to help translators and developers.
 - [ ] Server-side interpolation via API
 - [ ] Client-side live interpolation via library
+  - [ ] Support for multiple libraries, including different versions.
+  - [ ] Optionally bring your own library, per project. Upload any WebAssembly with the library included, and it will be used on all translations.
 - [ ] Source-code integration with project, to show usage of translation.
       
      E.g.
@@ -35,7 +84,6 @@
        ```
 - [ ] Upload of images to show usage of translation.
 - [ ] Sharing of translations between projects.
-- [ ] Typescript-type-generation with rich comments
 
 
 ## Things that are a mess, and need refactoring
