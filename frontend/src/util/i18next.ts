@@ -3,30 +3,34 @@ import i18next, { type TFunction } from 'i18next';
 import Fetch from 'i18next-fetch-backend';
 
 
-let ttt = (async () => {
-  const t = await i18next
+let initi18n = (async () => {
+  const i18n = i18next
     .use(Fetch)
-    .init({
-      ns: 'skiver',
-      lng: 'en',
-      preload: ['en', 'nb'],
-      saveMissing: true,
-      // resources,
-      debug: false,
-      backend: {
-        loadPath: "/api/export/l={{lng}}&p={{ns}}.json",
-        addPath: '/api/missing/{{lng}}/{{ns}}',
-      },
 
-      fallbackLng: 'en',
-      defaultNS: 'skiver',
-      fallbackNS: 'skiver',
-    });
+
+  const t = await i18n.init({
+    ns: 'skiver',
+    lng: 'en',
+    preload: ['en', 'nb'],
+    saveMissing: true,
+    // resources,
+    debug: false,
+    backend: {
+      loadPath: "/api/export/l={{lng}}&p={{ns}}.json",
+      addPath: '/api/missing/{{lng}}/{{ns}}',
+    },
+
+    fallbackLng: 'en',
+    defaultNS: 'skiver',
+    fallbackNS: 'skiver',
+  });
 
   await new Promise(res => i18next.loadResources(res));
 
   return t
-})()
+})
+
+let ttt = initi18n()
 function createL10nStore() {
   const { subscribe, update } = writable<TFunction>(() => "...initializing...");
 
@@ -40,6 +44,7 @@ function createL10nStore() {
     update(_t => t);
   }
 
+
   return {
     subscribe,
     init,
@@ -47,6 +52,8 @@ function createL10nStore() {
     i18next,
   };
 }
+
+
 
 export const t = createL10nStore();
 t.init()
@@ -65,7 +72,7 @@ export function addPreviewTranslationResource(localeKey: string, ns: string, cat
   if (!key) {
     return
   }
-  const cat = categoryKey === '___root___' ? "" : categoryKey
+  const cat = categoryKey === '' ? "" : categoryKey
   const kk = context ? key + "_" + context : key
   const k = cat ? cat + "." + kk : kk
   // TODO: check if this is performance-heavy.

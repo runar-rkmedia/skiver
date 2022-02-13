@@ -24,7 +24,7 @@ import (
 	"github.com/NYTimes/gziphandler"
 	swaggerMiddleware "github.com/go-openapi/runtime/middleware"
 	"github.com/patrickmn/go-cache"
-	"github.com/runar-rkmedia/gabyoall/api/utils"
+	gobyutils "github.com/runar-rkmedia/gabyoall/api/utils"
 	"github.com/runar-rkmedia/gabyoall/logger"
 	"github.com/runar-rkmedia/skiver/bboltStorage"
 	cfg "github.com/runar-rkmedia/skiver/config"
@@ -35,6 +35,7 @@ import (
 	"github.com/runar-rkmedia/skiver/requestContext"
 	"github.com/runar-rkmedia/skiver/translator"
 	"github.com/runar-rkmedia/skiver/types"
+	"github.com/runar-rkmedia/skiver/utils"
 )
 
 // TODO: update to use debug.BuildInfo or see https://github.com/carlmjohnson/versioninfo/
@@ -299,7 +300,7 @@ func main() {
 		},
 	}
 	if config.SelfCheck {
-		go utils.SelfCheck(utils.SelfCheckLimit{
+		go gobyutils.SelfCheck(gobyutils.SelfCheckLimit{
 			MemoryMB:   1000,
 			GoRoutines: 10000,
 			Streaks:    5,
@@ -380,6 +381,26 @@ func main() {
 	if isDev {
 		// In development, we serve the file directly.
 		handler.Handle("/", http.FileServer(http.Dir("./frontend/dist/")))
+		w, err := utils.NewDirWatcher("./frontend/dist")
+		if err != nil {
+			panic(err)
+		}
+		defer w.Close()
+		go func() {
+			for {
+				select {
+				case _, ok := <-w.Events:
+					if !ok {
+						continue
+					}
+					events.Publish("dist", "change", nil)
+				}
+
+			}
+		}()
+		if err != nil {
+			panic(err)
+		}
 	} else {
 		handler.Handle("/", frontend.DistServer)
 	}

@@ -153,6 +153,7 @@ type WsTranslationValue = Ws<'translationValue', verbs, ApiDef.TranslationValue>
 type WsTranslation = Ws<'translation', verbs, ApiDef.Translation>
 
 type WsMessage =
+  | Ws<'dist', 'chache', null> // Only used in development
   | WsProject
   | WsLocale
   | WsTranslation

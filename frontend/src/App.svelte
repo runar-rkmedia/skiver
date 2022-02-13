@@ -17,8 +17,8 @@
     api.login.get()
   })
 
-  import Tabs from './components/Tabs.svelte'
   import Alert from './components/Alert.svelte'
+  import Tabs from './components/Tabs.svelte'
   import Button from './components/Button.svelte'
   import Spinner from './components/Spinner.svelte'
   import PageContent from 'PageContent.svelte'
