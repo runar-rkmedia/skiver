@@ -125,7 +125,15 @@ func (p *Parser) parse() (ast Ast, err error) {
 			}
 			last := ast.Nodes[len(ast.Nodes)-1]
 			b := stringRangeWithInjectedChar(p.l.Input, node.Token.Start-10, node.Token.Start, node.Token.End+10, " ¦ ")
-			return ast, node.err(fmt.Sprintf("'%s' unexpected token-kind %s '%s' following %s '%s'. ", b, node.Token.Kind, node.Token.Literal, last.Token.Kind, last.Token.Literal))
+			return ast, node.err(
+				fmt.Sprintf(
+					"'%[1]s' unexpected token-kind %[2]s '%[3]s' following %[4]s '%[5]s'. ",
+					b,                  // 1
+					node.Token.Kind,    // 2
+					node.Token.Literal, // 3
+					last.Token.Kind,    // 4
+					last.Token.Literal, // 5
+				))
 		}
 
 		i++

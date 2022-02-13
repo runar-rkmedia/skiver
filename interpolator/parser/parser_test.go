@@ -94,6 +94,15 @@ func TestParser(t *testing.T) {
 			},
 			false,
 		},
+		// TODO: improve the parser with until the tests below give more meaningful result
+		// {
+		// 	"Multiple flat with semi-natural language",
+		// 	"The user is called {{username}}, his name is {{firstName}} {{lastName}} ({{name}}), he has {{count}} dogs as off {{year}}. Email is {{email}}, born on {{date}}. Favourite color is {{darkColor}}",
+		// 	Ast{
+		// 		Nodes: []Node{},
+		// 	},
+		// 	false,
+		// },
 
 		// {
 		// 	"Multiple nestings, interpolations, with eobjects",

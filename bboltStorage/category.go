@@ -87,6 +87,11 @@ func (b *BBolter) UpdateCategory(id string, category types.Category) (types.Cate
 
 		return nil
 	})
+	if err != nil {
+		return c, err
+	}
+
+	b.PublishChange(PubTypeCategory, PubVerbUpdate, c)
 
 	return c, err
 

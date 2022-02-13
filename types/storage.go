@@ -34,6 +34,7 @@ type Storage interface {
 	CreateTranslation(locale Translation) (Translation, error)
 	GetTranslations() (map[string]Translation, error)
 	GetTranslationsFilter(max int, filter ...Translation) (map[string]Translation, error)
+	UpdateTranslation(id string, paylaod Translation) (Translation, error)
 
 	// These must be added
 	GetCategory(ID string) (*Category, error)

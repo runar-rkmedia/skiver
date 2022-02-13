@@ -818,7 +818,38 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				}
 				tv.CreatedBy = session.User.ID
 				tv.OrganizationID = session.Organization.ID
+
+				_, variables := importexport.InferVariables(tv.Value, "???", tv.TranslationID)
+				if len(variables) > 0 {
+					t, err := ctx.DB.GetTranslation(tv.TranslationID)
+					if err != nil {
+						rc.WriteErr(err, requestContext.CodeErrTranslation)
+						return
+					}
+					needsUpdate := false
+					if t.Variables == nil {
+						t.Variables = variables
+						needsUpdate = true
+					} else {
+
+					outerV:
+						for k, v := range variables {
+							for tk := range t.Variables {
+								if k == tk {
+									continue outerV
+								}
+							}
+							t.Variables[k] = v
+							needsUpdate = true
+						}
+					}
+					if needsUpdate {
+						ctx.DB.UpdateTranslation(t.ID, *t)
+					}
+				}
+
 				translationValue, err := ctx.DB.CreateTranslationValue(tv)
+
 				rc.WriteAuto(translationValue, err, requestContext.CodeErrCreateTranslationValue)
 				return
 			}

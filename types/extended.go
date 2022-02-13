@@ -130,11 +130,8 @@ func (p Project) Extend(db Storage, options ...ExtendOptions) (ep ExtendedProjec
 				if key == k || v.IETF == key || v.Iso639_3 == key || v.Iso639_2 == key || v.Iso639_1 == key {
 					continue outer
 				}
-				fmt.Println("drpped", v.IETF)
 				delete(locales, k)
-
 			}
-
 		}
 	}
 	ep.Locales = locales

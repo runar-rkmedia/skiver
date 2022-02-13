@@ -11,11 +11,8 @@ import (
 // swagger:model Category
 type Category struct {
 	Entity
-	Title       string `json:"title"`
-	Description string `json:"description,omitempty"`
-	// If the category-key is "___root___", it should be considered as if there are no categories,
-	// but just a flat list of items
-	// Will be changed to a string array
+	Title          string   `json:"title"`
+	Description    string   `json:"description,omitempty"`
 	Key            string   `json:"key"`
 	ProjectID      string   `json:"project_id,omitempty"`
 	TranslationIDs []string `json:"translation_ids,omitempty"`

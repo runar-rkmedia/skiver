@@ -2,6 +2,7 @@ package importexport
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -204,9 +205,25 @@ func translationFromNode(t *types.ExtendedTranslation, key string, base types.Pr
 	}
 }
 
+var (
+	inferVariablesRegex = regexp.MustCompile(`{{\s*([^\s,}]*)[^}]*}}`)
+)
+
 func InferVariables(translationValue, category, translation string) ([]Warning, map[string]interface{}) {
 	w := []Warning{}
 	variables := make(map[string]interface{})
+
+	// The parser below is not yet quite up the the task, so we attempt to infer the easy, common ones with regex first:
+	matches := inferVariablesRegex.FindAllStringSubmatch(translationValue, -1)
+	if len(matches) > 0 {
+		for _, v := range matches {
+			if len(v) < 2 {
+				continue
+			}
+			variables[v[1]] = getValueForVariableKey(v[1])
+
+		}
+	}
 
 	parso := parser.NewParser(nil)
 	parsed, parseErr := parso.Parse(translationValue)

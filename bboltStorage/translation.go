@@ -69,9 +69,71 @@ func (b *BBolter) CreateTranslation(translation types.Translation) (types.Transl
 	}
 
 	b.PublishChange(PubTypeTranslation, PubVerbCreate, translation)
-	b.PublishChange(PubTypeCategory, PubVerbUpdate, b)
+	b.PublishChange(PubTypeCategory, PubVerbUpdate, c)
 	go b.UpdateMissingWithNewIds(types.MissingTranslation{Translation: translation.Key, TranslationID: translation.ID})
 	return translation, err
+}
+
+// TODO: complete implementation
+func (b *BBolter) UpdateTranslation(id string, paylaod types.Translation) (types.Translation, error) {
+	if id == "" {
+		return paylaod, ErrMissingIdArg
+	}
+	existing, err := b.GetTranslation(id)
+	if err != nil {
+		return *existing, err
+	}
+	var c types.Translation
+	err = b.Update(func(tx *bolt.Tx) error {
+
+		bucket := tx.Bucket(BucketTranslation)
+		existing := bucket.Get([]byte(id))
+		if existing == nil {
+			return ErrNotFound
+		}
+		err := b.Unmarshal(existing, &c)
+		if err != nil {
+			return err
+		}
+		needsUpdate := false
+		// TODO: ensure key-uniqueness
+		if paylaod.Key != c.Key {
+			c.Key = paylaod.Key
+			needsUpdate = true
+		}
+		if paylaod.Title != "" && paylaod.Title != c.Title {
+			c.Title = paylaod.Title
+			needsUpdate = true
+		}
+		if paylaod.Description != "" && paylaod.Description != c.Description {
+			c.Description = paylaod.Description
+			needsUpdate = true
+		}
+		if len(paylaod.Variables) > 0 {
+			c.Variables = paylaod.Variables
+			needsUpdate = true
+		}
+
+		if !needsUpdate {
+			return ErrNoFieldsChanged
+		}
+		c.UpdatedAt = nowPointer()
+
+		bytes, err := b.Marshal(c)
+		if err != nil {
+			return err
+		}
+		err = bucket.Put([]byte(c.ID), bytes)
+
+		return nil
+	})
+	if err != nil {
+		return c, err
+	}
+
+	b.PublishChange(PubTypeTranslation, PubVerbUpdate, c)
+	return c, err
+
 }
 
 func (bb *BBolter) GetTranslations() (map[string]types.Translation, error) {
