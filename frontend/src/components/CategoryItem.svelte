@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { db, api, projects } from 'api'
+  import { db, api } from 'api'
   import { state, toast } from 'state'
   import { fly } from 'svelte/transition'
   import Button from 'components/Button.svelte'
@@ -24,16 +24,19 @@
   export let selectedCategory: string
   export let visibleForm: string
   export let forceExpand = false
+  $: translations = (category.translation_ids || [])
+    .map((tid) => $db.translation[tid])
+    .filter(Boolean)
 
   // export let expandedCategory: string | boolean
 </script>
 
 <paper class="category-item">
-  <paper-count>{Object.keys(category.translations).length || 0}</paper-count>
+  <paper-count>{translations.length || 0}</paper-count>
   <Collapse key={category.id} forceShow={forceExpand}>
     <div class="category-item-header" slot="title">
       <h3>
-        {#if category.key !== '___root___'}
+        {#if category.key !== ''}
           <code>
             {category.key}
           </code>
@@ -77,12 +80,11 @@
       </paper>
     {/if}
     <div class="translations" key="={category.id}">
-      {#each sortOn(Object.values(category.translations), ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn) as translation}
+      {#each sortOn(translations, ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn) as translation}
         <paper class="translation-item">
           <TranslationItem
             {translation}
             {projectKey}
-            translationValues={translation.values}
             categoryKey={category.key}
             {locales}
             bind:selectedLocale

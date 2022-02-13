@@ -1,24 +1,36 @@
 <script lang="ts">
   import TranslationValueRow from './TranslationValueRow.svelte'
   import EntityDetails from './EntityDetails.svelte'
+  import { db } from 'api'
   export let translation: ApiDef.Translation
   /** Map by locale-id */
-  export let translationValues: Record<string, ApiDef.TranslationValue>
+  // export let translationValues: Record<string, ApiDef.TranslationValue>
   export let categoryKey: string
   export let projectKey: string
-  export let selectedLocale = ''
 
   export let locales: ApiDef.Locale[]
-  $: contextKeys = Array.from(
-    Object.values(translationValues || {}).reduce((r, tv) => {
-      if (!tv || !tv.context) {
+  let contextKeys = []
+  // $: contextKeys = Array.from(
+  //   Object.values(translationValues || {}).reduce((r, tv) => {
+  //     if (!tv || !tv.context) {
+  //       return r
+  //     }
+  //     for (const c of Object.keys(tv.context)) {
+  //       r.add(c)
+  //     }
+  //     return r
+  //   }, new Set<string>())
+  // )
+  $: translationValues = (translation?.value_ids || []).reduce(
+    (r, tvid) => {
+      const tv = $db.translationValue[tvid]
+      if (!tv || !tv.locale_id) {
         return r
       }
-      for (const c of Object.keys(tv.context)) {
-        r.add(c)
-      }
+      r[tv.locale_id] = tv
       return r
-    }, new Set<string>())
+    },
+    { bnaan: true }
   )
 </script>
 
@@ -26,9 +38,7 @@
   <div class="desc">
     <h4>
       <code>
-        {`${categoryKey !== '___root___' ? categoryKey + '.' : ''}${
-          translation.key
-        }`}
+        {`${categoryKey !== '' ? categoryKey + '.' : ''}${translation.key}`}
       </code>
       {translation.title}
     </h4>
@@ -50,7 +60,6 @@
           <TranslationValueRow
             {categoryKey}
             {projectKey}
-            bind:selectedLocale
             {translation}
             {locale}
             translationValue={translationValues[locale.id]} />
@@ -82,7 +91,6 @@
               {categoryKey}
               {projectKey}
               {translation}
-              bind:selectedLocale
               {contextKey}
               {locale}
               translationValue={translationValues[locale.id]} />

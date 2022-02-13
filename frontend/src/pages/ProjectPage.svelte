@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { db, api, projects } from 'api'
+  import { db } from 'api'
   import { state } from 'state'
   import Button from 'components/Button.svelte'
   import Collapse from 'components/Collapse.svelte'
@@ -11,7 +11,7 @@
   import CategoryList from '../components/CategoryList.svelte'
   import EntityDetails from 'components/EntityDetails.svelte'
 
-  $: project = $projects[projectID]
+  $: project = $db.project[projectID]
   $: {
     if (!$state.projectSettings[projectID]?.localeIds) {
       $state.projectSettings[projectID] = {
@@ -22,6 +22,12 @@
   $: locales = $state.projectSettings[projectID]?.localeIds?.length
     ? $state.projectSettings[projectID].localeIds.map((id) => $db.locale[id])
     : Object.values($db.locale || {})
+  $: categories =
+    (project &&
+      (project.category_ids || [])
+        .map((cid) => $db.category[cid])
+        .filter(Boolean)) ||
+    []
   let visibleForm: null | 'translation' | 'category' | 'translationValue' = null
   let selectedCategory = ''
   let selectedTranslation = ''
@@ -34,13 +40,6 @@
   ]
 </script>
 
-{$t('a.hello')}
-{$t('actions.create')}
-{$t('actions.update')}
-{$t('actions.delete')}
-{$t('forms.submit', { value: 4 })}
-
-<button on:click={() => t.changeLanguage('nb')}>toggle lang</button>
 {#if !project}
   {#if $db.responseStates.project.loading}
     Loading...
@@ -112,15 +111,17 @@
       </paper>
     {/if}
   </div>
-  <CategoryList
-    {locales}
-    {selectedCategory}
-    {selectedTranslation}
-    {selectedLocale}
-    {visibleForm}
-    projectKey={project.short_name || project.id}
-    categories={sortOn(
-      Object.values(project.categories),
-      ($state.categorySortAsc ? '' : '-') + $state.categorySortOn
-    )} />
+  {#if categories}
+    <CategoryList
+      {locales}
+      {selectedCategory}
+      {selectedTranslation}
+      {selectedLocale}
+      {visibleForm}
+      projectKey={project.short_name || project.id}
+      categories={sortOn(
+        categories,
+        ($state.categorySortAsc ? '' : '-') + $state.categorySortOn
+      )} />
+  {/if}
 {/if}

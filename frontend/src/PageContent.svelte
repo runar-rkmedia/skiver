@@ -13,7 +13,6 @@
   let routeArgs = ''
   $: {
     routeArgs = $router.hash.replace('#', '').split('/')
-    console.log(routeArgs)
     mainRoute = routeArgs[0]
     routeArgs = routeArgs.slice(1)
   }

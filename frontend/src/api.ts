@@ -4,8 +4,7 @@ import createStore from './store'
 import type { AnyFunc } from 'simplytyped'
 import { parseDate } from 'dates'
 import { isPast } from 'date-fns'
-import { derived, get } from 'svelte/store'
-import { addPreviewTranslationResource } from 'util/i18next'
+import { get } from 'svelte/store'
 export function objectKeys<T extends object>(obj: T) {
   return Object.keys(obj) as Array<keyof T>
 }
@@ -179,96 +178,50 @@ export const db = createStore<DB, null>({
   ),
 })
 
-type ExtendedTranslationValue = ApiDef.TranslationValue
-type ExtendedTranslation = ApiDef.Translation & {
-  values: Record<string, ExtendedTranslationValue>
-}
-type ExtendedCategory = ApiDef.Category & {
-  translations: Record<string, ExtendedTranslation>
-}
-type ExtendedProject = ApiDef.Project & {
-  categories: Record<string, ExtendedCategory>
-}
-
-export const projects = derived(db, ($db) =>
-  Object.values($db.project).reduce((r, project: ExtendedProject) => {
-    project.categories = Object.values($db.category).reduce(
-      (rc, c: ExtendedCategory) => {
-        if (c.project_id !== project.id) {
-          return rc
-        }
-        c.translations = Object.values($db.translation).reduce(
-          (rt, t: ExtendedTranslation) => {
-            if (t.category !== c.id) {
-              return rt
-            }
-            t.values = Object.values($db.translationValue).reduce((rtv, tv) => {
-              if (tv.translation_id !== t.id) {
-                return rtv
-              }
-              // NOTE: translations are indexed by their locale-id, not their id.
-              rtv[tv.locale_id!] = tv
-              // This might be really performance intesive, depending on how i18next has implemented it.
-              // The reason we do this is to add every resource as a previewable item.
-              addPreviewTranslationResource(tv.locale_id || "", project.short_name || project.id, c.key || '', t.key || '', tv.value || "", (t as any).context)
-              return rtv
-            }, {})
-            rt[t.id] = t
-            return rt
-          },
-          {}
-        )
-        rc[c.id] = c
-
-        return rc
-      },
-      {}
-    )
-    r[project.id] = project
-    return r
-  }, {} as Record<string, ExtendedProject>)
-)
-
 wsSubscribe({
   onMessage: (msg) => {
-    console.log('wsMessage', msg)
+    // only used in development
+    if (msg.kind === 'dist') {
+      window.location.reload()
+      return
+    }
     if (!msg.contents) {
       return
     }
     if (typeof msg.contents !== 'object') {
       return
     }
+    if (!msg.contents?.id) {
+      console.warn("received message without id", msg)
+      return
+    }
 
-    if (msg.contents.id) {
-      console.log('posting messasge', window.parent)
-      if (window.parent) {
-        // We should include more information here, since if the parent is an
-        // iframe, they probably don't have any relation to our ids, but keys
-        // and such
-        const store = get(db)
-        if (store.login.ok) {
+    if (window.parent) {
+      // We should include more information here, since if the parent is an
+      // iframe, they probably don't have any relation to our ids, but keys
+      // and such
+      const store = get(db)
+      if (store.login.ok) {
 
-          switch (msg.kind) {
-            case 'translationValue':
-              console.log('text', msg)
-              const tv = store.translationValue[msg.contents.id]
-              const t = !!tv && store.translation[tv.translation_id || '']
-              const locale = !!tv && store.locale[tv.locale_id || '']
-              const category = store.category[t?.category || '']
-              const key = (!!category && !!t) ? [category.key].join('.') + "." + t.key : ''
-              const text = `${titleCase(msg.kind)}-${msg.variant}: ${key} is now '${tv.value}' for locale ${locale?.title}`
+        switch (msg.kind) {
+          case 'translationValue':
+            const tv = store.translationValue[msg.contents.id]
+            const t = !!tv && store.translation[tv.translation_id || '']
+            const locale = !!tv && store.locale[tv.locale_id || '']
+            const category = store.category[t?.category || '']
+            const key = (!!category && !!t) ? [category.key].join('.') + "." + t.key : ''
+            const text = `${titleCase(msg.kind)}-${msg.variant}: ${key} is now '${msg.contents.value}' for locale ${locale?.title}`
 
-              window.parent.postMessage({ ...msg, translationValue: tv, translation: t, locale, category, text, key, value: msg.contents.value }, "*")
-              return
+            window.parent.postMessage({ ...msg, translationValue: tv, translation: t, locale, category, text, key, value: msg.contents.value }, "*")
+            break
 
-            default:
-              break;
-          }
-          window.parent.postMessage(msg, "*")
+          default:
+            window.parent.postMessage(msg, "*")
+            break;
         }
       }
-      replaceField(msg.kind, msg.contents as any, msg.contents.id)
     }
+    replaceField(msg.kind, msg.contents as any, msg.contents.id)
   },
   autoReconnect: true,
 })
@@ -459,8 +412,13 @@ function apiUpdateFactory<Payload extends {}, K extends DBKeyValue>(
   if (!subPath) {
     subPath = storeKey
   }
-  return (id: string, body: Payload, options?: ApiFetchOptions) =>
-    fetchApi<DB[K]['s']>(
+  return (id: string, body: Payload, options?: ApiFetchOptions) => {
+    db.update((s) => ({
+      ...s,
+      responseStates: { ...s.responseStates, [storeKey]: { loading: true } }
+    }))
+
+    return fetchApi<DB[K]['s']>(
       subPath + '/' + id,
       (e) => e.id && replaceField(storeKey, e, e.id),
       {
@@ -479,6 +437,7 @@ function apiUpdateFactory<Payload extends {}, K extends DBKeyValue>(
       }))
       return r
     })
+  }
 }
 
 function apiDeleteFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {

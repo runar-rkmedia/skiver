@@ -14,7 +14,7 @@ Still, we should present this information.
 <script type="ts">
   import ProjectForm from 'forms/ProjectForm.svelte'
 
-  import { db, projects } from '../api'
+  import { db } from '../api'
   import { fly } from 'svelte/transition'
   import Button from './Button.svelte'
   import ListItem from './ListItem.svelte'
@@ -176,10 +176,7 @@ Still, we should present this information.
           <TranslationItem
             projectKey={projectIsh}
             translation={$db.translation[missing.translation_id]}
-            translationValues={// This is terribale, I am sorry...
-            $projects[projectKeyMap[projectIsh]?.id]?.categories?.[
-              categories[categoryIsh]?.id
-            ]?.translations?.[missing.translation_id]?.values}
+            translationValues={{}}
             categoryKey={categories[categoryIsh]?.key || categoryIsh}
             locales={Object.values($db.locale)}
             on:complete={() => {

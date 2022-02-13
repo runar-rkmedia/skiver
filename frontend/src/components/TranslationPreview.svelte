@@ -11,12 +11,10 @@
   // $: myT = t.i18next.getFixedT(locale, '__derived__' + ns)
   $: {
     if (ns && locale && key) {
-      console.log('updating input', t.i18next, { ns, locale, key, input })
       // TODO: we might need to debounce this...
       t.i18next.addResource(locale, '__derived__' + ns, key, input)
       myT = t.i18next.getFixedT(locale, '__derived__' + ns)
       const b = t.i18next.getResourceBundle(locale, '__derived__' + ns)
-      console.log('bundle', b)
     }
   }
 </script>

@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from 'components/Button.svelte'
   import { createEventDispatcher } from 'svelte'
-  import { api } from '../api'
+  import { api, db } from '../api'
   import { state, toast } from '../state'
   export let localeID: string
   export let existingID: string = ''
@@ -39,7 +39,7 @@
       s = await api.translationValue.create($state.createTranslationValue)
     }
     if (!s) {
-      console.log('result was not set')
+      console.error('result was not set')
       return
     }
     if (!s[1]) {
@@ -51,6 +51,7 @@
       }
     }
   }
+  $: loading = $db.responseStates.translationValue.loading
 </script>
 
 <form>
@@ -67,11 +68,13 @@
   <Button
     color="primary"
     type="submit"
+    disabled={loading}
     on:click={onCreateTranslationValue}
-    icon={'submit'}>Submit</Button>
+    icon={loading ? 'loading' : 'submit'}>Submit</Button>
   <Button
     slot="actions"
     color="secondary"
+    disabled={loading}
     on:click={() => {
       dispatch('cancel')
     }}

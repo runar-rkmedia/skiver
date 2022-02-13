@@ -23,6 +23,7 @@ export const iconMap = {
   toggleOn: 'fa-toggle-on',
   toggleOff: 'fa-toggle-off',
   signIn: 'fa-sign-in-alt',
+  loading: 'fad fa-spinner fa-spin'
 } as const
 
 export type Icon = keyof typeof iconMap

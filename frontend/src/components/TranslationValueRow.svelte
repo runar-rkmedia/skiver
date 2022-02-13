@@ -8,7 +8,7 @@
   import TranslationPreview from './TranslationPreview.svelte'
   /** Map by locale-id */
 
-  export let selectedLocale: string
+  let selectedLocale: string
   const dispatch = createEventDispatcher()
   export let translation: ApiDef.Translation
   export let categoryKey: string
@@ -53,7 +53,7 @@
             <TranslationPreview
               bind:locale={locale.id}
               bind:ns={projectKey}
-              key={(categoryKey === '___root___' ? '' : categoryKey + '.') +
+              key={(categoryKey === '' ? '' : categoryKey + '.') +
                 translation.key +
                 (translation.context ? '_' + translation.context : '')}
               bind:variables={translation.variables}
