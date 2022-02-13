@@ -4,12 +4,20 @@ import (
 	"time"
 )
 
+type UserStorage interface {
+	GetUser(userId string) (*User, error)
+	FindUsers(max int, filter ...User) (map[string]User, error)
+	FindUserByUserName(organizationID, userName string) (*User, error)
+	CreateUser(user User) (User, error)
+}
+
 type Storage interface {
+	UserStorage
 	Size() (int64, error)
 
-	GetUser(userId string) (User, error)
-	GetUserByUserName(userName string) (*User, error)
-	CreateUser(user User) (User, error)
+	GetOrganization(organizationID string) (*Organization, error)
+	GetOrganizations() (map[string]Organization, error)
+	CreateOrganization(organization Organization) (Organization, error)
 
 	GetLocale(ID string) (Locale, error)
 	CreateLocale(locale Locale) (Locale, error)
@@ -31,6 +39,7 @@ type Storage interface {
 	GetCategory(ID string) (*Category, error)
 	CreateCategory(category Category) (Category, error)
 	GetCategories() (map[string]Category, error)
+	UpdateCategory(id string, category Category) (Category, error)
 
 	GetTranslationValue(ID string) (*TranslationValue, error)
 	CreateTranslationValue(translationValue TranslationValue) (TranslationValue, error)
@@ -41,6 +50,7 @@ type Storage interface {
 
 	ReportMissing(key MissingTranslation) (*MissingTranslation, error)
 	GetMissingKeysFilter(max int, filter ...MissingTranslation) (map[string]MissingTranslation, error)
+	UpdateUser(id string, payload User) (User, error)
 }
 
 type Entity struct {
@@ -59,4 +69,10 @@ type Entity struct {
 	// If set, the item is considered deleted. The item will normally not get deleted from the database,
 	// but it may if cleanup is required.
 	Deleted *time.Time `json:"deleted,omitempty"`
+	// Organizations are completely seperate from each-other.
+	OrganizationID string `json:"-"`
+}
+
+func (e Entity) IDString() string {
+	return e.ID
 }

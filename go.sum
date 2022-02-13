@@ -1,3 +1,5 @@
+bou.ke/monkey v1.0.2 h1:kWcnsrCNUatbxncxR/ThdYqbytgOIArtYWqcQLQzKLI=
+bou.ke/monkey v1.0.2/go.mod h1:OqickVX3tNx6t33n1xvtTtu85YN5s6cKwVug+oHMaIA=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/MarvinJWendt/testza v0.1.0/go.mod h1:7AxNvlfeHP7Z/hDQ5JtE3OKYT3XFUeLCDE2DQninSqs=
 github.com/MarvinJWendt/testza v0.2.1/go.mod h1:God7bhG8n6uQxwdScay+gjm9/LnO4D3kkcZX4hv9Rp8=
@@ -282,6 +284,8 @@ github.com/rs/zerolog v1.26.1 h1:/ihwxqH+4z8UxyI70wM1z9yCvkWcfz/a3mj48k/Zngc=
 github.com/rs/zerolog v1.26.1/go.mod h1:/wSSJWX7lVrsOwlbyTRSOJvqRlc+WjWlfes+CiJ+tmc=
 github.com/runar-rkmedia/gabyoall v0.4.6 h1:kSivTyZaSWE4KZLb4Yxmv2RaFWkqCHz+h1SJPD14vJw=
 github.com/runar-rkmedia/gabyoall v0.4.6/go.mod h1:GNQkW/kgHoWRgCKR6qqRSwLOiHOcJ2DpCk1BvKR/2Aw=
+github.com/schollz/mnemonicode v1.0.1 h1:LiH5hwADZwjwnfXsaD4xgnMyTAtaKHN+e5AyjRU6WSU=
+github.com/schollz/mnemonicode v1.0.1/go.mod h1:cl4UAOhUV0mkdjMj/QYaUZbZZdF8BnOqoz8rHMzwboY=
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
 github.com/sirupsen/logrus v1.4.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=

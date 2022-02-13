@@ -1,0 +1,17 @@
+{{- $root := . -}}
+/**
+ * Generated translations for:
+ *
+ * Project: {{.Project.Title}} ({{.Project.ShortName}})
+ *
+ * Generated on: {{dateInZone "2006-01-02" now "UTC" }}
+{{- if .Project.UpdatedAt}}
+  Last update on: {{dateInZone "2006-01-02" .Project.UpdatedAt "UTC" }}
+{{- end }}
+ */
+const tKeys = {
+{{- $category := $root.Project.CategoryTree -}}
+{{- template "typescript_category.tmpl" (dict "Root" $root  "Category" $category "AsValue" false "Path" $category.Key )}}
+}
+
+export default tKeys

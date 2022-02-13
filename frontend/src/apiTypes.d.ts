@@ -76,6 +76,14 @@ declare namespace ApiDef {
     export interface ImportInput {
         [name: string]: any;
     }
+    export interface JoinInput {
+        password: string;
+        /**
+         * example:
+         * abc123
+         */
+        username: string; // ^[^\s]*$
+    }
     /**
      * # See https://en.wikipedia.org/wiki/Language_code for more information
      * TODO: consider supporting other standards here, like Windows(?), which seem to have their own thing.
@@ -151,6 +159,16 @@ declare namespace ApiDef {
          * If not active, the account cannot be used until any issues are resolved.
          */
         Active?: boolean;
+        can_create_locales?: boolean;
+        can_create_organization?: boolean;
+        can_create_projects?: boolean;
+        can_create_translations?: boolean;
+        can_create_users?: boolean;
+        can_update_locales?: boolean;
+        can_update_organization?: boolean;
+        can_update_projects?: boolean;
+        can_update_translations?: boolean;
+        can_update_users?: boolean;
         /**
          * Time of which the entity was created in the database
          */
@@ -171,6 +189,7 @@ declare namespace ApiDef {
          */
         id: string;
         ok?: boolean;
+        organization?: Organization;
         /**
          * If set, the user must change the password before the account can be used
          */
@@ -237,6 +256,25 @@ declare namespace ApiDef {
          * User id refering to who created the item
          */
         updatedBy?: string;
+    }
+    export interface Organization {
+        createdAt?: string; // date-time
+        createdBy?: string;
+        deleted?: string; // date-time
+        description?: string;
+        id?: string;
+        /**
+         * This will allow anybody with the id to create a standard user, and join the organization
+         * The first user to join, gets priviliges to administer the organization.
+         */
+        join_id?: string;
+        join_id_expires?: string; // date-time
+        title?: string;
+        updatedAt?: string; // date-time
+        updatedBy?: string;
+    }
+    export interface OrganizationInput {
+        title: string;
     }
     export interface Project {
         category_ids?: string[];
@@ -413,6 +451,14 @@ declare namespace ApiDef {
     }
 }
 declare namespace ApiPaths {
+    namespace CreateOrganization {
+        export interface BodyParameters {
+            OrganizationInput: Parameters.OrganizationInput;
+        }
+        namespace Parameters {
+            export type OrganizationInput = ApiDef.OrganizationInput;
+        }
+    }
     namespace CreateTranslation {
         export interface BodyParameters {
             TranslationInput: Parameters.TranslationInput;
@@ -503,6 +549,22 @@ declare namespace ApiPaths {
             }
         }
     }
+    namespace GetOrgByJoinID {
+        namespace Parameters {
+            /**
+             * The join-id.
+             *
+             */
+            export type Id = string;
+        }
+        export interface PathParameters {
+            id: /**
+             * The join-id.
+             *
+             */
+            Parameters.Id;
+        }
+    }
     namespace ImportTranslations {
         export interface BodyParameters {
             ImportInput?: Parameters.ImportInput;
@@ -559,6 +621,26 @@ declare namespace ApiPaths {
         namespace Responses {
             export interface $200 {
             }
+        }
+    }
+    namespace JoinOrganiztaion {
+        export interface BodyParameters {
+            JoinInput: Parameters.JoinInput;
+        }
+        namespace Parameters {
+            /**
+             * The join-id.
+             *
+             */
+            export type Id = string;
+            export type JoinInput = ApiDef.JoinInput;
+        }
+        export interface PathParameters {
+            id: /**
+             * The join-id.
+             *
+             */
+            Parameters.Id;
         }
     }
     namespace ListLocale {
@@ -624,6 +706,7 @@ declare namespace ApiResponses {
     export type ApiError = ApiDef.APIError;
     export type CategoriesResponse = ApiDef.Category[];
     export type CategoryResponse = ApiDef.Category;
+    export type JoinResponse = ApiDef.LoginResponse;
     export type LocaleResponse = /**
      * # See https://en.wikipedia.org/wiki/Language_code for more information
      * TODO: consider supporting other standards here, like Windows(?), which seem to have their own thing.
@@ -635,6 +718,8 @@ declare namespace ApiResponses {
      */
     ApiDef.Locale[];
     export type LoginResponse = ApiDef.LoginResponse;
+    export type OrganizationResponse = ApiDef.Organization;
+    export type OrganizationsResponse = ApiDef.Organization[];
     export type ProjectResponse = ApiDef.Project;
     export type ProjectsResponse = ApiDef.Project[];
     export type ServerInfo = ApiDef.ServerInfo[];

@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,17 +13,26 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/google/uuid"
 	"github.com/runar-rkmedia/skiver/bboltStorage"
+	"github.com/runar-rkmedia/skiver/importexport"
 	"github.com/runar-rkmedia/skiver/localuser"
 	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/requestContext"
 	"github.com/runar-rkmedia/skiver/types"
+	"github.com/runar-rkmedia/skiver/utils"
 )
 
 var (
 	maxBodySize int64 = 1_000_000 // 1MB
 )
 
-func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverInfo types.ServerInfo, swaggerYml []byte) http.HandlerFunc {
+type Cache interface {
+	// Get
+	Get(k string) (interface{}, bool)
+	// Set(k string, x interface{}, d time.Duration)
+	SetDefault(k string, x interface{})
+}
+
+func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverInfo types.ServerInfo, swaggerYml []byte, exportCache Cache) http.HandlerFunc {
 
 	p, ok := ctx.DB.(localuser.Persistor)
 	if !ok {
@@ -148,8 +159,11 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 			if !isGet {
 				break
 			}
+			// TODO: clean up this mess:
+			// - We need to have a better handling of cache
+			// - It should be its own handler.
 			q, err := extractParams(r, "export/")
-			format := ""
+			format := "i18n" // Default format
 			localeKey := ""
 			var projects []string
 			var locales []string
@@ -168,11 +182,14 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					flatten = false
 				}
 			}
-			if format == "" {
-				format = "i18n"
-			} else {
+			switch format {
+			case "typescript":
+				break
+			case "i18n":
+				break
+			default:
 
-				validFormats := []string{"i18n", "raw"}
+				validFormats := []string{"i18n", "raw", "typescript"}
 				valid := false
 				for _, v := range validFormats {
 					if format == v {
@@ -184,11 +201,34 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					return
 				}
 			}
+			cacheKeys := []string{format, localeKey}
+			cacheKeys = append(cacheKeys, locales...)
+			cacheKeys = append(cacheKeys, projects...)
+			cacheKey := strings.Join(cacheKeys, "%")
+			if flatten {
+				cacheKey += "F"
+			}
+			if v, ok := exportCache.Get(cacheKey); ok {
+				rw.Write(v.([]byte))
+				return
+			}
 
 			ps, err := ctx.DB.GetProjects()
 			if err != nil {
 				rc.WriteErr(err, requestContext.CodeErrProject)
 				return
+			}
+			if len(projects) > 0 {
+			outer:
+				for k, proj := range ps {
+
+					for _, p := range projects {
+						if k == p || p == proj.ShortName {
+							continue outer
+						}
+					}
+					delete(ps, k)
+				}
 			}
 			projectsLength := len(projects)
 			out := map[string]types.ExtendedProject{}
@@ -212,38 +252,104 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				}
 				out[v.ID] = ep
 			}
-			if format == "i18n" {
-				out := map[string]types.I18N{}
-				for _, p := range ps {
-					ep, err := p.Extend(ctx.DB)
-					if err != nil {
-						rc.WriteErr(err, requestContext.CodeErrProject)
-						return
-					}
-					i18n, err := types.ExportI18N(ep, types.ExportI18NOptions{
+			eps := map[string]types.ExtendedProject{}
+			for _, p := range ps {
+				ep, err := p.Extend(ctx.DB, types.ExtendOptions{LocaleFilter: locales, ByKeyLike: true})
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrProject)
+					return
+				}
+				eps[ep.ID] = ep
+
+			}
+			switch format {
+			case "typescript":
+				rw.Header().Set("Content-Type", "application/typescript")
+			default:
+				rw.Header().Set("Content-Type", "application/json")
+			}
+			{
+				out := map[string]interface{}{}
+				for _, ep := range eps {
+					i18nodes, err := importexport.ExportI18N(ep, importexport.ExportI18NOptions{
 						LocaleFilter: locales,
-						LocaleKey:    types.LocaleKey(localeKey)})
+						LocaleKey:    importexport.LocaleKey(localeKey)})
 					if err != nil {
 						rc.WriteErr(err, requestContext.CodeErrProject)
 						return
 					}
+					i18n, err := importexport.I18NNodeToI18Next(i18nodes)
+					if err != nil {
+						rc.WriteErr(err, requestContext.CodeErrProject)
+						return
+					}
+
 					// If the user requested just a single project, we dont want to return a map
 					if flatten && projectsLength == 1 {
-						if len(locales) == 1 {
-							rc.WriteOutput(i18n[locales[0]], http.StatusOK)
+						if format == "typescript" {
+							var w bytes.Buffer
+							err := importexport.ExportByGoTemplate("typescript.tmpl", ep, i18nodes, &w)
+							if err != nil {
+								rc.WriteErr(err, requestContext.CodeErrTemplating)
+								return
+							}
+							runPrettier := false
+							if !runPrettier {
+
+								b := w.Bytes()
+								exportCache.SetDefault(cacheKey, b)
+								rw.Write(b)
+
+								return
+							}
+							ts := w.String()
+
+							pretty, err := importexport.Prettier(ts)
+							if err != nil {
+								rc.L.Error().Err(err).Msg("Failed to prettify")
+								b := w.Bytes()
+								exportCache.SetDefault(cacheKey, b)
+								rw.Write(b)
+								// rc.WriteError(err.Error(), requestContext.CodeErrTemplating, map[string]interface{}{"ts": ts})
+								return
+							}
+							b := []byte(pretty)
+							exportCache.SetDefault(cacheKey, b)
+							rw.Write(b)
 							return
 						}
-						rc.WriteOutput(i18n, http.StatusOK)
+						var toWrite interface{}
+						if len(locales) == 1 {
+							toWrite = i18n[locales[0]]
+						} else {
+							toWrite = i18n
+						}
+
+						b, err := json.Marshal(toWrite)
+						if err != nil {
+							rc.WriteErr(err, requestContext.CodeErrMarshal)
+							return
+						}
+						exportCache.SetDefault(cacheKey, b)
+						rw.Write(b)
 						return
 					}
-					out[ep.ID] = i18n
+					if format == "typescript" {
+						var w bytes.Buffer
+						err := importexport.ExportByGoTemplate("typescript.tmpl", ep, i18nodes, &w)
+						if err != nil {
+							rc.WriteErr(err, requestContext.CodeErrTemplating)
+							return
+						}
+						out[ep.ID] = w.String()
+					} else {
+						out[ep.ID] = i18n
+
+					}
 				}
 				rc.WriteOutput(out, http.StatusOK)
 				return
 			}
-			rc.WriteOutput(out, http.StatusOK)
-
-			return
 
 		case "swagger", "swagger.yaml", "swagger.yml":
 			rw.Header().Set("Content-Type", "text/vnd.yaml")
@@ -263,6 +369,120 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				rc.WriteAuto(serverInfo, err, "serverInfo")
 				return
 			}
+		case "join":
+			if isGet || isPost {
+				joinId := getStringSliceIndex(paths, 1)
+				if joinId == "" {
+					rc.WriteError("Missing join-id", requestContext.CodeErrIDEmpty)
+					return
+				}
+
+				orgs, err := ctx.DB.GetOrganizations()
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrOrganization)
+					return
+				}
+				var org *types.Organization
+				for _, o := range orgs {
+					if o.JoinID == joinId {
+						org = &o
+						break
+					}
+				}
+				if org == nil {
+					rc.WriteError("Not found", requestContext.CodeErrOrganizationNotFound)
+					return
+				}
+				if org.JoinIDExpires.Before(time.Now()) {
+					rc.WriteError("Not found", requestContext.CodeErrOrganizationNotFound)
+					return
+				}
+				if isPost {
+					var joinInput models.JoinInput
+					err := rc.ValidateBytes(body, &joinInput)
+					if err != nil {
+						return
+					}
+
+					pass, err := pw.Hash(*joinInput.Password)
+					if err != nil {
+						rc.L.Error().Err(err).Msg("there was an error with hashing the password")
+						rc.WriteError("Failure in password-creation", requestContext.CodeErrPasswordHashing)
+						return
+					}
+					u := types.User{
+						Entity: types.Entity{
+							CreatedAt:      time.Time{},
+							CreatedBy:      "join",
+							OrganizationID: org.ID,
+						},
+						UserName:              *joinInput.Username,
+						Active:                true,
+						Store:                 types.UserStoreLocal,
+						TemporaryPassword:     false,
+						PW:                    pass,
+						CanCreateOrganization: false,
+						CanCreateUsers:        false,
+						CanCreateProjects:     true,
+						CanCreateTranslations: true,
+						CanCreateLocales:      false,
+						CanUpdateOrganization: false,
+						CanUpdateUsers:        false,
+						CanUpdateProjects:     true,
+						CanUpdateTranslations: true,
+						CanUpdateLocales:      false,
+					}
+					existingUsers := false
+					{
+						orgUsers, err := ctx.DB.FindUsers(1, types.User{Entity: types.Entity{OrganizationID: org.ID}})
+						if err != nil {
+							rc.WriteErr(err, requestContext.CodeErrNotFoundUser)
+							return
+						}
+						existingUsers = len(orgUsers) > 0
+					}
+					if existingUsers {
+						u.CanUpdateOrganization = true
+						// user is the first to join, should have organization-administrative permissions
+					}
+
+					user, err := ctx.DB.CreateUser(u)
+					if err != nil {
+						rc.WriteErr(err, requestContext.CodeErrNotFoundUser)
+						return
+					}
+					// TODO: loginUser
+					rc.WriteOutput(types.LoginResponse{
+						User:         user,
+						Organization: *org,
+						Ok:           true,
+					}, http.StatusOK)
+					return
+				}
+
+				rc.WriteOutput(org, http.StatusOK)
+				return
+
+			}
+		case "logout":
+			{
+				if isPost {
+					cookie := &http.Cookie{
+						Name:     "token",
+						Path:     "/api/",
+						MaxAge:   0,
+						HttpOnly: true,
+					}
+					http.SetCookie(rw, cookie)
+					if session == nil {
+						rc.WriteError("Not logged in", requestContext.CodeErrAuthenticationRequired)
+						return
+					}
+					userSessions.SessionsForUser(session.User.ID)
+					rc.WriteOutput(struct{ OK bool }{true}, http.StatusOK)
+					return
+				}
+			}
 		case "login":
 			if isGet {
 				if session == nil {
@@ -271,10 +491,11 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				}
 				expiresD := session.Expires.Sub(time.Now())
 				rc.WriteOutput(types.LoginResponse{
-					User:      session.User,
-					Ok:        true,
-					Expires:   session.Expires,
-					ExpiresIn: expiresD.String(),
+					Organization: session.Organization,
+					User:         session.User,
+					Ok:           true,
+					Expires:      session.Expires,
+					ExpiresIn:    expiresD.String(),
 				}, http.StatusOK)
 				return
 			}
@@ -302,7 +523,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				return
 			}
 
-			user, err := ctx.DB.GetUserByUserName(*j.Username)
+			user, err := ctx.DB.FindUserByUserName("", *j.Username)
 			if err != nil {
 				rc.WriteErr(err, "Err:login")
 				return
@@ -344,7 +565,16 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 			}
 
 			if session.UserAgent == "" {
-				session = userSessions.NewSession(*user, userAgent)
+				organization, err := ctx.DB.GetOrganization(user.OrganizationID)
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrOrganization)
+					return
+				}
+				if organization == nil {
+					rc.WriteError("Could not find the users organzation. Please contact your administrator", requestContext.CodeErrOrganization)
+					return
+				}
+				session = userSessions.NewSession(*user, *organization, userAgent)
 			}
 
 			expiresD := session.Expires.Sub(now)
@@ -377,14 +607,20 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 			rc.WriteError("Not logged in", requestContext.CodeErrAuthenticationRequired)
 			return
 		}
+		orgId := session.Organization.ID
 		rc.L.Debug().
 			Str("path", path).
 			Str("username", session.User.UserName).
+			Str("orgId", orgId).
 			Msg("User is perorming action on route")
 
 		switch paths[0] {
 		case "import":
 			if isPost {
+				if !session.User.CanCreateTranslations {
+					rc.WriteError("You are not authorizatiod to create translations", requestContext.CodeErrAuthoriziation)
+					return
+				}
 				kind := getStringSliceIndex(paths, 1)
 				projectLike := getStringSliceIndex(paths, 2)
 				localeLike := getStringSliceIndex(paths, 3)
@@ -419,189 +655,57 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					rc.WriteErr(err, requestContext.CodeErrProject)
 					return
 				}
+
 				if project == nil {
 					rc.WriteError("Project was not found", requestContext.CodeErrNotFoundProject)
 					return
 				}
-				var locale *types.Locale
-				if localeLike != "" {
-					if true {
-
-						rc.WriteError("Locale from url is not yet implemented. Please add the locale as the root-key in the body", requestContext.CodeErrNotImplemented)
-						return
-					}
-					locale, err := ctx.DB.GetLocaleByIDOrShortName(localeLike)
-					if err != nil {
-						rc.WriteErr(err, requestContext.CodeErrLocale)
-						return
-					}
-					if locale == nil {
-						rc.WriteError("Locale not found", requestContext.CodeErrNotFoundLocale, localeLike)
-						return
-					}
-				}
-				locales, err := ctx.DB.GetLocales()
-				if err != nil {
-					rc.WriteErr(err, requestContext.CodeErrLocale)
-					return
-				}
-				localesSlice := make([]types.Locale, len(locales))
-				i := 0
-				for _, v := range locales {
-					localesSlice[i] = v
-					i++
-				}
-				imp, warnings, err := ImportI18NTranslation(localesSlice, locale, project.ID, session.User.ID, types.CreatorSourceImport, input)
-				if err != nil {
-					rc.WriteErr(err, requestContext.CodeErrImport)
-					return
-				}
-				if imp == nil {
-					rc.WriteError("Import resulted in null", requestContext.CodeErrImport)
-					return
-				}
-
-				extendOptions := types.ExtendOptions{ByKeyLike: true}
-				ex, err := project.Extend(ctx.DB, extendOptions)
-				if err != nil {
+				if project.OrganizationID != orgId {
 					rc.WriteErr(err, requestContext.CodeErrProject)
 					return
 				}
-				type Updates struct {
-					TranslationValueUpdates    map[string]types.TranslationValue
-					TranslationsValueCreations map[string]types.TranslationValue
-					TranslationCreations       map[string]types.Translation
-					CategoryCreations          map[string]types.Category
-				}
 
-				updates := Updates{
-					map[string]types.TranslationValue{},
-					map[string]types.TranslationValue{},
-					map[string]types.Translation{},
-					map[string]types.Category{},
-				}
-				// TODO: this should ideally all be done in a single atomic commit.
-				// TODO: handle changes to translation-values
-				for cKey, cat := range imp.Categories {
-					exCat, catExists := ex.Categories[cat.Key]
-					cat.Exists = &catExists
-					if !catExists {
-						if !dry {
-							created, err := ctx.DB.CreateCategory(cat.Category)
-							if err != nil {
-								rc.WriteError(err.Error(), requestContext.CodeErrCreateCategory, cat)
-								return
-							}
-							esc, err := created.Extend(ctx.DB, extendOptions)
-							if err != nil {
-								rc.WriteErr(err, requestContext.CodeErrCategory)
-								return
-							}
-							exCat = esc
-							catExists = true
-							updates.CategoryCreations[created.ID] = created
-						} else {
-							updates.CategoryCreations["_toCreate_"+cKey+""] = cat.Category
-						}
-					}
-					for tKey, t := range cat.Translations {
-						var exT *types.ExtendedTranslation
-						if exCat.ID == "" {
-							t.Exists = boolPointer(false)
-						} else {
-							ex, tExists := exCat.Translations[t.Key]
-							t.Exists = &tExists
-							t.CategoryID = exCat.ID
-							if tExists {
-								exT = &ex
-							} else {
-								if !dry {
-									created, err := ctx.DB.CreateTranslation(t.Translation)
-									if err != nil {
-										rc.WriteError(err.Error(), requestContext.CodeErrTranslation, t.Translation)
-										return
-									}
-									esc, err := created.Extend(ctx.DB, extendOptions)
-									if err != nil {
-										rc.WriteErr(err, requestContext.CodeErrTranslation)
-										return
-									}
-									ex = esc
-									exT = &esc
-									tExists = *boolPointer(true)
-									updates.TranslationCreations[created.ID] = created
-								} else {
-									updates.TranslationCreations["_toCreate_in_Category_'"+cKey+"'_"+tKey] = t.Translation
-								}
-							}
-						}
-						if exT == nil {
-							if dry {
-								exT = &t
-								exT.Exists = boolPointer(false)
-							} else {
-								// TODO: Create translationValue
-								rc.WriteError("condition not implemented: translation did not resolve", requestContext.CodeErrNotImplemented, map[string]interface{}{"translation": t})
-								return
-							}
-						}
-						for k, tv := range t.Values {
-							tv.TranslationID = exT.ID
-							exTv, existsTV := exT.Values[tv.LocaleID]
-							if existsTV {
-								if exTv.Value != tv.Value {
-									exTv.Value = tv.Value
-									if !dry {
-										updated, err := ctx.DB.UpdateTranslationValue(exTv)
-										if err != nil {
-											rc.WriteError(err.Error(), requestContext.CodeErrUpdateTranslationValue, tv)
-											return
-										}
-										updates.TranslationValueUpdates[updated.ID] = updated
-									} else {
-										updates.TranslationValueUpdates[exTv.ID] = exTv
-									}
-								}
-							} else {
-								if !dry {
-									created, err := ctx.DB.CreateTranslationValue(tv)
-									if err != nil {
-										details := struct {
-											Input    types.TranslationValue
-											Response types.TranslationValue
-										}{tv, created}
-										rc.WriteError(err.Error(), requestContext.CodeErrCreateTranslationValue, details)
-										return
-									}
-									updates.TranslationsValueCreations[created.ID] = created
-								} else {
-									updates.TranslationsValueCreations["_toCreate_in_Category_"+cKey+"_"+"under_Translation_"+tKey+"_"+k] = tv
-								}
-							}
-						}
-						imp.Categories[cKey].Translations[tKey] = t
-
-					}
-					imp.Categories[cKey] = cat
-				}
-
-				out := struct {
-					Changes  Updates
-					Imp      Import
-					Ex       types.ExtendedProject
-					Warnings []Warning
-				}{
-
-					Changes:  updates,
-					Imp:      *imp,
-					Ex:       ex,
-					Warnings: warnings,
+				out, Err := ImportIntoProject(ctx.DB, kind, session.User.ID, *project, localeLike, dry, input)
+				if Err != nil {
+					rc.WriteErr(Err, Err.GetCode())
+					return
 				}
 				rc.WriteOutput(out, http.StatusOK)
 				return
 
 			} else {
 				rc.WriteError("Only post is allowed here", requestContext.CodeErrMethodNotAllowed)
+				return
+			}
+		case "organization":
+			if isGet {
+				orgs, err := ctx.DB.GetOrganizations()
+				rc.WriteAuto(orgs, err, requestContext.CodeErrProject)
+				return
+			}
+			if isPost {
+				if !session.User.CanCreateOrganization {
+					rc.WriteError("You are not authorizatiod to create organizations", requestContext.CodeErrAuthoriziation)
+					return
+				}
+				var j models.OrganizationInput
+				if err := rc.ValidateBytes(body, &j); err != nil {
+					return
+				}
+
+				l := types.Organization{
+					Title: *j.Title,
+					// Initially set to expire within 30 days.
+					JoinIDExpires: time.Now().Add(30 * 24 * time.Hour),
+				}
+				l.JoinID, err = utils.GetRandomName()
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrOrganization)
+					return
+				}
+				l.CreatedBy = session.User.ID
+				org, err := ctx.DB.CreateOrganization(l)
+				rc.WriteAuto(org, err, requestContext.CodeErrCreateProject)
 				return
 			}
 		case "project":
@@ -611,6 +715,10 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				return
 			}
 			if isPost {
+				if !session.User.CanCreateProjects {
+					rc.WriteError("You are not authorizatiod to create projects", requestContext.CodeErrAuthoriziation)
+					return
+				}
 				var j models.ProjectInput
 				if err := rc.ValidateBytes(body, &j); err != nil {
 					return
@@ -622,6 +730,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					ShortName:   *j.ShortName,
 				}
 				l.CreatedBy = session.User.ID
+				l.OrganizationID = session.Organization.ID
 				locale, err := ctx.DB.CreateProject(l)
 				rc.WriteAuto(locale, err, requestContext.CodeErrCreateProject)
 				return
@@ -633,6 +742,10 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				return
 			}
 			if isPost {
+				if !session.User.CanCreateTranslations {
+					rc.WriteError("You are not authorizatiod to create translations", requestContext.CodeErrAuthoriziation)
+					return
+				}
 				var j models.TranslationInput
 				if err := rc.ValidateBytes(body, &j); err != nil {
 					return
@@ -647,6 +760,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					Variables:   j.Variables,
 				}
 				t.CreatedBy = session.User.ID
+				t.OrganizationID = session.Organization.ID
 				translation, err := ctx.DB.CreateTranslation(t)
 				rc.WriteAuto(translation, err, requestContext.CodeErrCreateTranslation)
 				return
@@ -658,6 +772,10 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				return
 			}
 			if isPost {
+				if !session.User.CanCreateTranslations {
+					rc.WriteError("You are not authorizatiod to create categories", requestContext.CodeErrAuthoriziation)
+					return
+				}
 				var j models.CategoryInput
 				if err := rc.ValidateBytes(body, &j); err != nil {
 					return
@@ -671,6 +789,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					Title:       *j.Title,
 				}
 				c.CreatedBy = session.User.ID
+				c.OrganizationID = session.Organization.ID
 				category, err := ctx.DB.CreateCategory(c)
 				rc.WriteAuto(category, err, requestContext.CodeErrCategory)
 				return
@@ -682,6 +801,10 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				return
 			}
 			if isPost {
+				if !session.User.CanCreateTranslations {
+					rc.WriteError("You are not authorizatiod to create translation-values", requestContext.CodeErrAuthoriziation)
+					return
+				}
 				var j models.TranslationValueInput
 				if err := rc.ValidateBytes(body, &j); err != nil {
 					return
@@ -694,11 +817,17 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					Value:         *j.Value,
 				}
 				tv.CreatedBy = session.User.ID
+				tv.OrganizationID = session.Organization.ID
 				translationValue, err := ctx.DB.CreateTranslationValue(tv)
 				rc.WriteAuto(translationValue, err, requestContext.CodeErrCreateTranslationValue)
 				return
 			}
 			if isPut {
+				if !session.User.CanCreateTranslations {
+					rc.WriteError("You are not authorizatiod to update translation-values", requestContext.CodeErrAuthoriziation)
+					return
+				}
+
 				id := getStringSliceIndex(paths, 1)
 				if id == "" {
 					rc.WriteError("Missing id", requestContext.CodeErrIDEmpty)
@@ -733,6 +862,10 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				return
 			}
 			if isPost {
+				if !session.User.CanCreateTranslations {
+					rc.WriteError("You are not authorizatiod to create locales", requestContext.CodeErrAuthoriziation)
+					return
+				}
 				var j models.LocaleInput
 				if err := rc.ValidateBytes(body, &j); err != nil {
 					return
@@ -745,6 +878,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					Title:    *j.Title,
 				}
 				l.CreatedBy = session.User.ID
+				l.OrganizationID = session.Organization.ID
 				locale, err := ctx.DB.CreateLocale(l)
 				if err != nil {
 					rc.WriteErr(err, requestContext.CodeErrDBCreateLocale)

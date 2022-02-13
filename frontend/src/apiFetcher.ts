@@ -143,18 +143,17 @@ type Ws<K extends string, V extends string, T> = {
   contents: T
 }
 
-type WsCreateProject = Ws<'project', 'create', ApiDef.Project>
-type WsUpdateProject = Ws<'project', 'update', ApiDef.Project>
-type WsDeleteProject = Ws<'project', 'soft-delete', ApiDef.Project>
+type verbs = 'create' | 'update' | 'soft-delete'
 
-type WsCreateLocale = Ws<'locale', 'create', ApiDef.Locale>
-type WsUpdateLocale = Ws<'locale', 'update', ApiDef.Locale>
-type WsDeleteLocale = Ws<'locale', 'soft-delete', ApiDef.Locale>
+type WsProject = Ws<'project', verbs, ApiDef.Project>
+
+type WsLocale = Ws<'locale', verbs, ApiDef.Locale>
+
+type WsTranslationValue = Ws<'translationValue', verbs, ApiDef.TranslationValue>
+type WsTranslation = Ws<'translation', verbs, ApiDef.Translation>
 
 type WsMessage =
-  | WsCreateProject
-  | WsUpdateProject
-  | WsDeleteProject
-  | WsCreateLocale
-  | WsUpdateLocale
-  | WsDeleteLocale
+  | WsProject
+  | WsLocale
+  | WsTranslation
+  | WsTranslationValue

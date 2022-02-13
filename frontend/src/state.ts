@@ -11,6 +11,7 @@ export const state = createStore({
     categorySortAsc: true,
     seenHints: {} as Record<string, [version: number, readAt: Date]>,
     collapse: {} as Record<string, boolean>,
+    createOrganization: {} as ApiDef.OrganizationInput,
     createTranslation: {} as ApiDef.TranslationInput,
     createCategory: {} as ApiDef.CategoryInput,
     createProject: {} as ApiDef.ProjectInput,

@@ -4,7 +4,7 @@ import createStore from './store'
 import type { AnyFunc } from 'simplytyped'
 import { parseDate } from 'dates'
 import { isPast } from 'date-fns'
-import { derived } from 'svelte/store'
+import { derived, get } from 'svelte/store'
 import { addPreviewTranslationResource } from 'util/i18next'
 export function objectKeys<T extends object>(obj: T) {
   return Object.keys(obj) as Array<keyof T>
@@ -19,6 +19,7 @@ export function objectKeys<T extends object>(obj: T) {
 export type DB = {
   missingTranslation: Record<string, ApiDef.MissingTranslation>
   project: Record<string, ApiDef.Project>
+  organization: Record<string, ApiDef.Organization>
   category: Record<string, ApiDef.Category>
   translationValue: Record<string, ApiDef.TranslationValue>
   locale: Record<string, ApiDef.Locale>
@@ -29,6 +30,10 @@ export type DB = {
 }
 
 export const api = {
+  join: {
+    get: (id: string) => fetchApi<ApiDef.Organization>('join/' + id, () => null, { method: 'GET' }),
+    post: (id: string, payload: ApiDef.JoinInput) => fetchApi<ApiDef.Organization>('join/' + id, () => null, { method: 'POST', body: payload }),
+  },
   serverInfo: (options?: ApiFetchOptions) =>
     fetchApi<ApiDef.ServerInfo>(
       'serverInfo',
@@ -42,12 +47,22 @@ export const api = {
     list: apiGetListFactory<'missingTranslation'>('missing', 'missingTranslation')
   },
   project: CrudFactory<ApiDef.ProjectInput, 'project'>('project'),
+  organization: CrudFactory<ApiDef.OrganizationInput, 'organization'>('organization'),
   category: CrudFactory<ApiDef.CategoryInput, 'category'>('category'),
   translationValue: CrudFactory<
     ApiDef.TranslationValueInput,
     'translationValue'
   >('translationValue'),
   locale: CrudFactory<ApiDef.LocaleInput, 'locale'>('locale'),
+  logout: () => fetchApi<ApiDef.LogoutResponse>('logout', () => {
+    return db.update(({ login, ...s }) => {
+      login.ok = false
+      localStorage.setItem('login-response', JSON.stringify(login))
+
+      return { ...s, login }
+    })
+  }, { method: "POST" }),
+
   login: {
     get: () =>
       fetchApi<ApiDef.LoginResponse>(
@@ -195,7 +210,7 @@ export const projects = derived(db, ($db) =>
               rtv[tv.locale_id!] = tv
               // This might be really performance intesive, depending on how i18next has implemented it.
               // The reason we do this is to add every resource as a previewable item.
-              // addPreviewTranslationResource(tv.locale_id, project.short_name || project.id, c.key, t.key, tv.value, t.context)
+              addPreviewTranslationResource(tv.locale_id || "", project.short_name || project.id, c.key || '', t.key || '', tv.value || "", (t as any).context)
               return rtv
             }, {})
             rt[t.id] = t
@@ -216,6 +231,7 @@ export const projects = derived(db, ($db) =>
 
 wsSubscribe({
   onMessage: (msg) => {
+    console.log('wsMessage', msg)
     if (!msg.contents) {
       return
     }
@@ -224,11 +240,46 @@ wsSubscribe({
     }
 
     if (msg.contents.id) {
+      console.log('posting messasge', window.parent)
+      if (window.parent) {
+        // We should include more information here, since if the parent is an
+        // iframe, they probably don't have any relation to our ids, but keys
+        // and such
+        const store = get(db)
+        if (store.login.ok) {
+
+          switch (msg.kind) {
+            case 'translationValue':
+              console.log('text', msg)
+              const tv = store.translationValue[msg.contents.id]
+              const t = !!tv && store.translation[tv.translation_id || '']
+              const locale = !!tv && store.locale[tv.locale_id || '']
+              const category = store.category[t?.category || '']
+              const key = (!!category && !!t) ? [category.key].join('.') + "." + t.key : ''
+              const text = `${titleCase(msg.kind)}-${msg.variant}: ${key} is now '${tv.value}' for locale ${locale?.title}`
+
+              window.parent.postMessage({ ...msg, translationValue: tv, translation: t, locale, category, text, key, value: msg.contents.value }, "*")
+              return
+
+            default:
+              break;
+          }
+          window.parent.postMessage(msg, "*")
+        }
+      }
       replaceField(msg.kind, msg.contents as any, msg.contents.id)
     }
   },
   autoReconnect: true,
 })
+
+const titleCase = (s: string) => {
+  if (!s) {
+    return ""
+  }
+  return s[0].toUpperCase() + s.slice(1)
+}
+
 
 const mergeMap = <K extends DBKeyValue, V extends DB[K]>(key: K, value: V) => {
   if (!key) {
@@ -381,7 +432,7 @@ function apiCreateFactory<Payload extends {}, K extends DBKeyValue>(
     }))
     const result = await fetchApi<DB[K]['s']>(
       subPath,
-      (e) => replaceField(storeKey, e, e.id),
+      (e) => e.id && replaceField(storeKey, e, e.id),
       {
         method: methods.POST,
         body,
@@ -411,7 +462,7 @@ function apiUpdateFactory<Payload extends {}, K extends DBKeyValue>(
   return (id: string, body: Payload, options?: ApiFetchOptions) =>
     fetchApi<DB[K]['s']>(
       subPath + '/' + id,
-      (e) => replaceField(storeKey, e, e.id),
+      (e) => e.id && replaceField(storeKey, e, e.id),
       {
         method: methods.PUT,
         body,
@@ -437,7 +488,7 @@ function apiDeleteFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
   return (id: string, options?: ApiFetchOptions) =>
     fetchApi<DB[K]['s']>(
       subPath + '/' + id,
-      (e) => replaceField(storeKey, e, e.id),
+      (e) => e.id && replaceField(storeKey, e, e.id),
       {
         method: methods.DELETE,
         ...options,

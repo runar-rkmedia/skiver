@@ -92,12 +92,20 @@ func (b *BBolter) ReportMissing(key types.MissingTranslation) (*types.MissingTra
 	if key.Locale == "" {
 		return &key, fmt.Errorf("Missing Locale: %w", ErrMissingIdArg)
 	}
-	entity, err := b.NewEntity(key.CreatedBy)
-	if err != nil {
+	entity, err := b.NewEntity(key.Entity)
+
+	switch err {
+	case nil:
+		break
+	case ErrMissingOrganizationID:
+		// OrganizationID is filled later on, if possible
+		break
+	default:
 		return nil, err
 	}
 	key.Entity = entity
 	key.ID = strings.Join([]string{key.Project, key.Locale, key.Category, key.Translation}, " / ")
+	// TODO: make sure this is isolated per OrganizationID
 
 	if key.ProjectID == "" {
 		project, err := b.GetProjectByShortName(key.Project)
@@ -106,7 +114,13 @@ func (b *BBolter) ReportMissing(key types.MissingTranslation) (*types.MissingTra
 		}
 		if project != nil {
 			key.ProjectID = project.ID
+			if key.OrganizationID == "" {
+				key.OrganizationID = project.OrganizationID
+			}
 		}
+	}
+	if key.OrganizationID == "" {
+		return nil, ErrMissingOrganizationID
 	}
 	if key.LocaleID == "" {
 		locale, err := b.GetLocaleByFirstMatch(key.Locale)
@@ -118,7 +132,8 @@ func (b *BBolter) ReportMissing(key types.MissingTranslation) (*types.MissingTra
 		}
 	}
 	if key.CategoryID == "" {
-		category, err := b.GetCategoryFilter(types.Category{Key: key.Category})
+		// TODO: report missing on sub-categories!!!
+		category, err := b.FindOneCategory(types.CategoryFilter{Key: key.Category})
 		if err != nil {
 			return &key, fmt.Errorf("failed to lookup category: %w", err)
 		}

@@ -1,19 +1,22 @@
 package bboltStorage
 
 import (
+	"encoding/gob"
 	"errors"
-	"fmt"
 	"os"
 	"time"
 
 	"github.com/runar-rkmedia/gabyoall/logger"
+	"github.com/runar-rkmedia/gabyoall/utils"
 	"github.com/runar-rkmedia/skiver/types"
 	"go.etcd.io/bbolt"
 	bolt "go.etcd.io/bbolt"
 )
 
 var (
-	ErrMissingIdArg = errors.New("Missing id as argument")
+	ErrDuplicate      = errors.New("Duplication of entities is disallowed")
+	ErrMissingIdArg   = errors.New("Missing id as argument")
+	ErrMissingProject = errors.New("Missing ProjectID as argument")
 	// deprecated. return pointer instead
 	ErrNotFound      = errors.New("Not found")
 	ErrMissingBucket = errors.New("Bucket not found")
@@ -23,8 +26,18 @@ type PubSubPublisher interface {
 	Publish(kind, variant string, contents interface{})
 }
 
+type BBoltOptions struct {
+	IDGenerator IDGenerator
+}
+
 // Caller must call close when ending
-func NewBbolt(l logger.AppLogger, path string, pubsub PubSubPublisher) (bb BBolter, err error) {
+func NewBbolt(l logger.AppLogger, path string, pubsub PubSubPublisher, options ...BBoltOptions) (bb BBolter, err error) {
+	gob.Register(time.Time{})
+	var opts BBoltOptions
+	if len(options) > 0 {
+		opts = options[0]
+		bb.idgenerator = opts.IDGenerator
+	}
 
 	bb.l = l
 	db, err := bolt.Open(path, 0666, &bolt.Options{
@@ -37,7 +50,7 @@ func NewBbolt(l logger.AppLogger, path string, pubsub PubSubPublisher) (bb BBolt
 	bb.pubsub = pubsub
 	bb.Marshaller = Gob{}
 	err = bb.Update(func(t *bolt.Tx) error {
-		buckets := [][]byte{BucketUser, BucketLocale, BucketTranslation, BucketProject, BucketSession, BucketCategory, BucketTranslationValue, BucketMissing}
+		buckets := [][]byte{BucketUser, BucketLocale, BucketTranslation, BucketProject, BucketSession, BucketCategory, BucketTranslationValue, BucketMissing, BucketOrganization}
 		for i := 0; i < len(buckets); i++ {
 			_, err := t.CreateBucketIfNotExists(buckets[i])
 			if err != nil {
@@ -78,18 +91,47 @@ func (s *BBolter) GetItem(bucket []byte, id string, j interface{}) error {
 
 	return err
 }
-func (s *BBolter) NewEntity(createdBy string) (types.Entity, error) {
-	if createdBy == "" {
-		return types.Entity{}, fmt.Errorf("CreatedBy was empty")
+
+var (
+	ErrMissingCreatedBy      = errors.New("CreatedBy was empty")
+	ErrMissingOrganizationID = errors.New("OrganizationID was empty")
+)
+
+func (s *BBolter) newUniqueID() string {
+	if s.idgenerator == nil {
+		str, err := utils.ForceCreateUniqueId()
+		if err != nil {
+			s.l.Error().Err(err).Msg("Failed during utils.ForceCreateUniqueId")
+		}
+		return str
+	}
+	return s.idgenerator.CreateUniqueID()
+}
+
+// Returns an entity for use by database, with id set and createdAt to current time.
+// It is guaranteeed to be created correctly, even if it errors.
+// The error should be logged.
+func (s *BBolter) newEntity() types.Entity {
+
+	return types.Entity{
+		ID:        s.newUniqueID(),
+		CreatedAt: time.Now(),
+	}
+}
+func (s *BBolter) NewEntity(base types.Entity) (e types.Entity, err error) {
+
+	if base.CreatedBy == "" {
+		err = ErrMissingCreatedBy
+	}
+	if base.OrganizationID == "" {
+		err = ErrMissingOrganizationID
 	}
 	// ForceNewEntity may return an error, but it guarantees the the Entity is still usable.
 	// The error should be logged, though.
-	e, err := ForceNewEntity()
-	if err != nil {
-		s.l.Error().Err(err).Str("id", e.ID).Msg("An error occured while creating entity. ")
-	}
-	e.CreatedBy = createdBy
-	return e, nil
+	e = s.newEntity()
+	e.CreatedBy = base.CreatedBy
+	e.OrganizationID = base.OrganizationID
+	return e, err
 }
 
 func nowPointer() *time.Time {
@@ -131,7 +173,7 @@ func (s *BBolter) updater(id string, bucket []byte, f func(b []byte) ([]byte, er
 }
 
 // iterates over objects within a bucket.
-// The function-parameter is will receive each item as key/value
+// The function-parameter will receive each item as key/value
 // Returning true within this function will stop the iteration
 func (bb *BBolter) Iterate(bucket []byte, f func(key, b []byte) bool) error {
 	err := bb.View(func(t *bbolt.Tx) error {
@@ -154,6 +196,11 @@ type BBolter struct {
 	pubsub PubSubPublisher
 	l      logger.AppLogger
 	Marshaller
+	idgenerator IDGenerator
+}
+
+type IDGenerator interface {
+	CreateUniqueID() string
 }
 
 var (
@@ -162,6 +209,7 @@ var (
 	BucketLocale           = []byte("locales")
 	BucketTranslation      = []byte("translations")
 	BucketProject          = []byte("projects")
+	BucketOrganization     = []byte("organizations")
 	BucketTranslationValue = []byte("translationValues")
 	BucketCategory         = []byte("categories")
 	BucketMissing          = []byte("missing")

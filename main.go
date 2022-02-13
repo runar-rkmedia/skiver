@@ -23,6 +23,7 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	swaggerMiddleware "github.com/go-openapi/runtime/middleware"
+	"github.com/patrickmn/go-cache"
 	"github.com/runar-rkmedia/gabyoall/api/utils"
 	"github.com/runar-rkmedia/gabyoall/logger"
 	"github.com/runar-rkmedia/skiver/bboltStorage"
@@ -86,19 +87,27 @@ type PubSubPublisher interface {
 }
 
 type MultiPublisher struct {
-	publishers map[string]PubSubPublisher
+	publishers   map[string]PubSubPublisher
+	publishFuncs map[string]func(kind, variant string, contents interface{})
 }
 
 func NewMultiPublisher() MultiPublisher {
-	return MultiPublisher{map[string]PubSubPublisher{}}
+	return MultiPublisher{map[string]PubSubPublisher{}, map[string]func(kind string, variant string, contents interface{}){}}
 }
 func (m *MultiPublisher) Publish(kind, variant string, contents interface{}) {
 	for _, v := range m.publishers {
 		go v.Publish(kind, variant, contents)
 	}
+	for _, v := range m.publishFuncs {
+		go v(kind, variant, contents)
+	}
 }
 func (m *MultiPublisher) AddSubscriber(name string, publisher PubSubPublisher) error {
 	m.publishers[name] = publisher
+	return nil
+}
+func (m *MultiPublisher) AddSubscriberFunc(name string, publisher func(kind, variant string, contents interface{})) error {
+	m.publishFuncs[name] = publisher
 	return nil
 }
 
@@ -128,6 +137,7 @@ func (m *translationHook) Publish(kind, variant string, contents interface{}) {
 			m.l.Error().Interface("content", contents).Msg("Failed to convert contents to TranslationValue")
 			return
 		}
+		orgId := tv.OrganizationID
 		if tv.Source == types.CreatorSourceTranslator {
 			if debug {
 				m.l.Debug().Interface("content", contents).Msg("ignoring TranslationValue since it was sourced from me")
@@ -192,6 +202,7 @@ func (m *translationHook) Publish(kind, variant string, contents interface{}) {
 				Source:        types.CreatorSourceTranslator,
 			}
 			tv.CreatedBy = string(tv.Source)
+			tv.OrganizationID = orgId
 			_, err = m.db.CreateTranslationValue(tv)
 
 			if err != nil {
@@ -316,15 +327,25 @@ func main() {
 	handler.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 	// TODO: consider using a buffered channel.
 	handler.Handle("/ws/", handlers.NewWsHandler(logger.GetLoggerWithLevel("ws", "debug"), pubsub.Ch, handlers.WsOptions{}))
+	exportCache := cache.New(time.Hour, time.Hour)
+	events.AddSubscriberFunc("exportCache", func(kind, variant string, contents interface{}) {
+		//  TODO: delete only thoose belonging to a project, etc.
+		exportCache.Flush()
+	})
 
-	err = types.SeedUsers(&db, nil, pw.Hash)
-	if err != nil {
-		panic(err)
-	}
-	err = types.SeedLocales(&db, nil)
-	if err != nil {
-		panic(err)
-	}
+	go func() {
+
+		org, err := types.SeedUsers(&db, nil, pw.Hash)
+		if err != nil {
+			l.Fatal().Err(err).Msg("Failed to seed users")
+		}
+		if org != nil {
+			err = types.SeedLocales(&db, org.ID, nil)
+			if err != nil {
+				l.Fatal().Err(err).Msg("Failed to seed Locale")
+			}
+		}
+	}()
 	handler.Handle("/api/ping", handlers.PingHandler(handler))
 
 	info := types.ServerInfo{
@@ -340,7 +361,7 @@ func main() {
 		gziphandler.GzipHandler(
 			http.StripPrefix("/api/",
 				handlers.EndpointsHandler(
-					ctx, pw, info, []byte(swaggerYml),
+					ctx, pw, info, []byte(swaggerYml), exportCache,
 				),
 			),
 			// ),

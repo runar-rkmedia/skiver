@@ -51,6 +51,9 @@ func (bt *BingTranslator) Translate(text, from, to string) (string, error) {
 	}
 
 	req, err := http.NewRequest(http.MethodPost, bt.Endpoint+"translate", bytes.NewBuffer(b))
+	if err != nil {
+		return "", err
+	}
 
 	req.Header.Set("Ocp-Apim-Subscription-Key", bt.KeyA)
 	req.Header.Set("Ocp-Apim-Subscription-Region", "norwayeast")

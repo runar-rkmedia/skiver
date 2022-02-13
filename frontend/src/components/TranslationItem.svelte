@@ -11,7 +11,7 @@
   export let locales: ApiDef.Locale[]
   $: contextKeys = Array.from(
     Object.values(translationValues || {}).reduce((r, tv) => {
-      if (!tv.context) {
+      if (!tv || !tv.context) {
         return r
       }
       for (const c of Object.keys(tv.context)) {
@@ -39,7 +39,6 @@
       <EntityDetails entity={translation} />
     </div>
   </div>
-  Selected {selectedLocale}
   <table>
     <thead>
       <th>Language</th>

@@ -1,4 +1,4 @@
-package handlers
+package importexport
 
 import (
 	"sort"
@@ -106,7 +106,7 @@ bopp:
 				t.Errorf("TEST-INPUT_ERROR: Failed to unmarshal: %s %s", err, tt.fields)
 				return
 			}
-			got, err := getMapPaths(j)
+			got, err := GetMapPaths(j)
 
 			if !tt.wantErr {
 				testza.AssertNoError(t, err)
