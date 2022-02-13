@@ -479,7 +479,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 						return
 					}
 					userSessions.SessionsForUser(session.User.ID)
-					rc.WriteOutput(struct{ OK bool }{true}, http.StatusOK)
+					rc.WriteOutput(models.LogoutResponse{Ok: boolPointer(true)}, http.StatusOK)
 					return
 				}
 			}

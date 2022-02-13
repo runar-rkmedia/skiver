@@ -341,6 +341,13 @@ definitions:
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
+  LogoutResponse:
+    properties:
+      ok:
+        type: boolean
+    required:
+    - ok
+    type: object
   MissingTranslation:
     properties:
       category:
@@ -1005,7 +1012,7 @@ paths:
       operationId: logout
       responses:
         "200":
-          $ref: '#/responses/loginResponse'
+          $ref: '#/responses/logoutResponse'
         "403":
           $ref: '#/responses/apiError'
         "500":
@@ -1239,6 +1246,11 @@ responses:
     description: Locale represents a language, dialect etc.
     schema:
       $ref: '#/definitions/LoginResponse'
+      type: object
+  logoutResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/LogoutResponse'
       type: object
   serverInfo:
     description: Server info

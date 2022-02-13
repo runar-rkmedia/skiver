@@ -56,7 +56,7 @@ func (bt *BingTranslator) Translate(text, from, to string) (string, error) {
 	}
 
 	req.Header.Set("Ocp-Apim-Subscription-Key", bt.KeyA)
-	req.Header.Set("Ocp-Apim-Subscription-Region", "norwayeast")
+	req.Header.Set("Ocp-Apim-Subscription-Region", "northeurope")
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
 
 	q := req.URL.Query()

@@ -11,6 +11,13 @@ components:
 security:
   - cookieAuth: []
 definitions:
+  LogoutResponse:
+    type: object
+    required:
+      - ok
+    properties:
+      ok:
+        type: boolean
   ProjectInput:
     type: object
     required:
@@ -554,7 +561,7 @@ paths:
       operationId: logout
       responses:
         "200":
-          $ref: '#/responses/loginResponse'
+          $ref: '#/responses/logoutResponse'
         "403":
           $ref: '#/responses/apiError'
         "500":
@@ -630,6 +637,10 @@ responses:
     description: "Consistant error-codes"
     schema:
       $ref: '#/definitions/ApiError'
+  logoutResponse:
+    schema:
+      $ref: '#/definitions/LogoutResponse'
+      type: object
   loginResponse:
     description: >
       On successful authentication, the token is set in a cookie named 'token'.

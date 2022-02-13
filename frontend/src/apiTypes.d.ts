@@ -204,6 +204,9 @@ declare namespace ApiDef {
         updatedBy?: string;
         userName?: string;
     }
+    export interface LogoutResponse {
+        ok: boolean;
+    }
     export interface MissingTranslation {
         /**
          * The reported category (may not exist), as reported by the client.
@@ -718,6 +721,7 @@ declare namespace ApiResponses {
      */
     ApiDef.Locale[];
     export type LoginResponse = ApiDef.LoginResponse;
+    export type LogoutResponse = ApiDef.LogoutResponse;
     export type OrganizationResponse = ApiDef.Organization;
     export type OrganizationsResponse = ApiDef.Organization[];
     export type ProjectResponse = ApiDef.Project;
