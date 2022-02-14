@@ -4,8 +4,6 @@
   import Button from 'components/Button.svelte'
   import Collapse from 'components/Collapse.svelte'
   export let projectID: string
-  import sortOn from 'sort-on'
-  import { t } from '../util/i18next'
 
   import CategoryForm from 'forms/CategoryForm.svelte'
   import CategoryList from '../components/CategoryList.svelte'
@@ -22,12 +20,6 @@
   $: locales = $state.projectSettings[projectID]?.localeIds?.length
     ? $state.projectSettings[projectID].localeIds.map((id) => $db.locale[id])
     : Object.values($db.locale || {})
-  $: categories =
-    (project &&
-      (project.category_ids || [])
-        .map((cid) => $db.category[cid])
-        .filter(Boolean)) ||
-    []
   let visibleForm: null | 'translation' | 'category' | 'translationValue' = null
   let selectedCategory = ''
   let selectedTranslation = ''
@@ -111,17 +103,11 @@
       </paper>
     {/if}
   </div>
-  {#if categories}
-    <CategoryList
-      {locales}
-      {selectedCategory}
-      {selectedTranslation}
-      {selectedLocale}
-      {visibleForm}
-      projectKey={project.short_name || project.id}
-      categories={sortOn(
-        categories,
-        ($state.categorySortAsc ? '' : '-') + $state.categorySortOn
-      )} />
-  {/if}
+  <CategoryList
+    {locales}
+    {selectedCategory}
+    {selectedTranslation}
+    {selectedLocale}
+    {visibleForm}
+    projectID={project.id} />
 {/if}

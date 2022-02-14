@@ -927,6 +927,7 @@ fsevents@~2.3.2:
     simplytyped: ^3.3.0
     sort-on: ^5.0.0
     svelte: ^3.44.3
+    svelte-inview: ^2.1.1
     svelte-preprocess: ^4.10.1
     svelte-preprocess-sass: ^2.0.1
     tippy.js: ^6.3.3
@@ -1874,6 +1875,15 @@ fsevents@~2.3.2:
   dependencies:
     min-indent: ^1.0.0
   checksum: 18f045d57d9d0d90cd16f72b2313d6364fd2cb4bf85b9f593523ad431c8720011a4d5f08b6591c9d580f446e78855c5334a30fb91aa1560f5d9f95ed1b4a0530
+  languageName: node
+  linkType: hard
+
+"svelte-inview@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "svelte-inview@npm:2.1.1"
+  peerDependencies:
+    svelte: ^3.0.0
+  checksum: ada1380a1c15d06d9b2d3588f48ed0f942c939cc3c8021d49ebe23519cd4d34f0adaf56344963f61532f3e176fb7169d008384cd5ef0292110176bf17bc764d2
   languageName: node
   linkType: hard
 

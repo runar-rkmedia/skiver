@@ -44,7 +44,7 @@
     {/if}
   </button>
   {#if show || forceShow}
-    <slot />
+    <slot show={$state.collapse[key]} />
   {/if}
 </div>
 

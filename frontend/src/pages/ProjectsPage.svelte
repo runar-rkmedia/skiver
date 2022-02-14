@@ -17,6 +17,7 @@
     optionally use resources from other projects.
   </p>
 </Tip>
+<div class="spacer" />
 <paper>
   <EntityList
     error={$db.responseStates.project.error?.error}
@@ -68,3 +69,9 @@
 <paper>
   <ProjectForm />
 </paper>
+
+<style>
+  .spacer {
+    height: var(--size-6);
+  }
+</style>

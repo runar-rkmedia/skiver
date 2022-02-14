@@ -26,6 +26,7 @@
     "nanoid": "^3.1.30",
     "sort-on": "^5.0.0",
     "svelte": "^3.44.3",
+    "svelte-inview": "^2.1.1",
     "tippy.js": "^6.3.3",
     "toml-js": "^0.0.8",
     "yaml": "^1.10.2",

@@ -4,7 +4,7 @@ import createStore from './store'
 import type { AnyFunc } from 'simplytyped'
 import { parseDate } from 'dates'
 import { isPast } from 'date-fns'
-import { get } from 'svelte/store'
+import { derived, get } from 'svelte/store'
 export function objectKeys<T extends object>(obj: T) {
   return Object.keys(obj) as Array<keyof T>
 }
@@ -177,6 +177,37 @@ export const db = createStore<DB, null>({
     } as DB
   ),
 })
+
+export const projectCategoriesByKeyLength = derived(db, ($db) => {
+  const sorted = Object.values($db.category)
+    .reduce((r, c) => {
+      if (!c.project_id) {
+        return r
+      }
+      const length = getKeyLength(c.key)
+      if (!r[c.project_id]) {
+        r[c.project_id] = []
+      }
+      if (!r[c.project_id][length]) {
+        r[c.project_id][length] = [c]
+        return r
+      }
+      r[c.project_id][length].push(c)
+      return r
+    }, {})
+
+  return sorted
+})
+
+
+
+
+const getKeyLength = (key?: string) => {
+  if (!key) {
+    return 0
+  }
+  return key?.split('.').length
+}
 
 wsSubscribe({
   onMessage: (msg) => {
