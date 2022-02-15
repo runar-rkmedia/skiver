@@ -449,6 +449,13 @@ declare namespace ApiDef {
         translation_id: string;
         value: string;
     }
+    export interface UpdateTranslationInput {
+        description?: string;
+        title?: string;
+        variables?: {
+            [name: string]: any;
+        };
+    }
     export interface UpdateTranslationValueInput {
         value: string;
     }

@@ -16,6 +16,7 @@
   import TranslationForm from 'forms/TranslationForm.svelte'
   import TranslationItem from 'components/TranslationItem.svelte'
   import EntityDetails from 'components/EntityDetails.svelte'
+  import { scrollToCategory } from 'util/scrollToCategory'
   import { inview } from 'svelte-inview'
 
   let isInView = false
@@ -23,6 +24,7 @@
     rootMargin: '50px',
     unobserveOnEnter: true,
   }
+
   const handleViewChange = ({ detail }) => {
     console.log('viewchange', detail)
     isInView = detail.inView
@@ -50,31 +52,32 @@
 <div
   use:inview={options}
   on:change={handleViewChange}
-  on:init={(e) => console.log('init???', e)}
   class="item"
   id={'cat-' + category.key}>
   <div class="desc category-item-header">
     <div>
       <h3>
+        <button
+          title="Overview-menu"
+          class="btn-reset menu"
+          on:click={() => ($state.sidebarVisible = !$state.sidebarVisible)}>
+          <Icon icon="menu" />
+        </button>
         {#each categoryPath as subPath, i}
           {#if i !== categoryPath.length - 1}
             <a
-              href={'#cat-' + category.key}
-              on:click|preventDefault={(e) => {
-                const el = document.getElementById(
-                  'cat-' + categoryPath.slice(0, i + 1).join('.')
-                )
-                console.log('el', el)
-                if (!el) {
-                  return
-                }
-                el.scrollIntoView({ behavior: 'smooth' })
-              }}>{subPath}</a>
+              href={'#cat-' + categoryPath.slice(0, i + 1).join('.')}
+              on:click|preventDefault={scrollToCategory}>{subPath}</a>
             <span class="sep">/</span>
           {/if}
         {/each}
         <span title={category.key}>
           {category.title}
+          {#if category.translation_ids?.length}
+            <small>
+              ({category.translation_ids.length})
+            </small>
+          {/if}
         </span>
       </h3>
       <div class="description">
@@ -157,7 +160,7 @@
     position: -webkit-sticky;
     top: 0px;
     max-height: 200px;
-    z-index: 10000;
+    z-index: 1;
     color: white;
   }
   .description {
@@ -188,6 +191,9 @@
     justify-content: space-between;
     align-items: center;
   }
+  .category-item-header small {
+    opacity: 0.7;
+  }
   a {
     font-size: small;
     color: inherit;
@@ -195,5 +201,14 @@
   .sep {
     opacity: 0.5;
     padding-inline: var(--size-2);
+  }
+  .menu {
+    margin-inline-start: calc(var(--size-4) * -1);
+    font-size: 110%;
+    transition: transform, color 120ms var(--easing-standard);
+    color: var(--color-primary);
+  }
+  .menu:hover {
+    transform: scale(1.16);
   }
 </style>

@@ -754,6 +754,20 @@ definitions:
     - locale_id
     - value
     type: object
+  UpdateTranslationInput:
+    properties:
+      description:
+        maxLength: 8000
+        minLength: 0
+        type: string
+      title:
+        maxLength: 300
+        minLength: 0
+        type: string
+      variables:
+        additionalProperties: true
+        type: object
+    type: object
   UpdateTranslationValueInput:
     properties:
       value:

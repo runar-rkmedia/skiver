@@ -30,8 +30,7 @@
       e.preventDefault()
     }
     dispatch('click', e)
-  }}
->
+  }}>
   {#if iconToUse}
     <Icon icon={iconToUse} />
   {/if}

@@ -141,6 +141,20 @@ definitions:
     type: object
     required:
       - value
+  UpdateTranslationInput:
+    type: object
+    properties:
+      title:
+        maxLength: 300
+        minLength: 0
+        type: string
+      description:
+        maxLength: 8000
+        minLength: 0
+        type: string
+      variables:
+        type: object
+        additionalProperties: true
   ReportMissingInput:
     type: object
     additionalProperties:

@@ -23,6 +23,7 @@ export const iconMap = {
   toggleOn: 'fa-toggle-on',
   toggleOff: 'fa-toggle-off',
   signIn: 'fa-sign-in-alt',
+  menu: 'fas fa-hamburger',
   loading: 'fad fa-spinner fa-spin'
 } as const
 

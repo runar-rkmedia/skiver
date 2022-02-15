@@ -28,15 +28,6 @@
       Object.values($db.translation).find(
         (t) => t.key === translationKeyLike && t.category === category.id
       ))
-  $: translationValues =
-    translation?.value_ids?.reduce((r, id) => {
-      const tv = $db.translationValue[id]
-      if (!tv || !tv.locale_id) {
-        return r
-      }
-      r[tv.locale_id] = tv
-      return r
-    }, {}) || {}
   $: loadingCount = Object.entries($db.responseStates).filter(
     ([_, v]) => v.loading
   ).length
@@ -46,42 +37,15 @@
   $: maxLoadingCount = Object.keys($db.responseStates).length
 </script>
 
-<code>{location.href}</code>
-
 <Spinner active={loadingCount > 0} />
 {#if translation && project && locales && category}
   <paper>
-    <code
-      >{JSON.stringify(
-        {
-          translation: translation.key,
-          translationKeyLike,
-          categoryKey,
-          category: category.key,
-        },
-        null,
-        2
-      )}</code>
-    <TranslationItem
-      {locales}
-      {translation}
-      {translationValues}
-      {categoryKey}
-      {projectKey}
-      {selectedLocale} />
+    <TranslationItem {locales} {translation} {categoryKey} {projectKey} />
   </paper>
 {:else if loadingCount}
   <p>Gathering information... hold on...</p>
   <progress value={notLoadingCount} max={maxLoadingCount} />
   {notLoadingCount} / {maxLoadingCount}
-  <code
-    >{JSON.stringify(
-      Object.entries($db.responseStates)
-        .filter(([_, d]) => d.loading)
-        .map(([k]) => k),
-      null,
-      2
-    )}</code>
 {:else}
   No translation found for input '{translationKeyLike}'
 
@@ -146,4 +110,9 @@
       </li>
     </ul>
   </Alert>
+{/if}
+
+<p>You are viewing the embed version of this page.</p>
+{#if project}
+  <a href={'#project/' + project.id}>Click her to go to the project-view</a>
 {/if}

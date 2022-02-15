@@ -66,9 +66,10 @@ const (
 	CodeErrOrganizationNotFound ErrorCodes = "Error: Organization not found"
 	CodeErrImport               ErrorCodes = "Error: Import error"
 
-	CodeErrNotFoundLocale  ErrorCodes = "Error: Locale not found"
-	CodeErrNotFoundProject ErrorCodes = "Error: Project not found"
-	CodeErrNotFoundUser    ErrorCodes = "Error: User not found"
+	CodeErrNotFoundLocale      ErrorCodes = "Error: Locale not found"
+	CodeErrNotFoundProject     ErrorCodes = "Error: Project not found"
+	CodeErrNotFoundTranslation ErrorCodes = "Error: Translation not found"
+	CodeErrNotFoundUser        ErrorCodes = "Error: User not found"
 
 	CodeErrDBCreateLocale         ErrorCodes = "Error: Database Create Locale"
 	CodeErrDBCreateUser           ErrorCodes = "Error: Database Create User"

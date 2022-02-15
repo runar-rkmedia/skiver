@@ -5,6 +5,7 @@ export const state = createStore({
   initialValue: {
     showDeleted: false,
     serverStats: false,
+    sidebarVisible: false,
     pageSize: 50,
     searchQuery: '',
     categorySortOn: 'key' as keyof ApiDef.Category,

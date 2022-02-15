@@ -1,7 +1,9 @@
 <script lang="ts">
   import TranslationValueRow from './TranslationValueRow.svelte'
   import EntityDetails from './EntityDetails.svelte'
-  import { db } from 'api'
+  import Alert from './Alert.svelte'
+  import { api, db } from 'api'
+  import Button from './Button.svelte'
   export let translation: ApiDef.Translation
   /** Map by locale-id */
   // export let translationValues: Record<string, ApiDef.TranslationValue>
@@ -32,23 +34,86 @@
     },
     { bnaan: true }
   )
+  let edit = false
+  let editTitle = ''
+  let editDescription = ''
+  let editVariables = ''
+  let editError = ''
+  function toggleEdit() {
+    edit = !edit
+    if (!editTitle) {
+      editTitle = translation.title || ''
+      editDescription = translation.description || ''
+      editVariables =
+        JSON.stringify(translation.variables, null, 2) || '{\n  \n}'
+    }
+  }
+
+  function submitEdit() {
+    let payload: Partial<ApiDef.TranslationInput> = {
+      title: editTitle,
+      description: editDescription,
+    }
+    if (editVariables && editVariables.replace(/\s/g, '') !== '{}')
+      try {
+        payload.variables = JSON.parse(editVariables)
+      } catch (err) {
+        editError = 'Invalid variables: ' + err.message
+        return
+      }
+    editError = ''
+
+    api.translation
+      .update(translation.id, payload as any)
+      .then(() => (edit = false))
+  }
 </script>
 
 {#if translation}
-  <div class="desc">
-    <h4>
-      <code>
-        {`${categoryKey !== '' ? categoryKey + '.' : ''}${translation.key}`}
-      </code>
-      {translation.title}
-    </h4>
-    <div>
-      <small>
-        {translation.description || ''}
-      </small>
-      <EntityDetails entity={translation} />
+  {#if edit}
+    <form>
+      <label
+        >Title<input name="title" bind:value={editTitle} type="text" /></label>
+      <label
+        >Description<textarea
+          name="description"
+          rows={3}
+          bind:value={editDescription}
+          type="text" /></label>
+      {#if editError}
+        <Alert kind="error">
+          {editError}
+        </Alert>
+      {/if}
+      <label
+        >Variables<textarea
+          name="variables"
+          rows={8}
+          bind:value={editVariables}
+          type="text" /></label>
+      <Button color="primary" icon="submit" on:click={submitEdit}
+        >Submit</Button>
+      <Button color="secondary" icon="cancel" on:click={toggleEdit}
+        >Cancel</Button>
+    </form>
+  {:else}
+    <div class="desc">
+      <h4>
+        <code>
+          {`${categoryKey !== '' ? categoryKey + '.' : ''}${translation.key}`}
+        </code>
+        {translation.title}
+        <Button icon="edit" on:click={toggleEdit}>Edit</Button>
+      </h4>
+      <div>
+        <small />
+        <EntityDetails entity={translation} />
+      </div>
     </div>
-  </div>
+  {/if}
+  <p>
+    {translation.description || ''}
+  </p>
   <table>
     <thead>
       <th>Language</th>
@@ -133,5 +198,8 @@
   }
   var-key::after {
     content: ': ';
+  }
+  textarea[name='variables'] {
+    font-family: var(--font-mono);
   }
 </style>
