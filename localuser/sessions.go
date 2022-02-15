@@ -75,10 +75,10 @@ func (us UserSessionInMemory) NewSession(user types.User, organization types.Org
 		Organization: organization,
 		UserAgent:    userAgent,
 		Issued:       now,
-		Expires:      now.Add(us.TTL),
+		Expires:      now.Add(us.UserSessionOptions.TTL),
 	}
 
-	us.c.Set(token, s, us.TTL)
+	us.c.Set(token, s, us.UserSessionOptions.TTL)
 	if us.persistor != nil {
 		s, err := us.persistor.CreateSession(token, s)
 		if err != nil {
@@ -88,6 +88,9 @@ func (us UserSessionInMemory) NewSession(user types.User, organization types.Org
 		return s
 	}
 	return s
+}
+func (us UserSessionInMemory) TTL() time.Duration {
+	return us.UserSessionOptions.TTL
 }
 func (us UserSessionInMemory) ClearSession(token string) error {
 	_, err := us.GetSession(token)

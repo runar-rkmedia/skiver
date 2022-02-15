@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"time"
 
 	"github.com/pelletier/go-toml"
 	"github.com/spf13/viper"
@@ -14,15 +15,30 @@ var (
 )
 
 type Config struct {
-	LogLevel           string    `cfg:"log-level" default:"info" description:"Log-level to use. Can be trace,debug,info,warn(ing),error or panic"`
-	LogFormat          string    `cfg:"log-format" default:"human" description:"Format of the logs. Can be human or json"`
-	Api                ApiConfig `cfg:"api" description:"Used with the api-server"`
-	SelfCheck          bool      `cfg:"selv-check" default:"true" description:"Enables a self check to check resources."`
+	// Level for logging
+	// Enum: [trace debug info warn warning error panic]
+	LogLevel string `cfg:"log-level" default:"info" description:"Log-level to use. Can be trace,debug,info,warn(ing),error or panic"`
+	// Enum: [human json]
+	LogFormat string    `cfg:"log-format" default:"human" description:"Format of the logs. Can be human or json"`
+	Api       ApiConfig `cfg:"api" description:"Used with the api-server"`
+
+	// If set, will enable a self-check that monitors the applications resource-usage. Used for debugging, and monitoring outside of any orcestrator like kubernetes
+	SelfCheck bool `cfg:"selv-check" default:"true" description:"Enables a self check to check resources."`
+
+	// Global translator-services that should be available
 	TranslatorServices []TranslatorService
+	// Options for Authentication
+	Authentication AuthConfig
 }
 
+type AuthConfig struct {
+	// Defines how long a Session should be valid for.
+	SessionLifeTime time.Duration `toml:"desc: blblba"`
+}
+
+// TDB
 type TranslatorService struct {
-	// OneOf: bind, libre
+	// Enum: [bind libre]
 	Kind     string
 	ApiToken string
 	Endpoint string

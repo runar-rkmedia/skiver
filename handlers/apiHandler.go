@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/google/uuid"
 	"github.com/runar-rkmedia/skiver/bboltStorage"
 	"github.com/runar-rkmedia/skiver/importexport"
+	"github.com/runar-rkmedia/skiver/internal"
 	"github.com/runar-rkmedia/skiver/localuser"
 	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/requestContext"
@@ -31,17 +31,21 @@ type Cache interface {
 	// Set(k string, x interface{}, d time.Duration)
 	SetDefault(k string, x interface{})
 }
+type SessionManager interface {
+	NewSession(user types.User, organization types.Organization, userAgent string) (s types.Session)
+	GetSession(token string) (s types.Session, err error)
+	SessionsForUser(userId string) (s []types.Session)
+	TTL() time.Duration
+}
 
-func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverInfo types.ServerInfo, swaggerYml []byte, exportCache Cache) http.HandlerFunc {
-
-	p, ok := ctx.DB.(localuser.Persistor)
-	if !ok {
-		ctx.L.Warn().Str("type", fmt.Sprintf("%T", ctx.DB)).Msg("DB does not implement the localUser.Persistor-interface")
-	}
-	userSessions, err := localuser.NewUserSessionInMemory(localuser.UserSessionOptions{TTL: time.Hour}, uuid.NewString, p)
-	if err != nil {
-		ctx.L.Fatal().Err(err).Msg("Failed to set up userSessions")
-	}
+func EndpointsHandler(
+	ctx requestContext.Context,
+	userSessions SessionManager,
+	pw localuser.PwHasher,
+	serverInfo types.ServerInfo,
+	swaggerYml []byte,
+	exportCache Cache,
+) http.HandlerFunc {
 
 	return func(rw http.ResponseWriter, r *http.Request) {
 		AddAccessControl(r, rw)
@@ -491,6 +495,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				}
 				expiresD := session.Expires.Sub(time.Now())
 				rc.WriteOutput(types.LoginResponse{
+					// TODO:
 					Organization: session.Organization,
 					User:         session.User,
 					Ok:           true,
@@ -557,7 +562,7 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 					continue
 				}
 				// if the user has a fair amount left in their session, it is not renewed
-				d := userSessions.TTL / 6 * 5
+				d := userSessions.TTL() / 6 * 5
 				if sessions[i].Expires.Add(-d).Before(now) {
 					continue
 				}
@@ -579,11 +584,14 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 
 			expiresD := session.Expires.Sub(now)
 
+			// TODO: move some of these settings to global config, organization settings and/or project settings.
 			cookie := &http.Cookie{
 				Name:     "token",
 				Path:     "/api/",
 				Value:    session.Token,
 				MaxAge:   int(expiresD.Seconds()),
+				Secure:   true,
+				SameSite: http.SameSiteNoneMode,
 				HttpOnly: true,
 			}
 			rw.Header().Add("session-expires", session.Expires.String())
@@ -740,6 +748,52 @@ func EndpointsHandler(ctx requestContext.Context, pw localuser.PwHasher, serverI
 				translations, err := ctx.DB.GetTranslations()
 				rc.WriteAuto(translations, err, requestContext.CodeErrTranslation)
 				return
+			}
+			if isPut {
+				if !session.User.CanUpdateTranslations {
+					rc.WriteError("You are not authorizatiod to update translations", requestContext.CodeErrAuthoriziation)
+					return
+				}
+				tid := getStringSliceIndex(paths, 1)
+				if tid == "" {
+					rc.WriteError("Missing id", requestContext.CodeErrIDEmpty)
+					return
+				}
+				var j models.UpdateTranslationInput
+				if err := rc.ValidateBytes(body, &j); err != nil {
+					return
+				}
+				existing, err := ctx.DB.GetTranslation(tid)
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrTranslation)
+				}
+				if existing == nil || existing.OrganizationID != session.User.OrganizationID {
+					rc.WriteErr(err, requestContext.CodeErrNotFoundTranslation)
+					return
+
+				}
+
+				t := types.Translation{
+					Key:         existing.Key,
+					Title:       *j.Title,
+					Description: *j.Description,
+				}
+				if j.Variables != nil {
+					if v, ok := j.Variables.(map[string]interface{}); ok {
+
+						t.Variables = v
+					} else {
+						rc.WriteError("key variables are invalid", requestContext.CodeErrInputValidation)
+						return
+					}
+				}
+				internal.PrintMultiLineYaml("payload", j)
+				internal.PrintMultiLineYaml("ttt", t)
+
+				updated, err := ctx.DB.UpdateTranslation(tid, t)
+				rc.WriteAuto(updated, err, requestContext.CodeErrTranslation)
+				return
+
 			}
 			if isPost {
 				if !session.User.CanCreateTranslations {

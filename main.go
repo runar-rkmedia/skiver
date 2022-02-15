@@ -23,6 +23,7 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	swaggerMiddleware "github.com/go-openapi/runtime/middleware"
+	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
 	gobyutils "github.com/runar-rkmedia/gabyoall/api/utils"
 	"github.com/runar-rkmedia/gabyoall/logger"
@@ -245,6 +246,13 @@ func main() {
 		WithCaller: config.LogLevel == "debug" || GitHash == "",
 	})
 	l := logger.GetLogger("main")
+
+	if config.Authentication.SessionLifeTime == 0 {
+		config.Authentication.SessionLifeTime = time.Hour
+	}
+	if config.Authentication.SessionLifeTime < time.Minute {
+		l.Fatal().Str("Authentication.SessionLifeTime", config.Authentication.SessionLifeTime.String()).Msg("SessionLifeTime cannot be shorter than a minute. That would just be really annoying.")
+	}
 	events := NewMultiPublisher()
 	l.Info().
 		Str("version", Version).
@@ -355,6 +363,14 @@ func main() {
 		Version:         Version,
 		BuildDate:       BuildDate,
 	}
+	p, ok := ctx.DB.(localuser.Persistor)
+	if !ok {
+		ctx.L.Warn().Str("type", fmt.Sprintf("%T", ctx.DB)).Msg("DB does not implement the localUser.Persistor-interface")
+	}
+	userSessions, err := localuser.NewUserSessionInMemory(localuser.UserSessionOptions{TTL: config.Authentication.SessionLifeTime}, uuid.NewString, p)
+	if err != nil {
+		ctx.L.Fatal().Err(err).Msg("Failed to set up userSessions")
+	}
 
 	handler.Handle("/api/",
 		// requires go.1.18
@@ -362,7 +378,7 @@ func main() {
 		gziphandler.GzipHandler(
 			http.StripPrefix("/api/",
 				handlers.EndpointsHandler(
-					ctx, pw, info, []byte(swaggerYml), exportCache,
+					ctx, userSessions, pw, info, []byte(swaggerYml), exportCache,
 				),
 			),
 			// ),
@@ -425,7 +441,7 @@ func main() {
 			}()
 
 		}
-		err = srv.ListenAndServeTLS("server.crt", "server.key")
+		err = srv.ListenAndServeTLS(config.Api.CertFile, config.Api.CertKey)
 	} else {
 		err = srv.ListenAndServe()
 	}
