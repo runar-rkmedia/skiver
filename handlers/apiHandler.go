@@ -13,7 +13,6 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/runar-rkmedia/skiver/bboltStorage"
 	"github.com/runar-rkmedia/skiver/importexport"
-	"github.com/runar-rkmedia/skiver/internal"
 	"github.com/runar-rkmedia/skiver/localuser"
 	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/requestContext"
@@ -586,8 +585,11 @@ func EndpointsHandler(
 
 			// TODO: move some of these settings to global config, organization settings and/or project settings.
 			cookie := &http.Cookie{
-				Name:     "token",
-				Path:     "/api/",
+				Name: "token",
+				// TODO: when the server is behind a subpath (e.g.
+				// exmaple.com/skiver/), the reverse-proxy in front may not return our
+				// path, and we probably need to get it from the config
+				Path:     "/",
 				Value:    session.Token,
 				MaxAge:   int(expiresD.Seconds()),
 				Secure:   true,
@@ -787,8 +789,6 @@ func EndpointsHandler(
 						return
 					}
 				}
-				internal.PrintMultiLineYaml("payload", j)
-				internal.PrintMultiLineYaml("ttt", t)
 
 				updated, err := ctx.DB.UpdateTranslation(tid, t)
 				rc.WriteAuto(updated, err, requestContext.CodeErrTranslation)
