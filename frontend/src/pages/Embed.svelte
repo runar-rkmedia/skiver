@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { db, api } from 'api'
+  import { db } from 'api'
   import Alert from 'components/Alert.svelte'
   import Spinner from 'components/Spinner.svelte'
 
@@ -10,7 +10,6 @@
 
   export let translationKeyLike: string
   export let projectKey: string
-  export let selectedLocale = ''
 
   $: locales = Object.values($db.locale)
   $: project =

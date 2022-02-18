@@ -57,6 +57,7 @@
   .wrapper {
     z-index: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     height: 100vh;
     scrollbar-width: none;
     -ms-overflow-style: none;

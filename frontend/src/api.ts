@@ -227,42 +227,38 @@ wsSubscribe({
       return
     }
 
-    if (window.parent) {
-      // We should include more information here, since if the parent is an
-      // iframe, they probably don't have any relation to our ids, but keys
-      // and such
-      const store = get(db)
-      if (store.login.ok) {
-
-        switch (msg.kind) {
-          case 'translationValue':
-            const tv = store.translationValue[msg.contents.id]
-            const t = !!tv && store.translation[tv.translation_id || '']
-            const locale = !!tv && store.locale[tv.locale_id || '']
-            const category = store.category[t?.category || '']
-            const key = (!!category && !!t) ? [category.key].join('.') + "." + t.key : ''
-            const text = `${titleCase(msg.kind)}-${msg.variant}: ${key} is now '${msg.contents.value}' for locale ${locale?.title}`
-
-            window.parent.postMessage({ ...msg, translationValue: tv, translation: t, locale, category, text, key, value: msg.contents.value }, "*")
-            break
-
-          default:
-            window.parent.postMessage(msg, "*")
-            break;
-        }
-      }
-    }
-    replaceField(msg.kind, msg.contents as any, msg.contents.id)
+    replaceField(msg.kind, msg.contents as any, msg.contents.id, msg.variant)
   },
   autoReconnect: true,
 })
 
-const titleCase = (s: string) => {
-  if (!s) {
-    return ""
+const windowPost = {
+  translationMessage: (variant: 'create' | 'update' | 'soft-delete', tv: ApiDef.TranslationValue, store: DB, extra?: any) => {
+    const t = !!tv && store.translation[tv.translation_id || '']
+    const locale = !!tv && store.locale[tv.locale_id || '']
+    const category = store.category[t?.category || '']
+    const key = (!!category && !!t) ? [category.key].join('.') + "." + t.key : ''
+    const text = `TranslationValue"-${variant}: ${key} is now '${tv.value}' for locale ${locale?.title}`
+
+    const msg = {
+      extra, translationValue: tv, translation: t, locale, category, text, key, value: tv.value
+    }
+    switch (true) {
+      case !(tv as any):
+      case !(t as any):
+      case !(category as any):
+      case !(variant as any):
+      case !(store as any):
+      case !(key as any):
+        console.warn("[windowPost.translationMessage]: Message has missing arguments:", { msg, store, extra })
+    }
+    console.debug("[windowPost.translationMessage]: Posting message:", msg)
+    window.parent.postMessage(msg, "*")
+
   }
-  return s[0].toUpperCase() + s.slice(1)
 }
+
+
 
 
 const mergeMap = <K extends DBKeyValue, V extends DB[K]>(key: K, value: V) => {
@@ -291,7 +287,8 @@ type DBKeyValue = keyof Omit<DB, 'serverInfo' | 'responseStates' | 'login'>
 const replaceField = <K extends DBKeyValue, V extends DB[K]['s']>(
   key: K,
   value: V,
-  id: string
+  id: string,
+  kind: 'get' | 'update' | 'create' | 'soft-delete'
 ) => {
   if (!key) {
     console.error('key is required in replaceField')
@@ -306,6 +303,17 @@ const replaceField = <K extends DBKeyValue, V extends DB[K]['s']>(
     return
   }
   db.update((s) => {
+    if (kind === 'create' || kind === 'update' || kind === 'soft-delete') {
+
+      switch (key) {
+        // FIXME: fix the typing above, so that typescript infers the correct value here.
+        // Or is this perhaps fixed in ts4.6, which may be better at these things.
+        case 'translationValue':
+          if ('locale_id' in value) {
+            windowPost.translationMessage('update/create' as any, value, s)
+          }
+      }
+    }
     return {
       ...s,
       [key]: {
@@ -398,7 +406,7 @@ function apiGetFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
   return (id: string, options?: ApiFetchOptions) =>
     fetchApi<DB[K]>(
       subPath + id,
-      (e: any) => replaceField(storeKey, e, e.id),
+      (e: any) => replaceField(storeKey, e, e.id, 'get'),
       options
     ).then((r) => {
       checkError(r[1])
@@ -416,7 +424,7 @@ function apiCreateFactory<Payload extends {}, K extends DBKeyValue>(
     }))
     const result = await fetchApi<DB[K]['s']>(
       subPath,
-      (e) => e.id && replaceField(storeKey, e, e.id),
+      (e) => e.id && replaceField(storeKey, e, e.id, 'create'),
       {
         method: methods.POST,
         body,
@@ -451,19 +459,23 @@ function apiUpdateFactory<Payload extends {}, K extends DBKeyValue>(
 
     return fetchApi<DB[K]['s']>(
       subPath + '/' + id,
-      (e) => e.id && replaceField(storeKey, e, e.id),
+      (e) => e.id && replaceField(storeKey, e, e.id, 'update'),
       {
         method: methods.PUT,
         body,
         ...options,
       }
     ).then((r) => {
-      checkError(r[1])
+      const [d, err] = r
+      checkError(err)
+      if (d?.data?.id) {
+        replaceField(storeKey, r[0].data, d.data.id, 'update')
+      }
       db.update((s) => ({
         ...s,
         responseStates: {
           ...s.responseStates,
-          [storeKey]: { loading: false, error: r[1] },
+          [storeKey]: { loading: false, error: err },
         },
       }))
       return r
@@ -478,7 +490,7 @@ function apiDeleteFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
   return (id: string, options?: ApiFetchOptions) =>
     fetchApi<DB[K]['s']>(
       subPath + '/' + id,
-      (e) => e.id && replaceField(storeKey, e, e.id),
+      (e) => e.id && replaceField(storeKey, e, e.id, 'soft-delete'),
       {
         method: methods.DELETE,
         ...options,

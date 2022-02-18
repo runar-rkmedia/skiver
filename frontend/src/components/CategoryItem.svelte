@@ -25,9 +25,11 @@
     unobserveOnEnter: true,
   }
 
-  const handleViewChange = ({ detail }) => {
-    console.log('viewchange', detail)
-    isInView = detail.inView
+  const handleViewChange = (e) => {
+    if (!e.detail) {
+      return
+    }
+    isInView = e.detail.inView
   }
   export let category: ApiDef.Category
   export let locales: ApiDef.Locale[]
@@ -146,7 +148,11 @@
       </div>
     </div>
   {:else}
-    <div class="placeholder tbox">Placeholder</div>
+    <paper class="placeholder tbox">
+      <div class="placeholder-entity" />
+      <div class="placeholder-title" />
+      <div class="placeholder-table" />
+    </paper>
   {/if}
 </div>
 
@@ -154,6 +160,9 @@
   .item {
     display: flex;
     flex-direction: column;
+  }
+  .box {
+    overflow-x: hidden;
   }
   .desc {
     position: sticky;
@@ -185,12 +194,19 @@
   }
   .category-item-header {
     margin-inline: calc(var(--size-4) * -1);
-    backdrop-filter: brightness(20%) saturate(180%) blur(2px);
+    background-color: #092335f0;
     padding-inline: var(--size-4);
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
+  @supports ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
+    .category-item-header {
+      /* background-color: unset; */
+      backdrop-filter: brightness(20%) saturate(180%) blur(2px);
+    }
+  }
+
   .category-item-header small {
     opacity: 0.7;
   }
@@ -210,5 +226,26 @@
   }
   .menu:hover {
     transform: scale(1.16);
+  }
+  .placeholder-entity {
+    width: 230px;
+    height: 37px;
+    position: absolute;
+    right: var(--size-2);
+    top: var(--size-4);
+  }
+  .placeholder-title {
+    width: 250px;
+    height: 37px;
+    position: absolute;
+    left: var(--size-2);
+    top: var(--size-4);
+  }
+  .placeholder-table {
+    height: 100px;
+    position: absolute;
+    left: var(--size-2);
+    right: var(--size-2);
+    bottom: var(--size-4);
   }
 </style>

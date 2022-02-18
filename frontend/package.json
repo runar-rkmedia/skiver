@@ -20,6 +20,7 @@
     "@joshnuss/svelte-codemirror": "^0.2.6",
     "date-fns": "^2.27.0",
     "felte": "^0.9.0",
+    "fuse.js": "^6.5.3",
     "i18next": "^21.6.4",
     "i18next-fetch-backend": "^4.1.0",
     "merge": "^2.1.1",

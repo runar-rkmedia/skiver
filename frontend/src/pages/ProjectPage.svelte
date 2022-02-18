@@ -8,7 +8,8 @@
   import CategoryForm from 'forms/CategoryForm.svelte'
   import CategoryList from '../components/CategoryList.svelte'
   import EntityDetails from 'components/EntityDetails.svelte'
-  import ProjectOverview from './ProjectOverview.svelte'
+  import ProjectOverview from '../components/ProjectOverview.svelte'
+  import GlobalSearch from '../components/GlobalSearch.svelte'
 
   $: project = $db.project[projectID]
   $: {
@@ -106,7 +107,6 @@
           </paper>
         {/if}
       </div>
-
       <CategoryList
         {locales}
         {selectedCategory}
@@ -141,10 +141,5 @@
   .backdrop.sidebarVisible {
     display: block;
     opacity: 1;
-  }
-
-  .wrapper.sidebarVisible {
-    /* transform: translateX(200px); */
-    /* transition: transform 200ms var(--easing-standard); */
   }
 </style>

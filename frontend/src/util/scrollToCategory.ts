@@ -7,8 +7,6 @@ export function scrollToCategory(e) {
       e.target?.getAttribute?.('data-key')
     )
   )
-  console.log('click', e.target, e.target?.getAttribute('href')?.replace('#', ""))
-  console.log('el', e.target?.getAttribute?.('data-key'), el)
   if (!el) {
     return
   }
