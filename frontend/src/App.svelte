@@ -153,6 +153,8 @@
     margin-left: auto;
     margin-block: auto;
     padding: var(--size-4);
+    display: flex;
+    align-items: center;
   }
   .login {
     position: fixed;
@@ -191,10 +193,14 @@
     display: flex;
     box-shadow: var(--elevation-4);
   }
-  header h1 {
+  header div h1 {
     margin-inline: var(--size-4);
     align-self: center;
   }
+  header div {
+    display: flex;
+  }
+
   main {
     margin-block-start: var(--size-2);
     padding-inline: var(--size-4);

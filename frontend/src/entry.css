@@ -49,7 +49,19 @@ li {
 html,
 body {
   height: 100%;
+  font-size: 16px;
 }
+  @media screen and (max-width: 576px) {
+    header,
+    footer,
+    nav {
+      display: flex;
+      flex-direction: column;
+    }
+    h1 {
+      display: inline;
+  }
+  }
 
 .error.fas {
   color: var(--color-error-icon);
@@ -321,7 +333,6 @@ select[aria-invalid] {
 
 
 .placeholder {
-  min-height: 200px;
   box-shadow: var(--elevation-4);
   position: relative;
   overflow: hidden;
@@ -332,25 +343,37 @@ select[aria-invalid] {
 
 @keyframes load {
   from {
-    left: -150px;
+    /* left: -150px; */
+    transform: translateX(-100%);
   }
   to {
-    left: 100%;
+    transform: translateX(100%);
+    /* left: 100%; */
   }
 }
+.placeholder > div {
+  background: var(--color-grey-300);
+}
+
 .placeholder::before {
   content: '';
   display: block;
   position: absolute;
-  left: -150px;
+  /* left: -150px; */
+    transform: translateX(-100%);
   top: 0;
   height: 100%;
-  width: 150px;
+  width: 100%;
   background: linear-gradient(
     to right,
     transparent 0%,
     #e8e8e8 50%,
     transparent 100%
   );
-  animation: load 1s var(--easing-accelerate) infinite;
+  animation-delay: 500ms;
+  animation-direction: alternate;
+  animation-name: load;
+  animation-duration: 1s;
+  animation-timing-function: var(--easing-standard);
+  animation-iteration-count: infinite;
 }
