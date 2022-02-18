@@ -23,6 +23,7 @@
   import Spinner from './components/Spinner.svelte'
   import PageContent from 'PageContent.svelte'
   import { state } from 'state'
+  import { appUrl } from 'util/appConstants'
   let didRunInital = false
   $: {
     if (!didRunInital && $db.login.ok) {
@@ -54,12 +55,14 @@
 
 <div class="wrapper">
   <header>
-    <a href="#/">
-      <img src="/logo.svg" alt="Logo" />
-    </a>
-    <a href="#/">
-      <h1>Skiver - Ski's the limit</h1>
-    </a>
+    <div>
+      <a href="#/">
+        <img src={appUrl('/logo.svg')} alt="Logo" />
+      </a>
+      <a href="#/">
+        <h1>Skiver - Ski's the limit</h1>
+      </a>
+    </div>
     <Tabs />
     {#if $db.login.ok}
       <div class="user-welcome">

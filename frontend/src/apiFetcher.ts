@@ -1,3 +1,5 @@
+import { apiUrl, appUrl } from "util/appConstants"
+
 export const contentTypes = {
   json: 'application/json',
   toml: 'application/toml',
@@ -11,10 +13,8 @@ export const methods = {
   DELETE: 'DELETE',
 } as const
 
-export const baseUrl = `${window.location.protocol}//${window.location.host}/api`
-export const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  }//${window.location.host}/ws/`
 
+export const wsUrl = appUrl('/ws/').replace('http', 'ws')
 export type ApiFetchOptions = {
   /** if set, will run the updater-function even on errors */
   runUpdaterOnErr?: boolean
@@ -53,7 +53,7 @@ export async function fetchApi<T extends {}>(
       body: typeof body === 'string' ? body : JSON.stringify(body),
     }),
   }
-  const url = baseUrl + sub
+  const url = apiUrl(sub)
   const result: {
     data: T
   } = {} as any
