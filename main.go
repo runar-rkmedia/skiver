@@ -372,19 +372,22 @@ func main() {
 		ctx.L.Fatal().Err(err).Msg("Failed to set up userSessions")
 	}
 
+	apiHandler := http.StripPrefix("/api/",
+		handlers.EndpointsHandler(
+			ctx, userSessions, pw, info, []byte(swaggerYml), exportCache,
+		),
+	)
+	if config.Gzip {
+		apiHandler = gziphandler.GzipHandler(apiHandler)
+	}
 	handler.Handle("/api/",
 		// requires go.1.18
-		// http.MaxBytesHandler(
-		gziphandler.GzipHandler(
-			http.StripPrefix("/api/",
-				handlers.EndpointsHandler(
-					ctx, userSessions, pw, info, []byte(swaggerYml), exportCache,
-				),
-			),
-			// ),
-			// maxBodySize,
-		))
+		// ioutil.MaxBytesHandler(
+		apiHandler,
 
+		// maxBodySize,
+	// 	)
+	)
 	useCert := false
 	if cfg.CertFile != "" {
 		_, err := os.Stat(cfg.CertFile)

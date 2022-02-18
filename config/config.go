@@ -29,6 +29,8 @@ type Config struct {
 	TranslatorServices []TranslatorService
 	// Options for Authentication
 	Authentication AuthConfig
+	// Set to enable gzip-module
+	Gzip bool
 }
 
 type AuthConfig struct {
