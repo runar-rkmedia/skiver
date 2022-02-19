@@ -241,7 +241,7 @@ const windowPost = {
     const text = `TranslationValue"-${variant}: ${key} is now '${tv.value}' for locale ${locale?.title}`
 
     const msg = {
-      extra, translationValue: tv, translation: t, locale, category, text, key, value: tv.value
+      extra, translationValue: tv, translation: t, locale, category, text, key, value: tv.value, kind: 'translation-value-change', variant
     }
     switch (true) {
       case !(tv as any):
@@ -255,8 +255,92 @@ const windowPost = {
     console.debug("[windowPost.translationMessage]: Posting message:", msg)
     window.parent.postMessage(msg, "*")
 
+  },
+  error: (msg: string, details?: any) => {
+    console.error(msg, details)
+    window.parent.postMessage({ kind: 'error', msg, details }, "*")
+  }
+
+}
+
+function handleMsg(e: MessageEvent) {
+  if (!e.data) {
+    return
+  }
+  const kind = e.data?.kind
+  switch (kind) {
+    case 'post-edit':
+      const { context, category, locale, translation, value, project } = e.data as { category?: string, locale?: string, translation?: string, value?: string, project?: string, context?: string }
+      if (context) {
+        windowPost.error("Sorry, I currently dont support context! How emberrasing...", e.data)
+        return
+      }
+      if (!category || !locale || !translation || !value || !project) {
+        windowPost.error("post-edit message had some missing arguments", e.data)
+        return
+      }
+      const store = get(db)
+      const p = Object.values(store.project).find(c => c.id === project || c.short_name === project)
+      if (!p) {
+        windowPost.error("post-edit failed to find the project: ", project)
+        return
+      }
+      const cat = Object.values(store.category).find(c => c.project_id === p.id && c.key === category)
+      if (!cat) {
+        windowPost.error("post-edit failed to find the category: ", { category, project: p })
+        return
+      }
+      let t: ApiDef.Translation | null = null
+      loop: for (const tid of cat.translation_ids || []) {
+        const found = store.translation[tid]
+        if (found && found.key === translation) {
+
+          t = found
+          break loop
+        }
+
+      }
+
+      if (!t) {
+        windowPost.error("post-edit failed to find the translation: ", { cateory: cat, translations: cat.translation_ids?.map(tid => store.translation[tid]) })
+        return
+      }
+      const loc = Object.values(store.locale).find(c => {
+        if (locale === c.ietf) {
+          return true
+        }
+        if (locale === c.iso_639_3) {
+          return true
+        }
+        if (locale === c.iso_639_2) {
+          return true
+        }
+        if (locale === c.iso_639_1) {
+          return true
+        }
+        if (locale === c.title) {
+          return true
+        }
+        return false
+      })
+      if (!loc) {
+        windowPost.error("post-edit failed to find the locale: ", locale)
+        return
+      }
+      const tid = t.id
+      const tv = Object.values(store.translationValue).find(c => c.translation_id === tid && c.locale_id === loc.id)
+      if (!tv) {
+        windowPost.error("post-edit failed to find the translation-value ")
+        return
+      }
+      api.translationValue.update(tv.id, { value })
+      break
+    default:
+      windowPost.error("unhandled kind for message:", e.data)
   }
 }
+window.addEventListener("message", handleMsg)
+
 
 
 
