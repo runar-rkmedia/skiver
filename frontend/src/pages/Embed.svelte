@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { db } from 'api'
+  import { api, db } from 'api'
   import Alert from 'components/Alert.svelte'
+  import Button from 'components/Button.svelte'
   import Spinner from 'components/Spinner.svelte'
 
   import TranslationItem from 'components/TranslationItem.svelte'
@@ -36,6 +37,12 @@
   $: maxLoadingCount = Object.keys($db.responseStates).length
 </script>
 
+{#if $db.login.ok}
+  <div class="user-welcome">
+    Welcome, {$db.login.userName}
+    <Button color="tertiary" on:click={api.logout}>Logout</Button>
+  </div>
+{/if}
 <Spinner active={loadingCount > 0} />
 {#if translation && project && locales && category}
   <paper>
@@ -111,7 +118,18 @@
   </Alert>
 {/if}
 
-<p>You are viewing the embed version of this page.</p>
+<p>You are viewing the embedded version of this page.
 {#if project}
   <a href={'#project/' + project.id}>Click her to go to the project-view</a>
+{:else}
+  <a href={'#/'}>Click her to go back to the main page</a>
 {/if}
+</p>
+<style>
+  .user-welcome {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding-inline-end: 20px;
+  }
+</style>

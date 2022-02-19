@@ -4,6 +4,14 @@
   import 'tippy.js/dist/tippy.css' // Tooltips popover
   import { api, db } from './api'
   import { scale, fly } from 'svelte/transition'
+  import Alert from './components/Alert.svelte'
+  import Tabs from './components/Tabs.svelte'
+  import Button from './components/Button.svelte'
+  import Spinner from './components/Spinner.svelte'
+  import PageContent from 'PageContent.svelte'
+  import { state } from 'state'
+  import { appUrl } from 'util/appConstants'
+  import router from 'util/router'
 
   import ServerInfo from './components/ServerInfo.svelte'
   import { onMount } from 'svelte'
@@ -17,15 +25,19 @@
     api.login.get()
   })
 
-  import Alert from './components/Alert.svelte'
-  import Tabs from './components/Tabs.svelte'
-  import Button from './components/Button.svelte'
-  import Spinner from './components/Spinner.svelte'
-  import PageContent from 'PageContent.svelte'
-  import { state } from 'state'
-  import { appUrl } from 'util/appConstants'
+  let showHeader = true
+  let showFooter = true
   let didRunInital = false
   $: {
+    let routeArgs = $router.hash.replace('#', '').split('/')
+    let mainRoute = routeArgs[0]
+    if (mainRoute === 'embed') {
+      showHeader = false
+      showFooter = false
+    } else {
+      showHeader = true
+      showFooter = true
+    }
     if (!didRunInital && $db.login.ok) {
       api.serverInfo()
       api.locale.list()
@@ -54,23 +66,25 @@
 </div>
 
 <div class="wrapper">
-  <header>
-    <div>
-      <a href="#/">
-        <img src={appUrl('/logo.svg')} alt="Logo" />
-      </a>
-      <a href="#/">
-        <h1>Skiver - Ski's the limit</h1>
-      </a>
-    </div>
-    <Tabs />
-    {#if $db.login.ok}
-      <div class="user-welcome">
-        Welcome, {$db.login.userName}
-        <Button color="tertiary" on:click={api.logout}>Logout</Button>
+  {#if showHeader}
+    <header>
+      <div>
+        <a href="#/">
+          <img src={appUrl('/logo.svg')} alt="Logo" />
+        </a>
+        <a href="#/">
+          <h1>Skiver - Ski's the limit</h1>
+        </a>
       </div>
-    {/if}
-  </header>
+      <Tabs />
+      {#if $db.login.ok}
+        <div class="user-welcome">
+          Welcome, {$db.login.userName}
+          <Button color="tertiary" on:click={api.logout}>Logout</Button>
+        </div>
+      {/if}
+    </header>
+  {/if}
   <div />
 
   {#if !$db.login.ok}
@@ -94,7 +108,11 @@
           <label>
             Username
             <!-- svelte-ignore a11y-autofocus -->
-            <input name="text" bind:value={username} autofocus={true} />
+            <input
+              name="text"
+              bind:value={username}
+              autofocus={true}
+              autocapitalize="none" />
           </label>
 
           <label>
@@ -126,10 +144,12 @@
     {/if}
     <PageContent />
   </main>
-  <footer>
-    <ServerInfo />
-    <a href="/docs" target="skiver-swagger">Docs</a>
-  </footer>
+  {#if showFooter}
+    <footer>
+      <ServerInfo />
+      <a href={appUrl("/docs")} target="skiver-swagger">Docs</a>
+    </footer>
+  {/if}
 </div>
 
 <style>
