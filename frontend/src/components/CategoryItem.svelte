@@ -11,7 +11,6 @@
   import { t } from '../util/i18next'
   import { formatDate } from '../dates'
 
-  import CategoryForm from 'forms/CategoryForm.svelte'
   import TranslationValueForm from 'forms/TranslationValueForm.svelte'
   import TranslationForm from 'forms/TranslationForm.svelte'
   import TranslationItem from 'components/TranslationItem.svelte'
@@ -113,7 +112,9 @@
         <paper>
           <TranslationForm
             categoryID={selectedCategory}
-            on:complete={() => (visibleForm = null)}>
+            on:complete={(c) => {
+              visibleForm = null
+            }}>
             <Button
               slot="actions"
               color="secondary"

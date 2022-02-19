@@ -17,7 +17,7 @@
     }
     const s = await api.category.create($state.createCategory)
     if (!s[1]) {
-      dispatch('complete', s)
+      dispatch('complete', s[0].data)
       $state.createCategory = { key: '', project_id: '', title: '' }
     }
   }

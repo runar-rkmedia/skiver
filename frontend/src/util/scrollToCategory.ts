@@ -10,6 +10,15 @@ export const scrollToCategory = (e: any) => {
   if (!el) {
     return
   }
+  scrollTo(el)
+  return el
+}
+
+export const scrollTo = (el: HTMLElement) => {
+  if (!el) {
+    return
+  }
+
   el.scrollIntoView({ behavior: 'auto' })
   // The categories we are scolling to are lazy-loaded, so they will move areound a bit as we scroll
   // This hopefully mitigates this, but it is very hacky
@@ -17,6 +26,19 @@ export const scrollToCategory = (e: any) => {
   setTimeout(() => el?.scrollIntoView({ behavior: 'smooth' }), 200)
   setTimeout(() => el?.scrollIntoView({ behavior: 'smooth' }), 300)
   setTimeout(() => el?.scrollIntoView({ behavior: 'smooth' }), 400)
+}
+
+export const scrollToCategoryByKey = (key: string) => {
+  if (!key) {
+    key = "_root_"
+  }
+  const id = 'cat-' + key
+  const el = document.getElementById(id)
+  if (!el) {
+    return null
+  }
+
+  scrollTo(el)
   return el
 }
 

@@ -39,10 +39,6 @@
       rows="5"
       bind:value={$state.createTranslation.description} />
   </label>
-  <label>
-    Context (Optional)
-    <input name="prefix" bind:value={$state.createTranslation.context} />
-  </label>
   <Button
     color="primary"
     type="submit"

@@ -10,6 +10,7 @@
   import EntityDetails from 'components/EntityDetails.svelte'
   import ProjectOverview from '../components/ProjectOverview.svelte'
   import GlobalSearch from '../components/GlobalSearch.svelte'
+  import { scrollToCategoryByKey } from 'util/scrollToCategory'
 
   $: project = $db.project[projectID]
   $: {
@@ -96,7 +97,15 @@
           }}>Create category</Button>
         {#if visibleForm === 'category'}
           <paper>
-            <CategoryForm on:complete={() => (visibleForm = null)} {projectID}>
+            <CategoryForm
+              on:complete={(c) => {
+                visibleForm = null
+                if (c.detail.key === undefined) {
+                  return
+                }
+                scrollToCategoryByKey(c.detail.key)
+              }}
+              {projectID}>
               <Button
                 slot="actions"
                 color="secondary"
