@@ -1,6 +1,8 @@
 <script lang="ts">
   import { db } from 'api'
   import Fuse from 'fuse.js'
+  import { scrollToCategory } from 'util/scrollToCategory'
+  import ScrollAnchor from './ScrollAnchor.svelte'
   export let project: ApiDef.Project
 
   export let query = 'ich'
@@ -50,16 +52,15 @@
 <div>
   {#if result && query}
     <div class="resultswrapper">
-      <paper class="resulblock">
+      <paper class="resultblock">
         <h3>Translation-values</h3>
         {#each result.translationValues as { item: tv }}
           <div>
             {tv.value}
-            <code>
-              {$db.category[
+            <ScrollAnchor
+              category={$db.category[
                 $db.translation[tv.translation_id || '']?.category || ''
-              ].key || ''}.{$db.translation[tv.translation_id || '']?.key || ''}
-            </code>
+              ]} />
           </div>
         {/each}
       </paper>
@@ -68,16 +69,16 @@
         {#each result.translations as { item: tv }}
           <div>
             {tv.key}
-            <code>
-              {$db.category[tv.category || '']?.key || ''}
-            </code>
+            <ScrollAnchor category={$db.category[tv.category || '']} />
           </div>
         {/each}
       </paper>
       <paper class="resultblock">
         <h3>Categories</h3>
-        {#each result.categories as { item: tv }}
-          <div>{tv.key}</div>
+        {#each result.categories as { item: category }}
+          <div>
+            <ScrollAnchor {category} />
+          </div>
         {/each}
       </paper>
     </div>
@@ -90,9 +91,12 @@
     gap: 10px;
     grid-template-columns: repeat(3, 1fr);
   }
-  code {
-    font-size: 0.8rem;
-    display: block;
+  .resultblock > div:nth-child(odd) {
+    background-color: var(--color-grey-300);
+  }
+  .resultblock > div {
+    display: flex;
+    justify-content: space-between;
   }
   paper > div {
     display: flex;

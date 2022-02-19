@@ -73,6 +73,7 @@
           </Collapse>
         </paper>
       {/if}
+      <GlobalSearch {project} />
       <div>
         <h2>Categories</h2>
         <label>

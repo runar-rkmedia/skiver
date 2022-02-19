@@ -3,7 +3,11 @@
   import Icon from 'components/Icon.svelte'
   import sortOn from 'sort-on'
   import { state } from 'state'
-  import { scrollToCategory } from 'util/scrollToCategory'
+  import {
+    createCategoryAnchorProps,
+    scrollToCategory,
+  } from 'util/scrollToCategory'
+  import ScrollAnchor from './ScrollAnchor.svelte'
 
   export let project: ApiDef.Project
   $: categories = sortOn(
@@ -13,10 +17,7 @@
 
   const toggleVisibility = () =>
     ($state.sidebarVisible = !$state.sidebarVisible)
-  function scrollToC(e) {
-    if (!scrollToCategory(e)) {
-      return
-    }
+  function scrollToC(e: any) {
     $state.sidebarVisible = false
   }
 </script>
@@ -30,18 +31,8 @@
 
   {#each categories as c}
     {#if c}
-      <div class="key" data-depth={(c.key || '').split('.').length - 1}>
-        <a
-          href={'#cat-' + c.key}
-          data-key={c.key}
-          on:click|preventDefault={scrollToC}
-          >{c.title}
-          {#if c.translation_ids?.length}
-            <small>
-              {c.translation_ids.length}
-            </small>
-          {/if}
-        </a>
+      <div class="key cat" data-depth={(c.key || '').split('.').length - 1}>
+        <ScrollAnchor category={c} on:scrollTo={scrollToC} />
       </div>
     {/if}
   {/each}
@@ -82,13 +73,13 @@
   .visible .button {
     opacity: 0;
   }
-  a {
+  .cat :global(a) {
     color: white;
     display: flex;
     margin-block: var(--size-2);
     justify-content: space-between;
   }
-  a small {
+  .cat :global(a small) {
     opacity: 0.7;
   }
   .button {

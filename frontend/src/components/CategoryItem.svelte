@@ -16,8 +16,12 @@
   import TranslationForm from 'forms/TranslationForm.svelte'
   import TranslationItem from 'components/TranslationItem.svelte'
   import EntityDetails from 'components/EntityDetails.svelte'
-  import { scrollToCategory } from 'util/scrollToCategory'
+  import {
+    createCategoryAnchorProps,
+    scrollToCategory,
+  } from 'util/scrollToCategory'
   import { inview } from 'svelte-inview'
+  import ScrollAnchor from './ScrollAnchor.svelte'
 
   let isInView = false
   const options = {
@@ -55,7 +59,7 @@
   use:inview={options}
   on:change={handleViewChange}
   class="item"
-  id={'cat-' + category.key}>
+  id={'cat-' + (category.key || '_root_')}>
   <div class="desc category-item-header">
     <div>
       <h3>
@@ -68,13 +72,15 @@
         {#each categoryPath as subPath, i}
           {#if i !== categoryPath.length - 1}
             <a
-              href={'#cat-' + categoryPath.slice(0, i + 1).join('.')}
+              href={createCategoryAnchorProps({
+                key: categoryPath.slice(0, i + 1).join('.'),
+              }).href}
               on:click|preventDefault={scrollToCategory}>{subPath}</a>
             <span class="sep">/</span>
           {/if}
         {/each}
         <span title={category.key}>
-          {category.title}
+          {category.title || '(Root)'}
           {#if category.translation_ids?.length}
             <small>
               ({category.translation_ids.length})

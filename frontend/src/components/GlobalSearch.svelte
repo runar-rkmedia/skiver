@@ -2,7 +2,7 @@
   import { db } from 'api'
 
   import GlobalSearchInner from './GlobalSearchInner.svelte'
-  let query = 'text'
+  let query = ''
   export let project: ApiDef.Project
   let visible = false
 </script>

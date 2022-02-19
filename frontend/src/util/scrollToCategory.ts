@@ -1,10 +1,10 @@
 
-export function scrollToCategory(e) {
+export const scrollToCategory = (e: any) => {
   const el = document.getElementById(
-    e.target?.getAttribute('href')?.replace('#', '') ||
+    e.currentTarget?.getAttribute('href')?.replace('#', '') ||
     (
       'cat-' +
-      e.target?.getAttribute?.('data-key')
+      e.currentTarget?.getAttribute?.('data-key')
     )
   )
   if (!el) {
@@ -18,4 +18,14 @@ export function scrollToCategory(e) {
   setTimeout(() => el?.scrollIntoView({ behavior: 'smooth' }), 300)
   setTimeout(() => el?.scrollIntoView({ behavior: 'smooth' }), 400)
   return el
+}
+
+export const createCategoryAnchorProps = (c: { key?: string }) => {
+  const key = c.key || "_root_"
+
+  return {
+
+    href: '#cat-' + key,
+    'data-key': key
+  }
 }
