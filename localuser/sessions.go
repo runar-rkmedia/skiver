@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
-	"github.com/runar-rkmedia/gabyoall/logger"
+	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/skiver/types"
 )
 

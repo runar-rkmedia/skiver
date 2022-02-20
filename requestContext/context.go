@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/runar-rkmedia/gabyoall/logger"
+	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/skiver/types"
 )
 

@@ -904,9 +904,9 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"gobyoall-svelte@workspace:.":
+"skiver-svelte@workspace:.":
   version: 0.0.0-use.local
-  resolution: "gobyoall-svelte@workspace:."
+  resolution: "skiver-svelte@workspace:."
   dependencies:
     "@dtsgenerator/replace-namespace": ^1.5.1
     "@felte/reporter-tippy": ^0.3.12

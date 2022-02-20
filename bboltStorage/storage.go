@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/runar-rkmedia/gabyoall/logger"
-	"github.com/runar-rkmedia/gabyoall/utils"
+	"github.com/runar-rkmedia/go-common/logger"
+	"github.com/runar-rkmedia/go-common/utils"
 	"github.com/runar-rkmedia/skiver/types"
 	"go.etcd.io/bbolt"
 	bolt "go.etcd.io/bbolt"

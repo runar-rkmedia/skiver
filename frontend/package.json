@@ -1,7 +1,7 @@
 {
-  "name": "gobyoall-svelte",
+  "name": "skiver-svelte",
   "version": "0.0.1",
-  "description": "frontend for gobyoall in svelte",
+  "description": "frontend for skiver in svelte",
   "main": "index.js",
   "repository": "github.com/rk-media/gaboall/",
   "author": "Runar Kristoffersen",

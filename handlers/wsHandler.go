@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/runar-rkmedia/gabyoall/logger"
-	"github.com/runar-rkmedia/gabyoall/utils"
+	"github.com/runar-rkmedia/go-common/logger"
+	"github.com/runar-rkmedia/go-common/utils"
 )
 
 type WsOptions struct {
