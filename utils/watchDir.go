@@ -86,5 +86,5 @@ OuterLoop:
 	close(b.done)
 }
 func (b *Batcher) Close() {
-	<-b.done
+	b.done <- struct{}{}
 }

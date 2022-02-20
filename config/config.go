@@ -35,7 +35,7 @@ type Config struct {
 
 type AuthConfig struct {
 	// Defines how long a Session should be valid for.
-	SessionLifeTime time.Duration `toml:"desc: blblba"`
+	SessionLifeTime time.Duration
 }
 
 // TDB
@@ -46,12 +46,25 @@ type TranslatorService struct {
 	Endpoint string
 }
 type ApiConfig struct {
-	Address      string `cfg:"address" default:"0.0.0.0" description:"Address (interface) to listen to)"`
-	RedirectPort int    `cfg:"redirect-port" default:"80" description:"Used normally to redirect from http to https. Will be ignored if zero or same as listening-port"`
-	Port         int    `cfg:"port" default:"80" description:"Port to listen to"`
-	CertFile     string `cfg:"cert-file" default:"" description:"Number of request to make total"`
-	CertKey      string `cfg:"cert-key" default:"" description:"Number of request to make total"`
-	DBLocation   string `cfg:"db-path" default:"./storage/db.bbolt" description:"Filepath to where to store the database"`
+	Address         string `cfg:"address" default:"0.0.0.0" description:"Address (interface) to listen to)"`
+	RedirectPort    int    `cfg:"redirect-port" default:"80" description:"Used normally to redirect from http to https. Will be ignored if zero or same as listening-port"`
+	Port            int    `cfg:"port" default:"80" description:"Port to listen to"`
+	CertFile        string `cfg:"cert-file" default:"" description:"Number of request to make total"`
+	CertKey         string `cfg:"cert-key" default:"" description:"Number of request to make total"`
+	DBLocation      string `cfg:"db-path" default:"./storage/db.bbolt" description:"Filepath to where to store the database"`
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	IdleTimeout     time.Duration
+	ShutdownTimeout time.Duration
+	// If set, will register debug-handlers at
+	// - /debug/vars
+	// - /debug/vars/
+	// - /debug/pprof/
+	// - /debug/pprof/cmdline
+	// - /debug/pprof/profile
+	// - /debug/pprof/symbol
+	// - /debug/pprof/trace
+	Debug bool
 }
 
 func GetConfig() *Config {
@@ -78,6 +91,11 @@ func InitConfig() error {
 	}
 	viper.SetEnvPrefix("skiver")
 	viper.AutomaticEnv()
+
+	viper.SetDefault("Api.ShutdownTimeout", time.Second*20)
+	viper.SetDefault("Api.WriteTimeout", time.Second*10)
+	viper.SetDefault("Api.IdleTimeout", time.Second*120)
+	viper.SetDefault("Api.ReadTimeout", time.Second*5)
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			// Config file not found; ignore error if desired

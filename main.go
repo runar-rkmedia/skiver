@@ -10,12 +10,17 @@
 package main
 
 import (
+	"context"
+	"expvar"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	_ "embed"
@@ -261,11 +266,15 @@ func main() {
 		Str("db", cfg.DBLocation).
 		Int("pid", os.Getpid()).
 		Msg("Starting")
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 	// IMPORTANT: database publishes changes, but for performance-reasons, it should not be used until the listener (ws) is started.
 	db, err := bboltStorage.NewBbolt(l, cfg.DBLocation, &events)
 	if err != nil {
 		l.Fatal().Err(err).Msg("Failed to initialize storage")
 	}
+	defer db.DB.Close()
 	if len(config.TranslatorServices) > 1 {
 		l.Fatal().Msg("currently, only a single translator-service can be used.")
 	}
@@ -307,12 +316,22 @@ func main() {
 		},
 	}
 	if config.SelfCheck {
-		go gobyutils.SelfCheck(gobyutils.SelfCheckLimit{
-			MemoryMB:   1000,
-			GoRoutines: 10000,
-			Streaks:    5,
-			Interval:   time.Second * 15,
-		}, logger.GetLogger("self-check"), 0)
+		// defer func() { quitSelfservice <- struct{}{} }()
+		go func() {
+
+			tick := time.Tick(time.Second * 15)
+
+			for {
+				select {
+				case <-tick:
+					utils.SelfCheck(utils.SelfCheckLimit{
+						MemoryMB:   1000,
+						GoRoutines: 10000,
+						Streaks:    5,
+					}, logger.GetLogger("self-check"), 0)
+				}
+			}
+		}()
 	}
 
 	address := net.JoinHostPort(cfg.Address, strconv.Itoa(cfg.Port))
@@ -328,11 +347,14 @@ func main() {
 		Favicon16:        "",
 		Title:            "Skiver",
 	}, handler))
-	handler.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
-	handler.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-	handler.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-	handler.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-	handler.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+	if cfg.Debug {
+		handler.Handle("/debug/vars/", expvar.Handler())
+		handler.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+		handler.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+		handler.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+		handler.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+		handler.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+	}
 	// TODO: consider using a buffered channel.
 	handler.Handle("/ws/", handlers.NewWsHandler(logger.GetLoggerWithLevel("ws", "debug"), pubsub.Ch, handlers.WsOptions{}))
 	exportCache := cache.New(time.Hour, time.Hour)
@@ -403,12 +425,12 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		defer w.Close()
 		go func() {
 			for {
 				select {
 				case _, ok := <-w.Events:
 					if !ok {
+						fmt.Println("not ok")
 						continue
 					}
 					events.Publish("dist", "change", nil)
@@ -423,7 +445,15 @@ func main() {
 		handler.Handle("/", frontend.DistServer)
 	}
 	l.Info().Str("address", cfg.Address).Int("port", cfg.Port).Bool("redirectHttpToHttps", useCert && cfg.RedirectPort != 0).Bool("tls", useCert).Msg("Creating listener")
-	srv := http.Server{Addr: address, Handler: handler}
+
+	serverErrors := make(chan error, 1)
+	srv := http.Server{
+		Addr: address, Handler: handler,
+		ReadTimeout:  cfg.ReadTimeout,
+		WriteTimeout: cfg.WriteTimeout,
+		IdleTimeout:  cfg.IdleTimeout,
+		ErrorLog:     Logger(logger.GetLogger("http-server")),
+	}
 	if useCert {
 		// TODO: re-read the certificate before it expires.
 		if cfg.RedirectPort != 0 {
@@ -436,19 +466,58 @@ func main() {
 			}
 			go func() {
 				redirectAddress := fmt.Sprintf("%s:%d", cfg.Address, cfg.RedirectPort)
-				if err := http.ListenAndServe(redirectAddress, http.HandlerFunc(redirectTLS)); err != nil {
-					l.Fatal().Err(err).Str("redirectAddress", redirectAddress).Msg("Failed to create redirect-listener")
-
-				}
+				serverErrors <- http.ListenAndServe(redirectAddress, http.HandlerFunc(redirectTLS))
 			}()
 
 		}
-		err = srv.ListenAndServeTLS(config.Api.CertFile, config.Api.CertKey)
+		go func() {
+			serverErrors <- srv.ListenAndServeTLS(config.Api.CertFile, config.Api.CertKey)
+		}()
 	} else {
-		err = srv.ListenAndServe()
+		go func() {
+			serverErrors <- srv.ListenAndServe()
+		}()
 	}
 	if err != nil {
 		l.Fatal().Err(err).Msg("Failed to create listener")
 	}
+	select {
+	case err := <-serverErrors:
+		l.Error().Err(err).Msg("A server-error occured")
+		return
+	case sig := <-shutdown:
+		events.Publish("system", "shutdown", sig)
 
+		// Any outstanding requests gets some time to complete
+		l.Error().Interface("signal", sig).Msg("Received signal, starting shutdown")
+
+		defer l.Info().Interface("signal", sig).Msg("Shutdown complete")
+
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
+		defer cancel()
+
+		if err := srv.Shutdown(ctx); err != nil {
+			srv.Close()
+			l.Error().Err(err).Msg("Failed to stop server gracefully.")
+			return
+		}
+		return
+	}
+
+}
+
+// Tiny wrapper for use with standard lolgger
+// TODO: move to upstream logger-lib
+type NewLog struct {
+	logger *logger.AppLogger
+}
+
+func (l *NewLog) Write(p []byte) (n int, err error) {
+	l.logger.Error().Msg(string(p))
+	return len(p), nil
+}
+
+func Logger(l logger.AppLogger) *log.Logger {
+	lg := NewLog{&l}
+	return log.New(&lg, "", 0)
 }
