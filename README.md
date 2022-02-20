@@ -16,37 +16,25 @@ Depending on the tooling used, developers could only see the key for the transla
 a different system.
 
 With these types generated, the developer can see examples of the real translation directly in their editor, along with any parameters used.
-<style>
-  .vcenter,
-  .vcenter {
-      width: 100%;
-      display: flex;
-      gap: 20px;
-      flex-direction: row;
-      align-items: flex-end;
-    }
-  .vcenter img {
-      display: block;
-      border-radius: 16px;
-      height: 100%;
-      border: 2px solid hsla(220, 67%, 80%, 30%);
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    }
-  img+em {
-      display: block;
-      text-align: center;
-    }
-</style>
 
-<div class="vcenter">
+<div style="width: 100%; display: flex; gap: 20px; flex-direction: row; align-items: flex-end;">
+
+<div>
 
 ![VSCode example](./docs/ts_hover.png)
+
 *Hover-information in Visual Studio Code*
+
+</div>
+
+<div>
 
 
 ![Vim example](./docs/ts_hover_vim.png)
+
 *Tooltip in VIM*
 
+</div>
 </div>
 
 - [X] Multi-locale support
