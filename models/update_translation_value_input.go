@@ -19,6 +19,9 @@ import (
 // swagger:model UpdateTranslationValueInput
 type UpdateTranslationValueInput struct {
 
+	// If set, it will add/update the context for that key instead of the original value
+	ContextKey string `json:"contextKey,omitempty"`
+
 	// value
 	// Required: true
 	// Max Length: 8000

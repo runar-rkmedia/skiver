@@ -442,9 +442,6 @@ declare namespace ApiDef {
         value?: string;
     }
     export interface TranslationValueInput {
-        context?: {
-            [name: string]: string;
-        };
         locale_id: string;
         translation_id: string;
         value: string;
@@ -457,6 +454,10 @@ declare namespace ApiDef {
         };
     }
     export interface UpdateTranslationValueInput {
+        /**
+         * If set, it will add/update the context for that key instead of the original value
+         */
+        contextKey?: string;
         value: string;
     }
 }

@@ -733,10 +733,6 @@ definitions:
     x-go-package: github.com/runar-rkmedia/skiver/types
   TranslationValueInput:
     properties:
-      context:
-        additionalProperties:
-          type: string
-        type: object
       locale_id:
         maxLength: 100
         minLength: 1
@@ -770,6 +766,10 @@ definitions:
     type: object
   UpdateTranslationValueInput:
     properties:
+      contextKey:
+        description: If set, it will add/update the context for that key instead of
+          the original value
+        type: string
       value:
         maxLength: 8000
         minLength: 0

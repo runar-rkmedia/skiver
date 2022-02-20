@@ -40,6 +40,7 @@
         existingID={translationValue?.id}
         localeID={locale.id}
         translationID={translation.id}
+        {contextKey}
         on:complete={() => {
           dispatch('complete')
           selectedLocale = ''
@@ -54,8 +55,7 @@
               bind:locale={locale.id}
               bind:ns={projectKey}
               key={(categoryKey === '' ? '' : categoryKey + '.') +
-                translation.key +
-                (translation.context ? '_' + translation.context : '')}
+                translation.key}
               bind:variables={translation.variables}
               bind:input={$state.createTranslationValue.value} />
           {/if}

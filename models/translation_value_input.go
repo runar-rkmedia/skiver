@@ -19,9 +19,6 @@ import (
 // swagger:model TranslationValueInput
 type TranslationValueInput struct {
 
-	// context
-	Context map[string]string `json:"context,omitempty"`
-
 	// locale id
 	// Required: true
 	// Max Length: 100

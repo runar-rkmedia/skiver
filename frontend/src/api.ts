@@ -39,7 +39,9 @@ export const api = {
       (e) => db.update((s) => ({ ...s, serverInfo: e })),
       options
     ),
-  translation: CrudFactory<ApiDef.TranslationInput, 'translation'>(
+  translation: CrudFactory<ApiDef.TranslationInput, 'translation',
+    ApiDef.UpdateTranslationInput
+  >(
     'translation'
   ),
   missingTranslation: {
@@ -50,7 +52,8 @@ export const api = {
   category: CrudFactory<ApiDef.CategoryInput, 'category'>('category'),
   translationValue: CrudFactory<
     ApiDef.TranslationValueInput,
-    'translationValue'
+    'translationValue',
+    ApiDef.UpdateTranslationValueInput
   >('translationValue'),
   locale: CrudFactory<ApiDef.LocaleInput, 'locale'>('locale'),
   logout: () => fetchApi<ApiDef.LogoutResponse>('logout', () => {
@@ -263,6 +266,7 @@ const windowPost = {
 
 }
 
+/** Messages from parent when webapp is loaded via an iframe */
 function handleMsg(e: MessageEvent) {
   if (!e.data) {
     return
@@ -271,10 +275,6 @@ function handleMsg(e: MessageEvent) {
   switch (kind) {
     case 'post-edit':
       const { context, category, locale, translation, value, project } = e.data as { category?: string, locale?: string, translation?: string, value?: string, project?: string, context?: string }
-      if (context) {
-        windowPost.error("Sorry, I currently dont support context! How emberrasing...", e.data)
-        return
-      }
       if (!category || !locale || !translation || !value || !project) {
         windowPost.error("post-edit message had some missing arguments", e.data)
         return
@@ -333,7 +333,7 @@ function handleMsg(e: MessageEvent) {
         windowPost.error("post-edit failed to find the translation-value ")
         return
       }
-      api.translationValue.update(tv.id, { value })
+      api.translationValue.update(tv.id, { value, ...context && { contextKey: context } })
       break
     default:
       windowPost.error("unhandled kind for message:", e.data)
@@ -416,7 +416,7 @@ const replaceField = <K extends DBKeyValue, V extends DB[K]['s']>(
 
   yes, that is not really all of the cruds...
 */
-function CrudFactory<Payload extends {}, K extends DBKeyValue>(
+function CrudFactory<Payload extends {}, K extends DBKeyValue, UpdatePayload = Payload>(
   storeKey: K,
   subPath?: string
 ) {
@@ -424,7 +424,7 @@ function CrudFactory<Payload extends {}, K extends DBKeyValue>(
     get: apiGetFactory(subPath || storeKey, storeKey),
     list: apiGetListFactory(subPath || storeKey, storeKey),
     create: apiCreateFactory<Payload, K>(subPath || storeKey, storeKey),
-    update: apiUpdateFactory<Payload, K>(subPath || storeKey, storeKey),
+    update: apiUpdateFactory<UpdatePayload, K>(subPath || storeKey, storeKey),
     delete: apiDeleteFactory<K>(subPath || storeKey, storeKey),
   }
 }

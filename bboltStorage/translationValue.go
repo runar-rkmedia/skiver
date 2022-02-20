@@ -14,9 +14,6 @@ func (b *BBolter) GetTranslationValue(ID string) (*types.TranslationValue, error
 }
 
 func (bb *BBolter) UpdateTranslationValue(tv types.TranslationValue) (types.TranslationValue, error) {
-	if tv.Value == "" {
-		return tv, fmt.Errorf("empty value")
-	}
 	var ex types.TranslationValue
 	err := bb.updater(tv.ID, BucketTranslationValue, func(b []byte) ([]byte, error) {
 		err := bb.Unmarshal(b, &ex)
@@ -27,7 +24,21 @@ func (bb *BBolter) UpdateTranslationValue(tv types.TranslationValue) (types.Tran
 		if err != nil {
 			return nil, err
 		}
-		ex.Value = tv.Value
+		if ex.Value != "" {
+			ex.Value = tv.Value
+		}
+		if tv.Source != "" {
+			ex.Source = tv.Source
+		}
+
+		if len(tv.Context) > 0 {
+			if ex.Context == nil {
+				ex.Context = map[string]string{}
+			}
+			for k, v := range tv.Context {
+				ex.Context[k] = v
+			}
+		}
 		return bb.Marshal(ex)
 	})
 	bb.PublishChange(PubTypeTranslationValue, PubVerbUpdate, tv)

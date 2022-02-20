@@ -867,7 +867,6 @@ func EndpointsHandler(
 				tv := types.TranslationValue{
 					LocaleID:      *j.LocaleID,
 					TranslationID: *j.TranslationID,
-					Context:       j.Context,
 					Value:         *j.Value,
 				}
 				tv.CreatedBy = session.User.ID
@@ -924,7 +923,12 @@ func EndpointsHandler(
 				}
 				tv := types.TranslationValue{}
 				tv.ID = id
-				tv.Value = *j.Value
+				if j.ContextKey != "" {
+					tv.Context = map[string]string{j.ContextKey: *j.Value}
+				} else {
+					tv.Value = *j.Value
+				}
+				tv.Source = types.CreatorSourceUser
 				tv.UpdatedBy = session.User.ID
 				translationValue, err := ctx.DB.UpdateTranslationValue(tv)
 				rc.WriteAuto(translationValue, err, requestContext.CodeErrUpdateTranslationValue)

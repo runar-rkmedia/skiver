@@ -6,15 +6,17 @@
   export let localeID: string
   export let existingID: string = ''
   export let translationID: string
+  export let contextKey: string = ''
   const dispatch = createEventDispatcher()
   async function onCreateTranslationValue() {
     let s: Awaited<ReturnType<typeof api.translationValue.create>>
     if (existingID) {
       // Update
-      s = await api.translationValue.update(
-        existingID,
-        $state.createTranslationValue
-      )
+      const p = $state.createTranslationValue
+      s = await api.translationValue.update(existingID, {
+        ...p,
+        ...(!!contextKey && { contextKey }),
+      })
     } else {
       // Create
 

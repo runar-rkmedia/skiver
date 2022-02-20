@@ -11,28 +11,25 @@
   export let projectKey: string
 
   export let locales: ApiDef.Locale[]
-  let contextKeys = []
-  // $: contextKeys = Array.from(
-  //   Object.values(translationValues || {}).reduce((r, tv) => {
-  //     if (!tv || !tv.context) {
-  //       return r
-  //     }
-  //     for (const c of Object.keys(tv.context)) {
-  //       r.add(c)
-  //     }
-  //     return r
-  //   }, new Set<string>())
-  // )
-  $: translationValues = (translation?.value_ids || []).reduce(
-    (r, tvid) => {
-      const tv = $db.translationValue[tvid]
-      if (!tv || !tv.locale_id) {
+  $: translationValues = (translation?.value_ids || []).reduce((r, tvid) => {
+    const tv = $db.translationValue[tvid]
+    if (!tv || !tv.locale_id) {
+      return r
+    }
+    r[tv.locale_id] = tv
+    return r
+  }, {} as Record<string, ApiDef.TranslationValue>)
+  let contextKeys: string[] = []
+  $: contextKeys = Array.from(
+    Object.values(translationValues || {}).reduce((r, tv) => {
+      if (!tv || !tv.context) {
         return r
       }
-      r[tv.locale_id] = tv
+      for (const c of Object.keys(tv.context)) {
+        r.add(c)
+      }
       return r
-    },
-    { bnaan: true }
+    }, new Set<string>())
   )
   let edit = false
   let editTitle = ''

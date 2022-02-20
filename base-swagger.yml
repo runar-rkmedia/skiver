@@ -123,10 +123,6 @@ definitions:
         maxLength: 8000
         minLength: 0
         type: string
-      context:
-        type: object
-        additionalProperties:
-          type: string
     type: object
     required:
       - translation_id
@@ -137,6 +133,9 @@ definitions:
       value:
         maxLength: 8000
         minLength: 0
+        type: string
+      contextKey:
+        description: If set, it will add/update the context for that key instead of the original value
         type: string
     type: object
     required:
