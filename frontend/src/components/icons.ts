@@ -1,4 +1,5 @@
 export const iconMap = {
+  add: 'fa-plus',
   edit: 'fa-edit',
   code: 'fa-code',
   create: 'fa-plus',

@@ -1,6 +1,7 @@
 <script lang="ts">
   import Fuse from 'fuse.js'
   import { createEventDispatcher } from 'svelte'
+  import LocaleFlag from './LocaleFlag.svelte'
   export let locales: ApiDef.Locale[]
 
   export let limit = 20
@@ -27,6 +28,7 @@
     class="btn-reset"
     on:click={() => dispatch('select', { item: loc.item })}>
     <div>
+      <LocaleFlag locale={loc.item} />
       {loc.item.title}
     </div>
 
@@ -48,5 +50,9 @@
   }
   button:nth-of-type(even) {
     background-color: var(--color-grey-300);
+  }
+  button:hover {
+    outline: 1px dashed black;
+    z-index: 1;
   }
 </style>
