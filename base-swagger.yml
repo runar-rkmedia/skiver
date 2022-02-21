@@ -11,6 +11,46 @@ components:
 security:
   - cookieAuth: []
 definitions:
+  LocaleSettingInput:
+    properties:
+      auto_translation:
+        description: |-
+          If set, will allow registered translation-services to translate from other languages to this locale.
+          This might help speed up translations for new locales.
+          See the Config or Organization-settings for instructions on how to set up translation-services.
+
+          Organization-settings are not yet available.
+
+          TODO: implement organization-settings
+        type: boolean
+      enabled:
+        description: If set, the locale will be visible for editing.
+        type: boolean
+      publish:
+        description: |-
+          If set, the associated translations will be published in releases.
+          This is useful for when adding new locales, and one don't want to publish it to users until it is complete
+        type: boolean
+    type: object
+  UpdateProjectInput:
+    type: object
+    properties:
+      title:
+        type: string
+        minLength: 1
+        maxLength: 400
+      short_name:
+        type: string
+        minLength: 1
+        maxLength: 20
+      description:
+        type: string
+        minLength: 1
+        maxLength: 8000
+      locales:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/LocaleSettingInput'
   LogoutResponse:
     type: object
     required:
@@ -36,6 +76,10 @@ definitions:
         type: string
         minLength: 1
         maxLength: 8000
+      locales:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/LocaleSetting'
   TranslationInput:
     type: object
     required:
@@ -479,6 +523,27 @@ paths:
           $ref: '#/responses/ProjectResponse'
         "500":
           $ref: '#/responses/apiError'
+      tags:
+      - project
+  /project/{projectID}:
+    put:
+      summary: Update a project, including its settings
+      operationId: updateProject
+      responses:
+        "200":
+          $ref: '#/responses/ProjectResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      parameters:
+        - in: path
+          name: id
+          type: string
+          required: true
+        - in: body
+          required: true
+          name: UpdateProject
+          schema:
+            $ref: '#/definitions/UpdateProjectInput'
       tags:
       - project
   /category/:

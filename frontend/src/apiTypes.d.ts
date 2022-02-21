@@ -146,6 +146,48 @@ declare namespace ApiDef {
         iso639_3: string;
         title: string;
     }
+    export interface LocaleSetting {
+        /**
+         * If set, will allow registered translation-services to translate from other languages to this locale.
+         * This might help speed up translations for new locales.
+         * See the Config or Organization-settings for instructions on how to set up translation-services.
+         *
+         * Organization-settings are not yet available.
+         *
+         * TODO: implement organization-settings
+         */
+        auto_translation?: boolean;
+        /**
+         * If set, the locale will be visible for editing.
+         */
+        enabled?: boolean;
+        /**
+         * If set, the associated translations will be published in releases.
+         * This is useful for when adding new locales, and one don't want to publish it to users until it is complete
+         */
+        publish?: boolean;
+    }
+    export interface LocaleSettingInput {
+        /**
+         * If set, will allow registered translation-services to translate from other languages to this locale.
+         * This might help speed up translations for new locales.
+         * See the Config or Organization-settings for instructions on how to set up translation-services.
+         *
+         * Organization-settings are not yet available.
+         *
+         * TODO: implement organization-settings
+         */
+        auto_translation?: boolean;
+        /**
+         * If set, the locale will be visible for editing.
+         */
+        enabled?: boolean;
+        /**
+         * If set, the associated translations will be published in releases.
+         * This is useful for when adding new locales, and one don't want to publish it to users until it is complete
+         */
+        publish?: boolean;
+    }
     export interface LoginInput {
         password: string;
         /**
@@ -300,6 +342,9 @@ declare namespace ApiDef {
          */
         id: string;
         included_tags?: string[];
+        locales?: {
+            [name: string]: LocaleSetting;
+        };
         short_name?: string;
         title?: string;
         /**
@@ -313,6 +358,9 @@ declare namespace ApiDef {
     }
     export interface ProjectInput {
         description?: string;
+        locales?: {
+            [name: string]: LocaleSetting;
+        };
         short_name: string;
         title: string;
     }
@@ -445,6 +493,14 @@ declare namespace ApiDef {
         locale_id: string;
         translation_id: string;
         value: string;
+    }
+    export interface UpdateProjectInput {
+        description?: string;
+        locales?: {
+            [name: string]: LocaleSettingInput;
+        };
+        short_name?: string;
+        title?: string;
     }
     export interface UpdateTranslationInput {
         description?: string;
@@ -702,6 +758,14 @@ declare namespace ApiPaths {
         namespace Responses {
             export interface $200 {
             }
+        }
+    }
+    namespace UpdateProject {
+        export interface BodyParameters {
+            UpdateProject: Parameters.UpdateProject;
+        }
+        namespace Parameters {
+            export type UpdateProject = ApiDef.UpdateProjectInput;
         }
     }
     namespace UpdateTranslationValue {

@@ -45,6 +45,9 @@ type Project struct {
 	// included tags
 	IncludedTags []string `json:"included_tags"`
 
+	// locale i ds
+	LocaleIDs map[string]LocaleSetting `json:"locales,omitempty"`
+
 	// short name
 	ShortName string `json:"short_name,omitempty"`
 
@@ -72,6 +75,10 @@ func (m *Project) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateID(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateLocaleIDs(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -119,6 +126,27 @@ func (m *Project) validateID(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *Project) validateLocaleIDs(formats strfmt.Registry) error {
+	if swag.IsZero(m.LocaleIDs) { // not required
+		return nil
+	}
+
+	for k := range m.LocaleIDs {
+
+		if err := validate.Required("locales"+"."+k, "body", m.LocaleIDs[k]); err != nil {
+			return err
+		}
+		if val, ok := m.LocaleIDs[k]; ok {
+			if err := val.Validate(formats); err != nil {
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
 func (m *Project) validateUpdatedAt(formats strfmt.Registry) error {
 	if swag.IsZero(m.UpdatedAt) { // not required
 		return nil
@@ -131,8 +159,32 @@ func (m *Project) validateUpdatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this project based on context it is used
+// ContextValidate validate this project based on the context it is used
 func (m *Project) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.contextValidateLocaleIDs(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *Project) contextValidateLocaleIDs(ctx context.Context, formats strfmt.Registry) error {
+
+	for k := range m.LocaleIDs {
+
+		if val, ok := m.LocaleIDs[k]; ok {
+			if err := val.ContextValidate(ctx, formats); err != nil {
+				return err
+			}
+		}
+
+	}
+
 	return nil
 }
 

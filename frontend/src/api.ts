@@ -47,7 +47,7 @@ export const api = {
   missingTranslation: {
     list: apiGetListFactory<'missingTranslation'>('missing', 'missingTranslation')
   },
-  project: CrudFactory<ApiDef.ProjectInput, 'project'>('project'),
+  project: CrudFactory<ApiDef.ProjectInput, 'project', ApiDef.UpdateProjectInput>('project'),
   organization: CrudFactory<ApiDef.OrganizationInput, 'organization'>('organization'),
   category: CrudFactory<ApiDef.CategoryInput, 'category'>('category'),
   translationValue: CrudFactory<

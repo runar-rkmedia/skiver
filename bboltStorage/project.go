@@ -1,6 +1,7 @@
 package bboltStorage
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/runar-rkmedia/skiver/types"
@@ -53,46 +54,79 @@ func (b *BBolter) CreateProject(project types.Project) (types.Project, error) {
 	b.PublishChange(PubTypeProject, PubVerbCreate, project)
 	return project, err
 }
-func (b *BBolter) UpdateProject(project types.Project) (types.Project, error) {
-	err := b.Update(func(tx *bolt.Tx) error {
+
+func (b *BBolter) UpdateProject(id string, project types.Project) (types.Project, error) {
+	if id == "" {
+		return project, ErrMissingIdArg
+	}
+	existing, err := b.GetProject(id)
+	if err != nil {
+		return *existing, err
+	}
+	// TODO: Must only be unique within organization
+	if project.ShortName != "" && existing.ShortName != project.ShortName {
+		ex, err := b.GetProjectByIDOrShortName(project.ShortName)
+		if err != nil {
+			return *ex, err
+		}
+		if ex != nil {
+			return *ex, errors.New("Shortname is already taken")
+		}
+	}
+	var c types.Project
+	err = b.Update(func(tx *bolt.Tx) error {
+
 		bucket := tx.Bucket(BucketProject)
-		existing := bucket.Get([]byte(project.ID))
+		existing := bucket.Get([]byte(id))
 		if existing == nil {
-			return fmt.Errorf("Project was not found")
+			return ErrNotFound
 		}
-		var ex types.Project
-		err := b.Unmarshal(existing, &ex)
+		err := b.Unmarshal(existing, &c)
 		if err != nil {
 			return err
 		}
-		if project.ShortName != "" {
-			ex.ShortName = project.ShortName
+		needsUpdate := false
+		if project.ShortName != c.ShortName {
+			c.ShortName = project.ShortName
+			needsUpdate = true
 		}
-		if project.Title != "" {
-			ex.Title = project.Title
+		if project.Title != c.Title {
+			c.Title = project.Title
+			needsUpdate = true
 		}
-		if project.Description != "" {
-			ex.Description = project.Description
+		if project.Description != c.Description {
+			c.Description = project.Description
+			needsUpdate = true
 		}
-		if project.IncludedTags != nil {
-			ex.IncludedTags = project.IncludedTags
+		if len(project.LocaleIDs) != 0 {
+			c.LocaleIDs = project.LocaleIDs
+			needsUpdate = true
 		}
-		if project.CategoryIDs != nil {
-			ex.CategoryIDs = project.CategoryIDs
+
+		if !needsUpdate {
+			return ErrNoFieldsChanged
 		}
-		bytes, err := b.Marshal(project)
+		err = c.Entity.Update(project.Entity)
 		if err != nil {
 			return err
 		}
-		return bucket.Put([]byte(project.ID), bytes)
+
+		bytes, err := b.Marshal(c)
+		if err != nil {
+			return err
+		}
+		err = bucket.Put([]byte(c.ID), bytes)
+
+		return nil
 	})
 	if err != nil {
-		return project, err
+		return c, err
 	}
 
-	go b.UpdateMissingWithNewIds(types.MissingTranslation{Project: project.ShortName, ProjectID: project.ID})
-	b.PublishChange(PubTypeProject, PubVerbUpdate, project)
-	return project, err
+	b.PublishChange(PubTypeProject, PubVerbUpdate, c)
+
+	return c, err
+
 }
 
 func (bb *BBolter) GetProjects() (map[string]types.Project, error) {

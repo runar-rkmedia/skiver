@@ -26,7 +26,8 @@ type Storage interface {
 	GetLocaleByIDOrShortName(shortNameOrId string) (*Locale, error)
 
 	GetProject(ID string) (*Project, error)
-	CreateProject(locale Project) (Project, error)
+	CreateProject(project Project) (Project, error)
+	UpdateProject(id string, project Project) (Project, error)
 	GetProjects() (map[string]Project, error)
 	GetProjectByIDOrShortName(shortNameOrId string) (*Project, error)
 
@@ -44,6 +45,7 @@ type Storage interface {
 
 	GetTranslationValue(ID string) (*TranslationValue, error)
 	CreateTranslationValue(translationValue TranslationValue) (TranslationValue, error)
+	// TODO: this should take in a id as first parameter
 	UpdateTranslationValue(tv TranslationValue) (TranslationValue, error)
 	GetTranslationValues() (map[string]TranslationValue, error)
 	GetTranslationValueFilter(filter ...TranslationValue) (*TranslationValue, error)

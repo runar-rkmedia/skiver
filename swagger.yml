@@ -235,6 +235,52 @@ definitions:
     - ietf_tag
     - title
     type: object
+  LocaleSetting:
+    properties:
+      auto_translation:
+        description: |-
+          If set, will allow registered translation-services to translate from other languages to this locale.
+          This might help speed up translations for new locales.
+          See the Config or Organization-settings for instructions on how to set up translation-services.
+
+          Organization-settings are not yet available.
+
+          TODO: implement organization-settings
+        type: boolean
+        x-go-name: AutoTranslation
+      enabled:
+        description: If set, the locale will be visible for editing.
+        type: boolean
+        x-go-name: Enabled
+      publish:
+        description: |-
+          If set, the associated translations will be published in releases.
+          This is useful for when adding new locales, and one don't want to publish it to users until it is complete
+        type: boolean
+        x-go-name: Publish
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
+  LocaleSettingInput:
+    properties:
+      auto_translation:
+        description: |-
+          If set, will allow registered translation-services to translate from other languages to this locale.
+          This might help speed up translations for new locales.
+          See the Config or Organization-settings for instructions on how to set up translation-services.
+
+          Organization-settings are not yet available.
+
+          TODO: implement organization-settings
+        type: boolean
+      enabled:
+        description: If set, the locale will be visible for editing.
+        type: boolean
+      publish:
+        description: |-
+          If set, the associated translations will be published in releases.
+          This is useful for when adding new locales, and one don't want to publish it to users until it is complete
+        type: boolean
+    type: object
   LoginInput:
     properties:
       password:
@@ -509,6 +555,11 @@ definitions:
           type: string
         type: array
         x-go-name: IncludedTags
+      locales:
+        additionalProperties:
+          $ref: '#/definitions/LocaleSetting'
+        type: object
+        x-go-name: LocaleIDs
       short_name:
         type: string
         x-go-name: ShortName
@@ -535,6 +586,10 @@ definitions:
         maxLength: 8000
         minLength: 1
         type: string
+      locales:
+        additionalProperties:
+          $ref: '#/definitions/LocaleSetting'
+        type: object
       short_name:
         maxLength: 20
         minLength: 1
@@ -749,6 +804,25 @@ definitions:
     - translation_id
     - locale_id
     - value
+    type: object
+  UpdateProjectInput:
+    properties:
+      description:
+        maxLength: 8000
+        minLength: 1
+        type: string
+      locales:
+        additionalProperties:
+          $ref: '#/definitions/LocaleSettingInput'
+        type: object
+      short_name:
+        maxLength: 20
+        minLength: 1
+        type: string
+      title:
+        maxLength: 400
+        minLength: 1
+        type: string
     type: object
   UpdateTranslationInput:
     properties:
@@ -1110,6 +1184,27 @@ paths:
         "500":
           $ref: '#/responses/apiError'
       summary: Create a new project
+      tags:
+      - project
+  /project/{projectID}:
+    put:
+      operationId: updateProject
+      parameters:
+      - in: path
+        name: id
+        required: true
+        type: string
+      - in: body
+        name: UpdateProject
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateProjectInput'
+      responses:
+        "200":
+          $ref: '#/responses/ProjectResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Update a project, including its settings
       tags:
       - project
   /serverInfo/:

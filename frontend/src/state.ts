@@ -1,5 +1,5 @@
 import createStore from './store'
-import type { Optional } from 'simplytyped'
+import type { Optional, Required } from 'simplytyped'
 
 export const state = createStore({
   initialValue: {
@@ -15,7 +15,7 @@ export const state = createStore({
     createOrganization: {} as ApiDef.OrganizationInput,
     createTranslation: {} as ApiDef.TranslationInput,
     createCategory: {} as ApiDef.CategoryInput,
-    createProject: {} as ApiDef.ProjectInput,
+    createProject: { locales: {} } as Required<ApiDef.ProjectInput, 'locales'>,
     projectSettings: {} as Record<string, { localeIds: string[] }>,
     createTranslationValue: {} as ApiDef.TranslationValueInput,
     toasts: {} as Record<
