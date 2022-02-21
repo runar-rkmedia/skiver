@@ -303,6 +303,7 @@ table th {
   color: var(--color-grey-100);
 }
 
+
 input:invalid,
 input[aria-invalid] textarea:invalid,
 textarea[aria-invalid] select:invalid,

@@ -5,6 +5,7 @@
   import ApiResponseError from './ApiResponseError.svelte'
   import EntityDetails from './EntityDetails.svelte'
   import Icon from './Icon.svelte'
+  import LocaleFlag from './LocaleFlag.svelte'
   import TranslationPreview from './TranslationPreview.svelte'
   /** Map by locale-id */
 
@@ -26,7 +27,9 @@
   class:auto-translate={translationValue?.source === 'system-translator'}
   class:missing={!value}
   class:selected={selectedLocale === locale.id}>
-  <td>{locale.title}</td>
+  <td>
+    <LocaleFlag {locale} />
+    {locale.title}</td>
   <td>
     {#if selectedLocale === locale.id}
       {#if translationValue?.source === 'system-translator'}
