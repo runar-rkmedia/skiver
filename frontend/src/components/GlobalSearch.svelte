@@ -9,7 +9,11 @@
 
 <h2>
   Search
-  <input type="search" bind:value={query} on:focus={() => (visible = true)} />
+  <input
+    placeholder="John Doe"
+    type="search"
+    bind:value={query}
+    on:focus={() => (visible = true)} />
 </h2>
 {#if project && visible && !Object.values($db.responseStates).some((rs) => rs.loading)}
   <GlobalSearchInner {project} {query} />

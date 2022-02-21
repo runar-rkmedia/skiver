@@ -734,15 +734,73 @@ func EndpointsHandler(
 					return
 				}
 
-				l := types.Project{
+				p := types.Project{
 					Title:       *j.Title,
 					Description: j.Description,
 					ShortName:   *j.ShortName,
+					LocaleIDs:   map[string]types.LocaleSetting{},
 				}
-				l.CreatedBy = session.User.ID
-				l.OrganizationID = session.Organization.ID
-				locale, err := ctx.DB.CreateProject(l)
+				if len(j.Locales) > 0 {
+					for lID, ls := range j.Locales {
+						p.LocaleIDs[lID] = types.LocaleSetting{
+							Enabled:         ls.Enabled,
+							Publish:         ls.Publish,
+							AutoTranslation: ls.AutoTranslation,
+						}
+					}
+				}
+
+				p.CreatedBy = session.User.ID
+				p.OrganizationID = session.Organization.ID
+				locale, err := ctx.DB.CreateProject(p)
 				rc.WriteAuto(locale, err, requestContext.CodeErrCreateProject)
+				return
+			}
+			if isPut {
+				if !session.User.CanUpdateProjects {
+					rc.WriteError("You are not authorizatiod to update projects", requestContext.CodeErrAuthoriziation)
+					return
+				}
+				pid := getStringSliceIndex(paths, 1)
+				if pid == "" {
+					rc.WriteError("Missing id", requestContext.CodeErrIDEmpty)
+					return
+				}
+				var j models.UpdateProjectInput
+				if err := rc.ValidateBytes(body, &j); err != nil {
+					return
+				}
+
+				p, err := ctx.DB.GetProject(pid)
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrProject)
+					return
+				}
+				if p == nil || session.User.OrganizationID != p.OrganizationID {
+					rc.WriteError("Could not find this project, or you do not have access", requestContext.CodeErrNotFoundProject)
+					return
+				}
+				payload := types.Project{
+					Title:       j.Title,
+					Description: j.Description,
+					ShortName:   j.ShortName,
+				}
+				payload.UpdatedBy = session.User.ID
+				if len(j.Locales) > 0 {
+					payload.LocaleIDs = map[string]types.LocaleSetting{}
+					for lID, ls := range j.Locales {
+						payload.LocaleIDs[lID] = types.LocaleSetting{
+							Enabled:         ls.Enabled,
+							Publish:         ls.Publish,
+							AutoTranslation: ls.AutoTranslation,
+						}
+
+					}
+				}
+				project, err := ctx.DB.UpdateProject(pid, payload)
+
+				rc.WriteAuto(project, err, requestContext.CodeErrProject)
+
 				return
 			}
 		case "translation":

@@ -11,6 +11,7 @@
   import ProjectOverview from '../components/ProjectOverview.svelte'
   import GlobalSearch from '../components/GlobalSearch.svelte'
   import { scrollToCategoryByKey } from 'util/scrollToCategory'
+  import ProjectForm from 'forms/ProjectForm.svelte'
 
   $: project = $db.project[projectID]
   $: {
@@ -51,26 +52,30 @@
       <EntityDetails entity={project} />
       {#if $state.projectSettings[projectID]?.localeIds}
         <paper>
-          <Collapse key={'ps-' + projectID}>
+          <Collapse key={'ps-' + projectID} let:show>
             <h3 slot="title">Project-settings</h3>
-            <h4>Only show these locales</h4>
-            {#each Object.values($db.locale) as locale}
-              <div>
-                <label>
-                  <input
-                    type="checkbox"
-                    name="locale-ids"
-                    value={locale.id}
-                    bind:group={$state.projectSettings[projectID].localeIds} />
+            {#if show}
+              <ProjectForm {project} />
+              <h4>Only show these locales</h4>
+              {#each Object.values($db.locale) as locale}
+                <div>
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="locale-ids"
+                      value={locale.id}
+                      bind:group={$state.projectSettings[projectID]
+                        .localeIds} />
 
-                  {locale.title}
-                </label>
-              </div>
-            {/each}
-            <!-- svelte-ignore a11y-missing-content -->
-            <a href={`/api/export/p=${project.short_name || project.id}`}>
-              Exported raw
-            </a>
+                    {locale.title}
+                  </label>
+                </div>
+              {/each}
+              <!-- svelte-ignore a11y-missing-content -->
+              <a href={`/api/export/p=${project.short_name || project.id}`}>
+                Exported raw
+              </a>
+            {/if}
           </Collapse>
         </paper>
       {/if}

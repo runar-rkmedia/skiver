@@ -14,10 +14,10 @@ import (
 	"github.com/go-openapi/validate"
 )
 
-// ProjectInput project input
+// UpdateProjectInput update project input
 //
-// swagger:model ProjectInput
-type ProjectInput struct {
+// swagger:model UpdateProjectInput
+type UpdateProjectInput struct {
 
 	// description
 	// Max Length: 8000
@@ -25,23 +25,21 @@ type ProjectInput struct {
 	Description string `json:"description,omitempty"`
 
 	// locales
-	Locales map[string]LocaleSetting `json:"locales,omitempty"`
+	Locales map[string]LocaleSettingInput `json:"locales,omitempty"`
 
 	// short name
-	// Required: true
 	// Max Length: 20
 	// Min Length: 1
-	ShortName *string `json:"short_name"`
+	ShortName string `json:"short_name,omitempty"`
 
 	// title
-	// Required: true
 	// Max Length: 400
 	// Min Length: 1
-	Title *string `json:"title"`
+	Title string `json:"title,omitempty"`
 }
 
-// Validate validates this project input
-func (m *ProjectInput) Validate(formats strfmt.Registry) error {
+// Validate validates this update project input
+func (m *UpdateProjectInput) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateDescription(formats); err != nil {
@@ -66,7 +64,7 @@ func (m *ProjectInput) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *ProjectInput) validateDescription(formats strfmt.Registry) error {
+func (m *UpdateProjectInput) validateDescription(formats strfmt.Registry) error {
 	if swag.IsZero(m.Description) { // not required
 		return nil
 	}
@@ -82,7 +80,7 @@ func (m *ProjectInput) validateDescription(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *ProjectInput) validateLocales(formats strfmt.Registry) error {
+func (m *UpdateProjectInput) validateLocales(formats strfmt.Registry) error {
 	if swag.IsZero(m.Locales) { // not required
 		return nil
 	}
@@ -103,42 +101,40 @@ func (m *ProjectInput) validateLocales(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *ProjectInput) validateShortName(formats strfmt.Registry) error {
+func (m *UpdateProjectInput) validateShortName(formats strfmt.Registry) error {
+	if swag.IsZero(m.ShortName) { // not required
+		return nil
+	}
 
-	if err := validate.Required("short_name", "body", m.ShortName); err != nil {
+	if err := validate.MinLength("short_name", "body", m.ShortName, 1); err != nil {
 		return err
 	}
 
-	if err := validate.MinLength("short_name", "body", *m.ShortName, 1); err != nil {
-		return err
-	}
-
-	if err := validate.MaxLength("short_name", "body", *m.ShortName, 20); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *ProjectInput) validateTitle(formats strfmt.Registry) error {
-
-	if err := validate.Required("title", "body", m.Title); err != nil {
-		return err
-	}
-
-	if err := validate.MinLength("title", "body", *m.Title, 1); err != nil {
-		return err
-	}
-
-	if err := validate.MaxLength("title", "body", *m.Title, 400); err != nil {
+	if err := validate.MaxLength("short_name", "body", m.ShortName, 20); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// ContextValidate validate this project input based on the context it is used
-func (m *ProjectInput) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+func (m *UpdateProjectInput) validateTitle(formats strfmt.Registry) error {
+	if swag.IsZero(m.Title) { // not required
+		return nil
+	}
+
+	if err := validate.MinLength("title", "body", m.Title, 1); err != nil {
+		return err
+	}
+
+	if err := validate.MaxLength("title", "body", m.Title, 400); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ContextValidate validate this update project input based on the context it is used
+func (m *UpdateProjectInput) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.contextValidateLocales(ctx, formats); err != nil {
@@ -151,7 +147,7 @@ func (m *ProjectInput) ContextValidate(ctx context.Context, formats strfmt.Regis
 	return nil
 }
 
-func (m *ProjectInput) contextValidateLocales(ctx context.Context, formats strfmt.Registry) error {
+func (m *UpdateProjectInput) contextValidateLocales(ctx context.Context, formats strfmt.Registry) error {
 
 	for k := range m.Locales {
 
@@ -167,7 +163,7 @@ func (m *ProjectInput) contextValidateLocales(ctx context.Context, formats strfm
 }
 
 // MarshalBinary interface implementation
-func (m *ProjectInput) MarshalBinary() ([]byte, error) {
+func (m *UpdateProjectInput) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -175,8 +171,8 @@ func (m *ProjectInput) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *ProjectInput) UnmarshalBinary(b []byte) error {
-	var res ProjectInput
+func (m *UpdateProjectInput) UnmarshalBinary(b []byte) error {
+	var res UpdateProjectInput
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}
