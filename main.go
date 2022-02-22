@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -135,6 +136,7 @@ type translationHook struct {
 }
 
 func (m *translationHook) Publish(kind, variant string, contents interface{}) {
+	// TODO: this function really should cache
 
 	debug := m.l.HasDebug()
 	if kind == string(bboltStorage.PubTypeTranslationValue) && variant == string(bboltStorage.PubVerbCreate) {
@@ -154,11 +156,65 @@ func (m *translationHook) Publish(kind, variant string, contents interface{}) {
 			m.l.Error().Interface("content", contents).Msg("Received TranslationValue, but the value appeared to be empty")
 			return
 		}
-		locales, err := m.db.GetLocales()
+
+		// We need the project-settings, so we resolve the project
+		var project *types.Project
+		{
+			t, err := m.db.GetTranslation(tv.TranslationID)
+			if err != nil {
+				m.l.Error().Err(err).Msg("failed to lookup translation")
+				return
+			}
+			if t == nil {
+				m.l.Error().Err(err).Msg("Missing translation")
+				return
+			}
+			cat, err := m.db.GetCategory(t.CategoryID)
+			if err != nil {
+				m.l.Error().Err(err).Msg("failed to lookup category")
+				return
+			}
+			if t == nil {
+				m.l.Error().Err(err).Msg("Missing category")
+				return
+			}
+			p, err := m.db.GetProject(cat.ProjectID)
+			if err != nil {
+				m.l.Error().Err(err).Msg("failed to lookup project")
+				return
+			}
+			if t == nil {
+				m.l.Error().Err(err).Msg("Missing project")
+				return
+			}
+			project = p
+
+		}
+		if len(project.LocaleIDs) == 0 {
+			if m.l.HasDebug() {
+				m.l.Debug().Interface("project", project).Msg("project does not have any locale-ids")
+			}
+			return
+		}
+
+		_locales, err := m.db.GetLocales()
 		if err != nil {
 			m.l.Error().Err(err).Msg("failed to lookup locales")
 			return
 		}
+		locales := map[string]types.Locale{}
+		for k, v := range project.LocaleIDs {
+			if !v.AutoTranslation {
+				continue
+			}
+			if l, ok := _locales[k]; ok {
+				locales[k] = l
+			}
+
+		}
+
+		runtime.Breakpoint()
+
 		tvs, err := m.db.GetTranslationValuesFilter(0, types.TranslationValue{TranslationID: tv.TranslationID})
 		if err != nil {
 			m.l.Error().Err(err).Msg("failed to lookup translationvalues")
