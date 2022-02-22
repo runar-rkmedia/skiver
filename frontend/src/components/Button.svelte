@@ -42,7 +42,6 @@
   button:hover:not(:disabled) {
     /* TODO: move to psudo-element and transition opacity for perf. */
     box-shadow: 0 8px 16px -2px rgba(0, 32, 128, 0.25);
-    filter: invert(50%);
   }
 
   .active {
