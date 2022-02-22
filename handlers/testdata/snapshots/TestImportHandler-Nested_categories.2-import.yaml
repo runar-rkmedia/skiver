@@ -45,6 +45,8 @@ Categories:
         exists: true
         key: Welcome
         title: Welcome
+        variables:
+          user: ???
   General.Forms:
     createdAt: "0001-01-01T00:00:00Z"
     createdBy: jim
