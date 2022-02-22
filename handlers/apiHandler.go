@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -176,10 +177,18 @@ func EndpointsHandler(
 				case "locale", "l":
 					locales = v
 				case "format", "f":
+					if len(v) > 1 {
+						rc.WriteError("format specified more than once", requestContext.CodeErrInputValidation)
+						return
+					}
 					format = v[0]
 				case "project", "p":
 					projects = v
 				case "locale_key":
+					if len(v) > 1 {
+						rc.WriteError("format specified more than once", requestContext.CodeErrInputValidation)
+						return
+					}
 					localeKey = v[0]
 				case "no_flatten":
 					flatten = false
@@ -207,6 +216,7 @@ func EndpointsHandler(
 			cacheKeys := []string{format, localeKey}
 			cacheKeys = append(cacheKeys, locales...)
 			cacheKeys = append(cacheKeys, projects...)
+			sort.Strings(cacheKeys)
 			cacheKey := strings.Join(cacheKeys, "%")
 			if flatten {
 				cacheKey += "F"
@@ -257,9 +267,19 @@ func EndpointsHandler(
 			}
 			eps := map[string]types.ExtendedProject{}
 			for _, p := range ps {
-				ep, err := p.Extend(ctx.DB, types.ExtendOptions{LocaleFilter: locales, ByKeyLike: true})
+				ep, err := p.Extend(ctx.DB, types.ExtendOptions{LocaleFilter: locales, ByKeyLike: true, ErrOnNoLocales: true, LocaleFilterFunc: func(project types.Project, locale types.Locale) bool {
+					for k, v := range project.LocaleIDs {
+						if locale.ID != k {
+							continue
+						}
+						if v.Publish {
+							return true
+						}
+					}
+					return false
+				}})
 				if err != nil {
-					rc.WriteErr(err, requestContext.CodeErrProject)
+					rc.WriteErr(fmt.Errorf("Error extending project '%s' (%s): %w", ep.Title, ep.ID, err), requestContext.CodeErrProject)
 					return
 				}
 				eps[ep.ID] = ep
@@ -274,6 +294,9 @@ func EndpointsHandler(
 			{
 				out := map[string]interface{}{}
 				for _, ep := range eps {
+					if len(ep.Locales) == 0 {
+						continue
+					}
 					i18nodes, err := importexport.ExportI18N(ep, importexport.ExportI18NOptions{
 						LocaleFilter: locales,
 						LocaleKey:    importexport.LocaleKey(localeKey)})
@@ -349,6 +372,17 @@ func EndpointsHandler(
 						out[ep.ID] = i18n
 
 					}
+				}
+				if len(out) == 0 {
+					rc.WriteError(
+						"No output was produced. This may have been the result of for instance no valid locales specified",
+						requestContext.CodeErrInputValidation,
+						map[string]interface{}{
+							"locales":  locales,
+							"projects": projects,
+							"format":   format,
+						})
+					return
 				}
 				rc.WriteOutput(out, http.StatusOK)
 				return

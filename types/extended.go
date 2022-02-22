@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -93,8 +94,10 @@ func (c Category) Extend(db Storage, options ...ExtendOptions) (ec ExtendedCateg
 }
 
 type ExtendOptions struct {
-	ByID, ByKeyLike bool
-	LocaleFilter    []string
+	ByID, ByKeyLike  bool
+	LocaleFilter     []string
+	LocaleFilterFunc func(project Project, locale Locale) bool
+	ErrOnNoLocales   bool
 }
 
 func (o ExtendOptions) Validate() error {
@@ -112,6 +115,11 @@ func getExtendOptions(options []ExtendOptions) (ExtendOptions, error) {
 	}
 	return options[0], options[0].Validate()
 }
+
+var (
+	ErrNoLocales = errors.New("List of locales was empty")
+)
+
 func (p Project) Extend(db Storage, options ...ExtendOptions) (ep ExtendedProject, err error) {
 	ep.Project = p
 	opts, err := getExtendOptions(options)
@@ -133,6 +141,19 @@ func (p Project) Extend(db Storage, options ...ExtendOptions) (ep ExtendedProjec
 				delete(locales, k)
 			}
 		}
+	}
+	if opts.LocaleFilterFunc != nil {
+		for k, v := range locales {
+			keep := opts.LocaleFilterFunc(p, v)
+			if !keep {
+				delete(locales, k)
+
+			}
+		}
+	}
+	if opts.ErrOnNoLocales && len(locales) == 0 {
+		err = ErrNoLocales
+		return
 	}
 	ep.Locales = locales
 	if len(ep.CategoryIDs) == 0 {
