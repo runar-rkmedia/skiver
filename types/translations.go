@@ -52,6 +52,12 @@ func (e TranslationValue) Namespace() string {
 func (e TranslationValue) Kind() string {
 	return string(PubTypeTranslationValue)
 }
+func (e Locale) Namespace() string {
+	return e.Kind()
+}
+func (e Locale) Kind() string {
+	return string(PubTypeLocale)
+}
 
 type CreatorSource string
 

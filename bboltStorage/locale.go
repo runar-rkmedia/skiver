@@ -12,6 +12,24 @@ func (b *BBolter) GetLocale(ID string) (types.Locale, error) {
 	err := b.GetItem(BucketLocale, ID, &u)
 	return u, err
 }
+func localeFilter(f, uu types.Locale) bool {
+	if f.ID != "" && f.ID != uu.ID {
+		return false
+	}
+	if f.IETF != "" && f.IETF != uu.IETF {
+		return false
+	}
+	if f.Iso639_3 != "" && f.Iso639_3 != uu.Iso639_3 {
+		return false
+	}
+	if f.Iso639_2 != "" && f.Iso639_2 != uu.Iso639_2 {
+		return false
+	}
+	if f.Iso639_1 != "" && f.Iso639_1 != uu.Iso639_1 {
+		return false
+	}
+	return true
+}
 
 func (b *BBolter) CreateLocale(locale types.Locale) (types.Locale, error) {
 	existing, err := b.GetLocaleFilter(locale)
