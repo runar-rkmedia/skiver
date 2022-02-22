@@ -30,6 +30,8 @@ var DefaultInterpolationExamples = map[string]interface{}{
 	"country":      "Japan",
 	"countryname":  "Japan",
 	"companyname":  "Wily",
+	"user":         "Roll",
+	"username":     "Roll",
 	"name":         "Douglas Dagurasu",
 	"firstName":    "Axl",
 	"lastName":     "Akuseru",
