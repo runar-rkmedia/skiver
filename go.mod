@@ -12,6 +12,8 @@ require (
 	github.com/go-openapi/validate v0.20.3
 	github.com/go-test/deep v1.0.8
 	github.com/gobeam/stringy v0.0.5
+	github.com/julienschmidt/httprouter v1.3.0
+	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/runar-rkmedia/go-common v0.0.4
 	github.com/schollz/mnemonicode v1.0.1
 )

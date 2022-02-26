@@ -1,13 +1,16 @@
 package requestContext
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/pelletier/go-toml"
 	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/skiver/types"
+	"gopkg.in/yaml.v2"
 )
 
 type Context struct {
@@ -15,6 +18,9 @@ type Context struct {
 	DB              types.Storage
 	StructValidater func(interface{}) error
 }
+
+// Deprecated.
+// The useful methods here should be returned into structs
 type ReqContext struct {
 	Context     *Context
 	Req         *http.Request
@@ -61,6 +67,9 @@ func NewReqContext(context *Context, req *http.Request, rw http.ResponseWriter) 
 	}
 }
 
+func (c *Context) NewReqContext(rw http.ResponseWriter, r *http.Request) ReqContext {
+	return NewReqContext(c, r, rw)
+}
 func (rc ReqContext) WriteAuto(output interface{}, error error, errCode ErrorCodes) {
 	err := WriteAuto(output, error, errCode, rc.Req, rc.Rw)
 	if err != nil {
@@ -89,6 +98,18 @@ func (rc ReqContext) WriteNotFound(errCode ErrorCodes) {
 	}
 }
 func (rc ReqContext) WriteErr(err error, errCode ErrorCodes) {
+	if apiErr, ok := err.(APIError); ok {
+		code := apiErr.Err.Code
+		if errCode != "" {
+			code = errCode + ": " + code
+		}
+
+		_err := WriteError(apiErr.Err.Message, apiErr.Err.Code, rc.Req, rc.Rw, apiErr.Details)
+		if _err != nil {
+			rc.L.Error().Err(_err).Msg("Failure in WriteErr")
+		}
+		return
+	}
 	_err := WriteErr(err, errCode, rc.Req, rc.Rw)
 	if _err != nil {
 		rc.L.Error().Err(_err).Msg("Failure in WriteErr")
@@ -116,6 +137,50 @@ func (rc ReqContext) Unmarshal(body []byte, j interface{}) error {
 			Bytes("body", body).
 			Err(err).
 			Msg("unmarshalling failed with input")
+	}
+	return err
+}
+
+type decoder interface {
+	Decode(v interface{}) error
+}
+
+func (rc ReqContext) GetDecoder() decoder {
+	switch rc.ContentKind {
+	case OutputJson:
+		return json.NewDecoder(rc.Req.Body)
+	case OutputToml:
+		return toml.NewDecoder(rc.Req.Body)
+	case OutputYaml:
+		return yaml.NewDecoder(rc.Req.Body)
+	}
+	return json.NewDecoder(rc.Req.Body)
+}
+
+// Reads the requests body, and validates it.
+// with writeErr = true, upon validation error it will write the error to the body. In this case, the caller should simply return
+func (rc ReqContext) ValidateBody(j interface{}, writeErr bool) error {
+	if rc.Req.ContentLength == 0 {
+		err := ErrEmptyBody
+		if writeErr {
+			rc.WriteErr(err, CodeErrMissingBody)
+		}
+		return err
+	}
+	decoder := rc.GetDecoder()
+	err := decoder.Decode(j)
+	if err != nil {
+		if writeErr {
+			rc.WriteErr(err, CodeErrMarshal)
+		}
+		return err
+	}
+	err = rc.ValidateStruct(j)
+	if err != nil {
+		if writeErr {
+			rc.WriteErr(err, CodeErrInputValidation)
+		}
+		return err
 	}
 	return err
 }

@@ -115,7 +115,7 @@ func (a *Api) Login(username, password string) error {
 		var j models.APIError
 		err = json.Unmarshal(body, &j)
 		if err == nil {
-			return fmt.Errorf("Login-request return a %d-response: %s (%s) %#v", res.StatusCode, j.Message, j.Code, j.Details)
+			return fmt.Errorf("Login-request return a %d-response: %s (%s) %#v", res.StatusCode, j.Error.Message, j.Error.Code, j.Details)
 		}
 
 		return fmt.Errorf("Login-request return a %d-response: %s", res.StatusCode, string(body))
@@ -156,7 +156,7 @@ func (a Api) Import(projectName string, kind string, reader io.Reader) error {
 		var j models.APIError
 		err = json.Unmarshal(body, &j)
 		if err == nil {
-			return fmt.Errorf("import-request return a %d-response: %s (%s) %#v", res.StatusCode, j.Message, j.Code, j.Details)
+			return fmt.Errorf("import-request return a %d-response: %s (%s) %#v", res.StatusCode, j.Error.Message, j.Error.Code, j.Details)
 		}
 
 		return fmt.Errorf("import-request return a %d-response: %s", res.StatusCode, string(body))
@@ -207,7 +207,7 @@ func (a Api) Export(projectName string, format string, locale string, writer io.
 		var j models.APIError
 		err = json.Unmarshal(body, &j)
 		if err == nil {
-			return fmt.Errorf("export-request return a %d-response: %s (%s) %#v", res.StatusCode, j.Message, j.Code, j.Details)
+			return fmt.Errorf("export-request return a %d-response: %s (%s) %#v", res.StatusCode, j.Error.Message, j.Error.Code, j.Details)
 		}
 
 		return fmt.Errorf("export-request return a %d-response: %s", res.StatusCode, string(body))

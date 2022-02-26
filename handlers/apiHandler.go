@@ -1,12 +1,9 @@
 package handlers
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -38,17 +35,21 @@ type SessionManager interface {
 	TTL() time.Duration
 }
 
+// Deprecated. Migrating to using httproutermux
 func EndpointsHandler(
 	ctx requestContext.Context,
 	userSessions SessionManager,
 	pw localuser.PwHasher,
 	serverInfo types.ServerInfo,
 	swaggerYml []byte,
-	exportCache Cache,
 ) http.HandlerFunc {
 
 	return func(rw http.ResponseWriter, r *http.Request) {
 		AddAccessControl(r, rw)
+
+		path := r.URL.Path
+		paths := strings.Split(strings.TrimSuffix(path, "/"), "/")
+		// We are finally migrating to using a mux, but only a few routes have been migrated this far.
 		rc := requestContext.NewReqContext(&ctx, r, rw)
 		var body []byte
 		var err error
@@ -56,8 +57,6 @@ func EndpointsHandler(
 		isPost := r.Method == http.MethodPost
 		// isDelete := r.Method == http.MethodDelete
 		isPut := r.Method == http.MethodPut
-		path := r.URL.Path
-		paths := strings.Split(strings.TrimSuffix(path, "/"), "/")
 		shouldReadBody := rc.ContentKind > 0 && (isPost || isPut)
 
 		if shouldReadBody {
@@ -159,234 +158,6 @@ func EndpointsHandler(
 
 				return
 			}
-		case "export":
-			if !isGet {
-				break
-			}
-			// TODO: clean up this mess:
-			// - We need to have a better handling of cache
-			// - It should be its own handler.
-			q, err := extractParams(r, "export/")
-			format := "i18n" // Default format
-			localeKey := ""
-			var projects []string
-			var locales []string
-			flatten := true
-			for k, v := range q {
-				switch strings.ToLower(k) {
-				case "locale", "l":
-					locales = v
-				case "format", "f":
-					if len(v) > 1 {
-						rc.WriteError("format specified more than once", requestContext.CodeErrInputValidation)
-						return
-					}
-					format = v[0]
-				case "project", "p":
-					projects = v
-				case "locale_key":
-					if len(v) > 1 {
-						rc.WriteError("format specified more than once", requestContext.CodeErrInputValidation)
-						return
-					}
-					localeKey = v[0]
-				case "no_flatten":
-					flatten = false
-				}
-			}
-			switch format {
-			case "typescript":
-				break
-			case "i18n":
-				break
-			default:
-
-				validFormats := []string{"i18n", "raw", "typescript"}
-				valid := false
-				for _, v := range validFormats {
-					if format == v {
-						valid = true
-					}
-				}
-				if !valid {
-					rc.WriteErr(fmt.Errorf("invalid format: %s. Valid formats are: %s", format, validFormats), requestContext.CodeErrInputValidation)
-					return
-				}
-			}
-			cacheKeys := []string{format, localeKey}
-			cacheKeys = append(cacheKeys, locales...)
-			cacheKeys = append(cacheKeys, projects...)
-			sort.Strings(cacheKeys)
-			cacheKey := strings.Join(cacheKeys, "%")
-			if flatten {
-				cacheKey += "F"
-			}
-			if v, ok := exportCache.Get(cacheKey); ok {
-				rw.Write(v.([]byte))
-				return
-			}
-
-			ps, err := ctx.DB.GetProjects()
-			if err != nil {
-				rc.WriteErr(err, requestContext.CodeErrProject)
-				return
-			}
-			if len(projects) > 0 {
-			outer:
-				for k, proj := range ps {
-
-					for _, p := range projects {
-						if k == p || p == proj.ShortName {
-							continue outer
-						}
-					}
-					delete(ps, k)
-				}
-			}
-			projectsLength := len(projects)
-			out := map[string]types.ExtendedProject{}
-			for _, v := range ps {
-				if projectsLength > 0 {
-					found := false
-					for _, pid := range projects {
-						if v.ID == pid || v.ShortName == pid {
-							found = true
-							break
-						}
-					}
-					if !found {
-						break
-					}
-				}
-				ep, err := v.Extend(ctx.DB)
-				if err != nil {
-					rc.WriteErr(err, requestContext.CodeErrProject)
-					return
-				}
-				out[v.ID] = ep
-			}
-			eps := map[string]types.ExtendedProject{}
-			for _, p := range ps {
-				ep, err := p.Extend(ctx.DB, types.ExtendOptions{LocaleFilter: locales, ByKeyLike: true, ErrOnNoLocales: true, LocaleFilterFunc: func(project types.Project, locale types.Locale) bool {
-					for k, v := range project.LocaleIDs {
-						if locale.ID != k {
-							continue
-						}
-						if v.Publish {
-							return true
-						}
-					}
-					return false
-				}})
-				if err != nil {
-					rc.WriteErr(fmt.Errorf("Error extending project '%s' (%s): %w", ep.Title, ep.ID, err), requestContext.CodeErrProject)
-					return
-				}
-				eps[ep.ID] = ep
-
-			}
-			switch format {
-			case "typescript":
-				rw.Header().Set("Content-Type", "application/typescript")
-			default:
-				rw.Header().Set("Content-Type", "application/json")
-			}
-			{
-				out := map[string]interface{}{}
-				for _, ep := range eps {
-					if len(ep.Locales) == 0 {
-						continue
-					}
-					i18nodes, err := importexport.ExportI18N(ep, importexport.ExportI18NOptions{
-						LocaleFilter: locales,
-						LocaleKey:    importexport.LocaleKey(localeKey)})
-					if err != nil {
-						rc.WriteErr(err, requestContext.CodeErrProject)
-						return
-					}
-					i18n, err := importexport.I18NNodeToI18Next(i18nodes)
-					if err != nil {
-						rc.WriteErr(err, requestContext.CodeErrProject)
-						return
-					}
-
-					// If the user requested just a single project, we dont want to return a map
-					if flatten && projectsLength == 1 {
-						if format == "typescript" {
-							var w bytes.Buffer
-							err := importexport.ExportByGoTemplate("typescript.tmpl", ep, i18nodes, &w)
-							if err != nil {
-								rc.WriteErr(err, requestContext.CodeErrTemplating)
-								return
-							}
-							runPrettier := false
-							if !runPrettier {
-
-								b := w.Bytes()
-								exportCache.SetDefault(cacheKey, b)
-								rw.Write(b)
-
-								return
-							}
-							ts := w.String()
-
-							pretty, err := importexport.Prettier(ts)
-							if err != nil {
-								rc.L.Error().Err(err).Msg("Failed to prettify")
-								b := w.Bytes()
-								exportCache.SetDefault(cacheKey, b)
-								rw.Write(b)
-								// rc.WriteError(err.Error(), requestContext.CodeErrTemplating, map[string]interface{}{"ts": ts})
-								return
-							}
-							b := []byte(pretty)
-							exportCache.SetDefault(cacheKey, b)
-							rw.Write(b)
-							return
-						}
-						var toWrite interface{}
-						if len(locales) == 1 {
-							toWrite = i18n[locales[0]]
-						} else {
-							toWrite = i18n
-						}
-
-						b, err := json.Marshal(toWrite)
-						if err != nil {
-							rc.WriteErr(err, requestContext.CodeErrMarshal)
-							return
-						}
-						exportCache.SetDefault(cacheKey, b)
-						rw.Write(b)
-						return
-					}
-					if format == "typescript" {
-						var w bytes.Buffer
-						err := importexport.ExportByGoTemplate("typescript.tmpl", ep, i18nodes, &w)
-						if err != nil {
-							rc.WriteErr(err, requestContext.CodeErrTemplating)
-							return
-						}
-						out[ep.ID] = w.String()
-					} else {
-						out[ep.ID] = i18n
-
-					}
-				}
-				if len(out) == 0 {
-					rc.WriteError(
-						"No output was produced. This may have been the result of for instance no valid locales specified",
-						requestContext.CodeErrInputValidation,
-						map[string]interface{}{
-							"locales":  locales,
-							"projects": projects,
-							"format":   format,
-						})
-					return
-				}
-				rc.WriteOutput(out, http.StatusOK)
-				return
-			}
 
 		case "swagger", "swagger.yaml", "swagger.yml":
 			rw.Header().Set("Content-Type", "text/vnd.yaml")
@@ -407,7 +178,7 @@ func EndpointsHandler(
 				return
 			}
 		case "join":
-			if isGet || isPost {
+			if isPost {
 				joinId := getStringSliceIndex(paths, 1)
 				if joinId == "" {
 					rc.WriteError("Missing join-id", requestContext.CodeErrIDEmpty)
@@ -468,6 +239,7 @@ func EndpointsHandler(
 						CanUpdateProjects:     true,
 						CanUpdateTranslations: true,
 						CanUpdateLocales:      false,
+						CanManageSnapshots:    true,
 					}
 					existingUsers := false
 					{
@@ -626,9 +398,16 @@ func EndpointsHandler(
 				Path:     "/",
 				Value:    session.Token,
 				MaxAge:   int(expiresD.Seconds()),
-				Secure:   true,
+				Secure:   r.TLS != nil,
 				SameSite: http.SameSiteNoneMode,
 				HttpOnly: true,
+			}
+			xproto := r.Header.Get("X-Forwarded-Proto")
+			switch xproto {
+			case "http":
+				cookie.Secure = false
+			case "https":
+				cookie.Secure = true
 			}
 			rw.Header().Add("session-expires", session.Expires.String())
 			rw.Header().Add("session-expires-in", expiresD.String())
@@ -723,7 +502,7 @@ func EndpointsHandler(
 			}
 		case "organization":
 			if isGet {
-				orgs, err := ctx.DB.GetOrganizations()
+				orgs, err := ctx.DB.GetOrganization(session.User.OrganizationID)
 				rc.WriteAuto(orgs, err, requestContext.CodeErrProject)
 				return
 			}
@@ -753,89 +532,91 @@ func EndpointsHandler(
 				return
 			}
 		case "project":
-			if isGet {
-				projects, err := ctx.DB.GetProjects()
-				rc.WriteAuto(projects, err, requestContext.CodeErrProject)
-				return
-			}
-			if isPost {
-				if !session.User.CanCreateProjects {
-					rc.WriteError("You are not authorizatiod to create projects", requestContext.CodeErrAuthoriziation)
+			if getStringSliceIndex(paths, 1) == "" {
+				if isGet {
+					projects, err := ctx.DB.GetProjects()
+					rc.WriteAuto(projects, err, requestContext.CodeErrProject)
 					return
 				}
-				var j models.ProjectInput
-				if err := rc.ValidateBytes(body, &j); err != nil {
-					return
-				}
+				if isPost {
+					if !session.User.CanCreateProjects {
+						rc.WriteError("You are not authorizatiod to create projects", requestContext.CodeErrAuthoriziation)
+						return
+					}
+					var j models.ProjectInput
+					if err := rc.ValidateBytes(body, &j); err != nil {
+						return
+					}
 
-				p := types.Project{
-					Title:       *j.Title,
-					Description: j.Description,
-					ShortName:   *j.ShortName,
-					LocaleIDs:   map[string]types.LocaleSetting{},
-				}
-				if len(j.Locales) > 0 {
-					for lID, ls := range j.Locales {
-						p.LocaleIDs[lID] = types.LocaleSetting{
-							Enabled:         ls.Enabled,
-							Publish:         ls.Publish,
-							AutoTranslation: ls.AutoTranslation,
+					p := types.Project{
+						Title:       *j.Title,
+						Description: j.Description,
+						ShortName:   *j.ShortName,
+						LocaleIDs:   map[string]types.LocaleSetting{},
+					}
+					if len(j.Locales) > 0 {
+						for lID, ls := range j.Locales {
+							p.LocaleIDs[lID] = types.LocaleSetting{
+								Enabled:         ls.Enabled,
+								Publish:         ls.Publish,
+								AutoTranslation: ls.AutoTranslation,
+							}
 						}
 					}
-				}
 
-				p.CreatedBy = session.User.ID
-				p.OrganizationID = session.Organization.ID
-				locale, err := ctx.DB.CreateProject(p)
-				rc.WriteAuto(locale, err, requestContext.CodeErrCreateProject)
-				return
-			}
-			if isPut {
-				if !session.User.CanUpdateProjects {
-					rc.WriteError("You are not authorizatiod to update projects", requestContext.CodeErrAuthoriziation)
+					p.CreatedBy = session.User.ID
+					p.OrganizationID = session.Organization.ID
+					locale, err := ctx.DB.CreateProject(p)
+					rc.WriteAuto(locale, err, requestContext.CodeErrCreateProject)
 					return
 				}
-				pid := getStringSliceIndex(paths, 1)
-				if pid == "" {
-					rc.WriteError("Missing id", requestContext.CodeErrIDEmpty)
-					return
-				}
-				var j models.UpdateProjectInput
-				if err := rc.ValidateBytes(body, &j); err != nil {
-					return
-				}
-
-				p, err := ctx.DB.GetProject(pid)
-				if err != nil {
-					rc.WriteErr(err, requestContext.CodeErrProject)
-					return
-				}
-				if p == nil || session.User.OrganizationID != p.OrganizationID {
-					rc.WriteError("Could not find this project, or you do not have access", requestContext.CodeErrNotFoundProject)
-					return
-				}
-				payload := types.Project{
-					Title:       j.Title,
-					Description: j.Description,
-					ShortName:   j.ShortName,
-				}
-				payload.UpdatedBy = session.User.ID
-				if len(j.Locales) > 0 {
-					payload.LocaleIDs = map[string]types.LocaleSetting{}
-					for lID, ls := range j.Locales {
-						payload.LocaleIDs[lID] = types.LocaleSetting{
-							Enabled:         ls.Enabled,
-							Publish:         ls.Publish,
-							AutoTranslation: ls.AutoTranslation,
-						}
-
+				if isPut {
+					if !session.User.CanUpdateProjects {
+						rc.WriteError("You are not authorizatiod to update projects", requestContext.CodeErrAuthoriziation)
+						return
 					}
+					pid := getStringSliceIndex(paths, 1)
+					if pid == "" {
+						rc.WriteError("Missing id", requestContext.CodeErrIDEmpty)
+						return
+					}
+					var j models.UpdateProjectInput
+					if err := rc.ValidateBytes(body, &j); err != nil {
+						return
+					}
+
+					p, err := ctx.DB.GetProject(pid)
+					if err != nil {
+						rc.WriteErr(err, requestContext.CodeErrProject)
+						return
+					}
+					if p == nil || session.User.OrganizationID != p.OrganizationID {
+						rc.WriteError("Could not find this project, or you do not have access", requestContext.CodeErrNotFoundProject)
+						return
+					}
+					payload := types.Project{
+						Title:       j.Title,
+						Description: j.Description,
+						ShortName:   j.ShortName,
+					}
+					payload.UpdatedBy = session.User.ID
+					if len(j.Locales) > 0 {
+						payload.LocaleIDs = map[string]types.LocaleSetting{}
+						for lID, ls := range j.Locales {
+							payload.LocaleIDs[lID] = types.LocaleSetting{
+								Enabled:         ls.Enabled,
+								Publish:         ls.Publish,
+								AutoTranslation: ls.AutoTranslation,
+							}
+
+						}
+					}
+					project, err := ctx.DB.UpdateProject(pid, payload)
+
+					rc.WriteAuto(project, err, requestContext.CodeErrProject)
+
+					return
 				}
-				project, err := ctx.DB.UpdateProject(pid, payload)
-
-				rc.WriteAuto(project, err, requestContext.CodeErrProject)
-
-				return
 			}
 		case "translation":
 			if isGet {

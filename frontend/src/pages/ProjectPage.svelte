@@ -77,8 +77,6 @@
           <Collapse key={'ps-' + projectID} let:show>
             <h3 slot="title">Project-settings</h3>
             {#if show}
-              <ProjectForm {project} />
-              <hr />
               <h3>My settings</h3>
 
               <!-- These settings will be moved to user-settings in the future -->

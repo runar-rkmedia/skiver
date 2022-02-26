@@ -18,17 +18,17 @@ type Error struct {
 
 func (err Error) Error() string {
 	if len(err.Errors) > 0 {
-		s := err.Message
+		s := err.APIError.Error.Message
 		for i := 0; i < len(err.Errors); i++ {
 			s += ", " + err.Errors[i].Error()
 		}
 
 		return s
 	}
-	return err.Message
+	return err.APIError.Error.Message
 }
 func (err Error) GetCode() requestContext.ErrorCodes {
-	return requestContext.ErrorCodes(err.Code)
+	return requestContext.ErrorCodes(err.APIError.Error.Code)
 }
 func (err Error) GetStatusCode() int {
 	if err.StatusCode == 0 {
@@ -46,8 +46,10 @@ func NewError(message string, code requestContext.ErrorCodes, details ...interfa
 		Errors: []error{},
 		APIError: models.APIError{
 			Details: details,
-			Message: message,
-			Code:    models.ErrorCodes(code),
+			Error: &models.Error{
+				Message: message,
+				Code:    models.ErrorCodes(code),
+			},
 		},
 	}
 }

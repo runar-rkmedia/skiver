@@ -37,6 +37,9 @@ type LoginResponse struct {
 	// can create users
 	CanCreateUsers bool `json:"can_create_users,omitempty"`
 
+	// can manage snapshots
+	CanManageSnapshots bool `json:"can_manage_snapshots,omitempty"`
+
 	// can update locales
 	CanUpdateLocales bool `json:"can_update_locales,omitempty"`
 

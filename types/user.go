@@ -23,6 +23,7 @@ type User struct {
 	CanUpdateOrganization bool `json:"can_update_organization,omitempty"`
 	CanUpdateUsers        bool `json:"can_update_users,omitempty"`
 	CanUpdateProjects     bool `json:"can_update_projects,omitempty"`
+	CanManageSnapshots    bool `json:"can_manage_snapshots,omitempty"`
 	CanUpdateTranslations bool `json:"can_update_translations,omitempty"`
 	CanUpdateLocales      bool `json:"can_update_locales,omitempty"`
 }

@@ -14,13 +14,10 @@ import (
 	"github.com/go-openapi/validate"
 )
 
-// Project project
+// Snapshot snapshot
 //
-// swagger:model Project
-type Project struct {
-
-	// category i ds
-	CategoryIDs []string `json:"category_ids"`
+// swagger:model Snapshot
+type Snapshot struct {
 
 	// Time of which the entity was created in the database
 	// Required: true
@@ -36,26 +33,29 @@ type Project struct {
 	Deleted strfmt.DateTime `json:"deleted,omitempty"`
 
 	// description
-	Description string `json:"description,omitempty"`
+	Description string `json:"Description,omitempty"`
 
 	// Unique identifier of the entity
 	// Required: true
 	ID *string `json:"id"`
 
-	// included tags
-	IncludedTags []string `json:"included_tags"`
+	// project
+	Project *ExtendedProject `json:"Project,omitempty"`
 
-	// locale i ds
-	LocaleIDs map[string]LocaleSetting `json:"locales,omitempty"`
+	// project hash
+	ProjectHash uint64 `json:"ProjectHash,omitempty"`
 
-	// short name
-	ShortName string `json:"short_name,omitempty"`
+	// project ID
+	ProjectID string `json:"ProjectID,omitempty"`
 
-	// snapshots
-	Snapshots map[string]ProjectSnapshotMeta `json:"snapshots,omitempty"`
+	// project short name
+	ProjectShortName string `json:"ProjectShortName,omitempty"`
 
-	// title
-	Title string `json:"title,omitempty"`
+	// project title
+	ProjectTitle string `json:"ProjectTitle,omitempty"`
+
+	// tags
+	Tags []string `json:"Tags"`
 
 	// Time of which the entity was updated, if any
 	// Format: date-time
@@ -65,8 +65,8 @@ type Project struct {
 	UpdatedBy string `json:"updatedBy,omitempty"`
 }
 
-// Validate validates this project
-func (m *Project) Validate(formats strfmt.Registry) error {
+// Validate validates this snapshot
+func (m *Snapshot) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateCreatedAt(formats); err != nil {
@@ -81,11 +81,7 @@ func (m *Project) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateLocaleIDs(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateSnapshots(formats); err != nil {
+	if err := m.validateProject(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -99,7 +95,7 @@ func (m *Project) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateCreatedAt(formats strfmt.Registry) error {
+func (m *Snapshot) validateCreatedAt(formats strfmt.Registry) error {
 
 	if err := validate.Required("createdAt", "body", m.CreatedAt); err != nil {
 		return err
@@ -112,7 +108,7 @@ func (m *Project) validateCreatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateDeleted(formats strfmt.Registry) error {
+func (m *Snapshot) validateDeleted(formats strfmt.Registry) error {
 	if swag.IsZero(m.Deleted) { // not required
 		return nil
 	}
@@ -124,7 +120,7 @@ func (m *Project) validateDeleted(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateID(formats strfmt.Registry) error {
+func (m *Snapshot) validateID(formats strfmt.Registry) error {
 
 	if err := validate.Required("id", "body", m.ID); err != nil {
 		return err
@@ -133,49 +129,26 @@ func (m *Project) validateID(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateLocaleIDs(formats strfmt.Registry) error {
-	if swag.IsZero(m.LocaleIDs) { // not required
+func (m *Snapshot) validateProject(formats strfmt.Registry) error {
+	if swag.IsZero(m.Project) { // not required
 		return nil
 	}
 
-	for k := range m.LocaleIDs {
-
-		if err := validate.Required("locales"+"."+k, "body", m.LocaleIDs[k]); err != nil {
+	if m.Project != nil {
+		if err := m.Project.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("Project")
+			} else if ce, ok := err.(*errors.CompositeError); ok {
+				return ce.ValidateName("Project")
+			}
 			return err
 		}
-		if val, ok := m.LocaleIDs[k]; ok {
-			if err := val.Validate(formats); err != nil {
-				return err
-			}
-		}
-
 	}
 
 	return nil
 }
 
-func (m *Project) validateSnapshots(formats strfmt.Registry) error {
-	if swag.IsZero(m.Snapshots) { // not required
-		return nil
-	}
-
-	for k := range m.Snapshots {
-
-		if err := validate.Required("snapshots"+"."+k, "body", m.Snapshots[k]); err != nil {
-			return err
-		}
-		if val, ok := m.Snapshots[k]; ok {
-			if err := val.Validate(formats); err != nil {
-				return err
-			}
-		}
-
-	}
-
-	return nil
-}
-
-func (m *Project) validateUpdatedAt(formats strfmt.Registry) error {
+func (m *Snapshot) validateUpdatedAt(formats strfmt.Registry) error {
 	if swag.IsZero(m.UpdatedAt) { // not required
 		return nil
 	}
@@ -187,15 +160,11 @@ func (m *Project) validateUpdatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validate this project based on the context it is used
-func (m *Project) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+// ContextValidate validate this snapshot based on the context it is used
+func (m *Snapshot) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.contextValidateLocaleIDs(ctx, formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.contextValidateSnapshots(ctx, formats); err != nil {
+	if err := m.contextValidateProject(ctx, formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -205,38 +174,24 @@ func (m *Project) ContextValidate(ctx context.Context, formats strfmt.Registry) 
 	return nil
 }
 
-func (m *Project) contextValidateLocaleIDs(ctx context.Context, formats strfmt.Registry) error {
+func (m *Snapshot) contextValidateProject(ctx context.Context, formats strfmt.Registry) error {
 
-	for k := range m.LocaleIDs {
-
-		if val, ok := m.LocaleIDs[k]; ok {
-			if err := val.ContextValidate(ctx, formats); err != nil {
-				return err
+	if m.Project != nil {
+		if err := m.Project.ContextValidate(ctx, formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("Project")
+			} else if ce, ok := err.(*errors.CompositeError); ok {
+				return ce.ValidateName("Project")
 			}
+			return err
 		}
-
-	}
-
-	return nil
-}
-
-func (m *Project) contextValidateSnapshots(ctx context.Context, formats strfmt.Registry) error {
-
-	for k := range m.Snapshots {
-
-		if val, ok := m.Snapshots[k]; ok {
-			if err := val.ContextValidate(ctx, formats); err != nil {
-				return err
-			}
-		}
-
 	}
 
 	return nil
 }
 
 // MarshalBinary interface implementation
-func (m *Project) MarshalBinary() ([]byte, error) {
+func (m *Snapshot) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -244,8 +199,8 @@ func (m *Project) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *Project) UnmarshalBinary(b []byte) error {
-	var res Project
+func (m *Snapshot) UnmarshalBinary(b []byte) error {
+	var res Snapshot
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

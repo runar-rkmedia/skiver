@@ -8,11 +8,12 @@
    * Key should be a unique identifier for this tip, preferably human-readable
    *
    * @example
-   * key="server-message"
+   *   key = 'server-message'
    */
   export let key: string
-  /** If the content is significanly changed, users who have already read the previous message,
-   * will be presented again if the version is incremented.x
+  /**
+   * If the content is significanly changed, users who have already read the
+   * previous message, will be presented again if the version is incremented.x
    */
   export let version: number = 0
   /** Indicated if the tip is read or not */
@@ -36,8 +37,7 @@
     on:click={() => {
       $state.seenHints[key] = [version, new Date()]
       read = false
-    }}
-  >
+    }}>
     <Icon icon={'success'} />
     Got it
   </Button>

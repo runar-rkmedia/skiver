@@ -8,6 +8,7 @@ import (
 
 	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/go-common/utils"
+	"github.com/runar-rkmedia/skiver/internal"
 	"github.com/runar-rkmedia/skiver/types"
 	"go.etcd.io/bbolt"
 	bolt "go.etcd.io/bbolt"
@@ -50,9 +51,8 @@ func NewBbolt(l logger.AppLogger, path string, pubsub PubSubPublisher, options .
 	bb.pubsub = pubsub
 	bb.Marshaller = Gob{}
 	err = bb.Update(func(t *bolt.Tx) error {
-		buckets := [][]byte{BucketUser, BucketLocale, BucketTranslation, BucketProject, BucketSession, BucketCategory, BucketTranslationValue, BucketMissing, BucketOrganization}
-		for i := 0; i < len(buckets); i++ {
-			_, err := t.CreateBucketIfNotExists(buckets[i])
+		for i := 0; i < len(allBuckets); i++ {
+			_, err := t.CreateBucketIfNotExists(allBuckets[i])
 			if err != nil {
 				return err
 
@@ -95,6 +95,8 @@ func (s *BBolter) GetItem(bucket []byte, id string, j interface{}) error {
 var (
 	ErrMissingCreatedBy      = errors.New("CreatedBy was empty")
 	ErrMissingOrganizationID = errors.New("OrganizationID was empty")
+	ErrMissingProjectID      = errors.New("ProjectID was empty")
+	ErrMissingTags           = errors.New("Missing tags")
 )
 
 func (s *BBolter) newUniqueID() string {
@@ -139,15 +141,31 @@ func nowPointer() *time.Time {
 	return &t
 }
 
-func (s *BBolter) Size() (int64, error) {
-	s.l.Info().Interface("stats", s.Stats()).Msg("DB-stats")
+func (bb *BBolter) Size() (int64, error) {
+	bb.l.Info().Interface("stats", bb.Stats()).Msg("DB-stats")
 
-	stat, err := os.Stat(s.Path())
+	stat, err := os.Stat(bb.Path())
 	if err != nil {
 		return 0, err
 	}
 	return int64(stat.Size()), err
 }
+
+// Returns BucketStats for all buckets used
+func (bb *BBolter) BucketStats() map[string]interface{} {
+	stats := map[string]interface{}{}
+
+	bb.DB.View(func(t *bolt.Tx) error {
+		for i := 0; i < len(allBuckets); i++ {
+			stats[string(allBuckets[i])] = t.Bucket(allBuckets[i]).Stats()
+		}
+		return nil
+	})
+	internal.PrintMultiLineYaml("db-stats", stats)
+	return stats
+
+}
+
 func (s *BBolter) updater(id string, bucket []byte, f func(b []byte) ([]byte, error)) error {
 	if id == "" {
 		return ErrMissingIdArg
@@ -207,10 +225,23 @@ var (
 	BucketSession          = []byte("sessions")
 	BucketUser             = []byte("users")
 	BucketLocale           = []byte("locales")
+	BucketSnapshot         = []byte("snapshot")
 	BucketTranslation      = []byte("translations")
 	BucketProject          = []byte("projects")
 	BucketOrganization     = []byte("organizations")
 	BucketTranslationValue = []byte("translationValues")
 	BucketCategory         = []byte("categories")
 	BucketMissing          = []byte("missing")
+	allBuckets             = [][]byte{
+		BucketSession,
+		BucketUser,
+		BucketLocale,
+		BucketSnapshot,
+		BucketTranslation,
+		BucketProject,
+		BucketOrganization,
+		BucketTranslationValue,
+		BucketCategory,
+		BucketMissing,
+	}
 )

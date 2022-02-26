@@ -28,6 +28,7 @@ export type DB = {
   responseStates: Omit<Record<keyof DB, { loading: boolean; error?: ApiDef.APIError }>, 'responseStates' | 'serverInfo'>
 }
 
+
 export const api = {
   join: {
     get: (id: string) => fetchApi<ApiDef.Organization>('join/' + id, () => null, { method: 'GET' }),
@@ -48,6 +49,9 @@ export const api = {
     list: apiGetListFactory<'missingTranslation'>('missing', 'missingTranslation')
   },
   project: CrudFactory<ApiDef.ProjectInput, 'project', ApiDef.UpdateProjectInput>('project'),
+  snapshotMeta: {
+    create: apiCreateFactory<ApiDef.CreateSnapshotInput, 'project'>('project/snapshot', 'project'),
+  },
   organization: CrudFactory<ApiDef.OrganizationInput, 'organization'>('organization'),
   category: CrudFactory<ApiDef.CategoryInput, 'category'>('category'),
   translationValue: CrudFactory<
@@ -473,7 +477,7 @@ const checkError = (apiError?: ApiDef.APIError | null) => {
   if (!apiError) {
     return apiError
   }
-  if (apiError.code?.includes('Authentication required')) {
+  if (apiError.error?.code?.includes('Authentication required')) {
     db.update((s) => {
       const login = { ...s.login, ok: false }
       localStorage.setItem('login-response', JSON.stringify(login))

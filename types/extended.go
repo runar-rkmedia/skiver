@@ -96,7 +96,7 @@ func (c Category) Extend(db Storage, options ...ExtendOptions) (ec ExtendedCateg
 type ExtendOptions struct {
 	ByID, ByKeyLike  bool
 	LocaleFilter     []string
-	LocaleFilterFunc func(project Project, locale Locale) bool
+	LocaleFilterFunc func(locale Locale) bool
 	ErrOnNoLocales   bool
 }
 
@@ -144,7 +144,7 @@ func (p Project) Extend(db Storage, options ...ExtendOptions) (ep ExtendedProjec
 	}
 	if opts.LocaleFilterFunc != nil {
 		for k, v := range locales {
-			keep := opts.LocaleFilterFunc(p, v)
+			keep := opts.LocaleFilterFunc(v)
 			if !keep {
 				delete(locales, k)
 

@@ -1,15 +1,14 @@
 package requestContext
 
-import "fmt"
-
 type ErrorCodes string
 type Error struct {
 	Code    ErrorCodes `json:"code,omitempty"`
 	Message string     `json:"error,omitempty"`
 }
 type APIError struct {
-	Details interface{} `json:"details,omitempty"`
-	Error
+	Details       interface{} `json:"details,omitempty"`
+	Err           Error       `json:"error"`
+	InternalError error       `json:"-"`
 }
 
 // swagger:response
@@ -18,8 +17,14 @@ type apiError struct {
 	Body APIError
 }
 
+func (e APIError) Error() string {
+	if e.Err.Message == "" && e.InternalError != nil {
+		e.Err.Message = e.InternalError.Error()
+	}
+	return e.Err.Error()
+}
 func (e Error) Error() string {
-	return fmt.Sprintf("%s (%s)", e.Message, e.Code)
+	return e.Message
 }
 
 func NewError(msg string, code ErrorCodes) Error {
@@ -27,6 +32,7 @@ func NewError(msg string, code ErrorCodes) Error {
 }
 
 var (
+	ErrEmptyBody  = NewError("Body was empty", CodeErrInputValidation)
 	ErrIDNonValid = NewError("Id was not valid", CodeErrIDNonValid)
 	ErrIDTooLong  = NewError("Id was too long", CodeErrIDTooLong)
 	ErrIDEmpty    = NewError("Id was empty", CodeErrIDEmpty)
@@ -47,6 +53,7 @@ const (
 
 	CodeErrRequestEntityTooLarge ErrorCodes = "Error: Request Entity too large"
 	CodeErrInputValidation       ErrorCodes = "Error: General input validation"
+	CodeErrMissingBody           ErrorCodes = "Error: No body"
 	CodeErrIDNonValid            ErrorCodes = "Error: ID not valid"
 	CodeErrIDTooLong             ErrorCodes = "Error: ID is too long"
 	CodeErrIDEmpty               ErrorCodes = "Error: ID was Empty"
@@ -58,6 +65,7 @@ const (
 	CodeErrLocale               ErrorCodes = "Error: Locale error"
 	CodeErrUser                 ErrorCodes = "Error: User error"
 	CodeErrProject              ErrorCodes = "Error: Project error"
+	CodeErrSnapshot             ErrorCodes = "Error: Snapshot error"
 	CodeErrReportMissing        ErrorCodes = "Error: Report missing"
 	CodeErrTranslation          ErrorCodes = "Error: Translation error"
 	CodeErrCategory             ErrorCodes = "Error: Category error"

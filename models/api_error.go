@@ -21,18 +21,15 @@ type APIError struct {
 	// details
 	Details interface{} `json:"details,omitempty"`
 
-	// message
-	Message string `json:"error,omitempty"`
-
-	// code
-	Code ErrorCodes `json:"code,omitempty"`
+	// error
+	Error *Error `json:"error,omitempty"`
 }
 
 // Validate validates this API error
 func (m *APIError) Validate(formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.validateCode(formats); err != nil {
+	if err := m.validateError(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -42,18 +39,20 @@ func (m *APIError) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *APIError) validateCode(formats strfmt.Registry) error {
-	if swag.IsZero(m.Code) { // not required
+func (m *APIError) validateError(formats strfmt.Registry) error {
+	if swag.IsZero(m.Error) { // not required
 		return nil
 	}
 
-	if err := m.Code.Validate(formats); err != nil {
-		if ve, ok := err.(*errors.Validation); ok {
-			return ve.ValidateName("code")
-		} else if ce, ok := err.(*errors.CompositeError); ok {
-			return ce.ValidateName("code")
+	if m.Error != nil {
+		if err := m.Error.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("error")
+			} else if ce, ok := err.(*errors.CompositeError); ok {
+				return ce.ValidateName("error")
+			}
+			return err
 		}
-		return err
 	}
 
 	return nil
@@ -63,7 +62,7 @@ func (m *APIError) validateCode(formats strfmt.Registry) error {
 func (m *APIError) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.contextValidateCode(ctx, formats); err != nil {
+	if err := m.contextValidateError(ctx, formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -73,15 +72,17 @@ func (m *APIError) ContextValidate(ctx context.Context, formats strfmt.Registry)
 	return nil
 }
 
-func (m *APIError) contextValidateCode(ctx context.Context, formats strfmt.Registry) error {
+func (m *APIError) contextValidateError(ctx context.Context, formats strfmt.Registry) error {
 
-	if err := m.Code.ContextValidate(ctx, formats); err != nil {
-		if ve, ok := err.(*errors.Validation); ok {
-			return ve.ValidateName("code")
-		} else if ce, ok := err.(*errors.CompositeError); ok {
-			return ce.ValidateName("code")
+	if m.Error != nil {
+		if err := m.Error.ContextValidate(ctx, formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("error")
+			} else if ce, ok := err.(*errors.CompositeError); ok {
+				return ce.ValidateName("error")
+			}
+			return err
 		}
-		return err
 	}
 
 	return nil

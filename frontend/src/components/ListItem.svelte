@@ -25,9 +25,11 @@
       <slot name="description" />
     </div>
   </div>
-  <div class="item-actions">
-    <slot name="actions" />
-  </div>
+  {#if $$slots.actions}
+    <div class="item-actions">
+      <slot name="actions" />
+    </div>
+  {/if}
 </li>
 
 <style>
@@ -59,6 +61,7 @@
     padding-inline: var(--size-4);
     margin-block-start: var(--size-3);
     margin-block-end: var(--size-2);
+    width: 100%;
   }
   .sub-item {
     margin-inline-start: 16px;

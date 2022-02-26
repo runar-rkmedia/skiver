@@ -8,12 +8,12 @@ import (
 
 // Extracts queryparameters from path and query-params.
 // This is useful for caching
-func extractParams(r *http.Request, basePath string) (url.Values, error) {
+func ExtractParams(r *http.Request) (url.Values, error) {
 	q := r.URL.Query()
 
-	qpath := strings.Replace(r.URL.Path, basePath, "", 1)
+	qpath := StripBeforeLast(r.URL.Path, "/")
+
 	// qpath, _, _ = strings.Cut(qpath, ".")
-	qpath = strings.Split(qpath, ".")[0]
 	qpath = strings.TrimPrefix(qpath, "/")
 
 	qq, err := url.ParseQuery(qpath)
@@ -27,4 +27,12 @@ func extractParams(r *http.Request, basePath string) (url.Values, error) {
 		}
 	}
 	return q, nil
+}
+
+// Removes the characters before the last occureance of `sep` and the `sep` if available
+func StripBeforeLast(s, sep string) string {
+	if idx := strings.LastIndex(s, sep); idx != -1 {
+		return s[idx+1:]
+	}
+	return s
 }

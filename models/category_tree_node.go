@@ -14,13 +14,13 @@ import (
 	"github.com/go-openapi/validate"
 )
 
-// Project project
+// CategoryTreeNode category tree node
 //
-// swagger:model Project
-type Project struct {
+// swagger:model CategoryTreeNode
+type CategoryTreeNode struct {
 
-	// category i ds
-	CategoryIDs []string `json:"category_ids"`
+	// categories
+	Categories map[string]CategoryTreeNode `json:"categories,omitempty"`
 
 	// Time of which the entity was created in the database
 	// Required: true
@@ -38,24 +38,27 @@ type Project struct {
 	// description
 	Description string `json:"description,omitempty"`
 
+	// TODO: change to map
+	Exists bool `json:"exists,omitempty"`
+
 	// Unique identifier of the entity
 	// Required: true
 	ID *string `json:"id"`
 
-	// included tags
-	IncludedTags []string `json:"included_tags"`
+	// key
+	Key string `json:"key,omitempty"`
 
-	// locale i ds
-	LocaleIDs map[string]LocaleSetting `json:"locales,omitempty"`
-
-	// short name
-	ShortName string `json:"short_name,omitempty"`
-
-	// snapshots
-	Snapshots map[string]ProjectSnapshotMeta `json:"snapshots,omitempty"`
+	// project ID
+	ProjectID string `json:"project_id,omitempty"`
 
 	// title
 	Title string `json:"title,omitempty"`
+
+	// translation i ds
+	TranslationIDs []string `json:"translation_ids"`
+
+	// translations
+	Translations map[string]ExtendedTranslation `json:"translations,omitempty"`
 
 	// Time of which the entity was updated, if any
 	// Format: date-time
@@ -65,9 +68,13 @@ type Project struct {
 	UpdatedBy string `json:"updatedBy,omitempty"`
 }
 
-// Validate validates this project
-func (m *Project) Validate(formats strfmt.Registry) error {
+// Validate validates this category tree node
+func (m *CategoryTreeNode) Validate(formats strfmt.Registry) error {
 	var res []error
+
+	if err := m.validateCategories(formats); err != nil {
+		res = append(res, err)
+	}
 
 	if err := m.validateCreatedAt(formats); err != nil {
 		res = append(res, err)
@@ -81,11 +88,7 @@ func (m *Project) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateLocaleIDs(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateSnapshots(formats); err != nil {
+	if err := m.validateTranslations(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -99,7 +102,28 @@ func (m *Project) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateCreatedAt(formats strfmt.Registry) error {
+func (m *CategoryTreeNode) validateCategories(formats strfmt.Registry) error {
+	if swag.IsZero(m.Categories) { // not required
+		return nil
+	}
+
+	for k := range m.Categories {
+
+		if err := validate.Required("categories"+"."+k, "body", m.Categories[k]); err != nil {
+			return err
+		}
+		if val, ok := m.Categories[k]; ok {
+			if err := val.Validate(formats); err != nil {
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+func (m *CategoryTreeNode) validateCreatedAt(formats strfmt.Registry) error {
 
 	if err := validate.Required("createdAt", "body", m.CreatedAt); err != nil {
 		return err
@@ -112,7 +136,7 @@ func (m *Project) validateCreatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateDeleted(formats strfmt.Registry) error {
+func (m *CategoryTreeNode) validateDeleted(formats strfmt.Registry) error {
 	if swag.IsZero(m.Deleted) { // not required
 		return nil
 	}
@@ -124,7 +148,7 @@ func (m *Project) validateDeleted(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateID(formats strfmt.Registry) error {
+func (m *CategoryTreeNode) validateID(formats strfmt.Registry) error {
 
 	if err := validate.Required("id", "body", m.ID); err != nil {
 		return err
@@ -133,17 +157,17 @@ func (m *Project) validateID(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateLocaleIDs(formats strfmt.Registry) error {
-	if swag.IsZero(m.LocaleIDs) { // not required
+func (m *CategoryTreeNode) validateTranslations(formats strfmt.Registry) error {
+	if swag.IsZero(m.Translations) { // not required
 		return nil
 	}
 
-	for k := range m.LocaleIDs {
+	for k := range m.Translations {
 
-		if err := validate.Required("locales"+"."+k, "body", m.LocaleIDs[k]); err != nil {
+		if err := validate.Required("translations"+"."+k, "body", m.Translations[k]); err != nil {
 			return err
 		}
-		if val, ok := m.LocaleIDs[k]; ok {
+		if val, ok := m.Translations[k]; ok {
 			if err := val.Validate(formats); err != nil {
 				return err
 			}
@@ -154,28 +178,7 @@ func (m *Project) validateLocaleIDs(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Project) validateSnapshots(formats strfmt.Registry) error {
-	if swag.IsZero(m.Snapshots) { // not required
-		return nil
-	}
-
-	for k := range m.Snapshots {
-
-		if err := validate.Required("snapshots"+"."+k, "body", m.Snapshots[k]); err != nil {
-			return err
-		}
-		if val, ok := m.Snapshots[k]; ok {
-			if err := val.Validate(formats); err != nil {
-				return err
-			}
-		}
-
-	}
-
-	return nil
-}
-
-func (m *Project) validateUpdatedAt(formats strfmt.Registry) error {
+func (m *CategoryTreeNode) validateUpdatedAt(formats strfmt.Registry) error {
 	if swag.IsZero(m.UpdatedAt) { // not required
 		return nil
 	}
@@ -187,15 +190,15 @@ func (m *Project) validateUpdatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validate this project based on the context it is used
-func (m *Project) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+// ContextValidate validate this category tree node based on the context it is used
+func (m *CategoryTreeNode) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.contextValidateLocaleIDs(ctx, formats); err != nil {
+	if err := m.contextValidateCategories(ctx, formats); err != nil {
 		res = append(res, err)
 	}
 
-	if err := m.contextValidateSnapshots(ctx, formats); err != nil {
+	if err := m.contextValidateTranslations(ctx, formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -205,11 +208,11 @@ func (m *Project) ContextValidate(ctx context.Context, formats strfmt.Registry) 
 	return nil
 }
 
-func (m *Project) contextValidateLocaleIDs(ctx context.Context, formats strfmt.Registry) error {
+func (m *CategoryTreeNode) contextValidateCategories(ctx context.Context, formats strfmt.Registry) error {
 
-	for k := range m.LocaleIDs {
+	for k := range m.Categories {
 
-		if val, ok := m.LocaleIDs[k]; ok {
+		if val, ok := m.Categories[k]; ok {
 			if err := val.ContextValidate(ctx, formats); err != nil {
 				return err
 			}
@@ -220,11 +223,11 @@ func (m *Project) contextValidateLocaleIDs(ctx context.Context, formats strfmt.R
 	return nil
 }
 
-func (m *Project) contextValidateSnapshots(ctx context.Context, formats strfmt.Registry) error {
+func (m *CategoryTreeNode) contextValidateTranslations(ctx context.Context, formats strfmt.Registry) error {
 
-	for k := range m.Snapshots {
+	for k := range m.Translations {
 
-		if val, ok := m.Snapshots[k]; ok {
+		if val, ok := m.Translations[k]; ok {
 			if err := val.ContextValidate(ctx, formats); err != nil {
 				return err
 			}
@@ -236,7 +239,7 @@ func (m *Project) contextValidateSnapshots(ctx context.Context, formats strfmt.R
 }
 
 // MarshalBinary interface implementation
-func (m *Project) MarshalBinary() ([]byte, error) {
+func (m *CategoryTreeNode) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -244,8 +247,8 @@ func (m *Project) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *Project) UnmarshalBinary(b []byte) error {
-	var res Project
+func (m *CategoryTreeNode) UnmarshalBinary(b []byte) error {
+	var res CategoryTreeNode
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}
