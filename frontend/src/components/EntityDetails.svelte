@@ -1,7 +1,7 @@
 <script lang="ts">
   import formatDate from 'dates'
 
-  export let entity: ApiDef.Entity
+  export let entity: Partial<ApiDef.Entity>
 </script>
 
 {#if entity}

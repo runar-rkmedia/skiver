@@ -5,6 +5,7 @@
   import { db } from './api'
   import LocalePage from './pages/LocalePage.svelte'
   import ProjectsPage from './pages/ProjectsPage.svelte'
+  import ProjectSettingsPage from './pages/ProjectSettingsPage.svelte'
   import MissingTranslationsPage from './pages/MissingTranslationsPage.svelte'
   import OrganizationPage from 'pages/OrganizationPage.svelte'
   import JoinPage from 'pages/JoinPage.svelte'
@@ -45,7 +46,11 @@
   <MissingTranslationsPage />
 {:else if mainRoute === 'project'}
   {#if routeArgs[0]}
-    <ProjectPage projectID={routeArgs[0]} />
+    {#if routeArgs[1] === 'settings'}
+      <ProjectSettingsPage projectID={routeArgs[0]} />
+    {:else}
+      <ProjectPage projectID={routeArgs[0]} />
+    {/if}
   {:else}
     <ProjectsPage />
   {/if}

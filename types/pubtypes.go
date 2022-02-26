@@ -9,6 +9,7 @@ const (
 	PubTypeMissingTranslation PubType = "missingTranslation"
 	PubTypeTranslationValue   PubType = "translationValue"
 	PubTypeCategory           PubType = "category"
+	PubTypeSnapshot           PubType = "snapshot"
 	PubTypeLocale             PubType = "locale"
 	PubTypeProject            PubType = "project"
 	PubTypeOrganization       PubType = "organization"

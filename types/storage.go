@@ -54,6 +54,11 @@ type Storage interface {
 	ReportMissing(key MissingTranslation) (*MissingTranslation, error)
 	GetMissingKeysFilter(max int, filter ...MissingTranslation) (map[string]MissingTranslation, error)
 	UpdateUser(id string, payload User) (User, error)
+
+	GetSnapshot(snapshotId string) (*ProjectSnapshot, error)
+	FindSnapshots(max int, filter ...ProjectSnapshot) (map[string]ProjectSnapshot, error)
+	CreateSnapshot(snapshot ProjectSnapshot) (ProjectSnapshot, error)
+	FindOneSnapshot(filter ...ProjectSnapshot) (*ProjectSnapshot, error)
 }
 
 type Entity struct {

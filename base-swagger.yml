@@ -11,6 +11,25 @@ components:
 security:
   - cookieAuth: []
 definitions:
+  CreateSnapshotInput:
+    type: object
+    required:
+      - project_id
+      - tag
+    properties:
+      project_id:
+        type: string
+        maxLength: 36
+        minLength: 3
+      description:
+        type: string
+        maxLength: 300
+        minLength: 3
+      tag:
+        type: string
+        maxLength: 36
+        minLength: 3
+        pattern: ^[a-zA-Z0-9-_.]{3,36}$
   LocaleSettingInput:
     properties:
       auto_translation:
@@ -271,6 +290,30 @@ info:
   title: Skiver API.
   version: 0.0.1
 paths:
+  /project/snapshot:
+    post:
+      tags:
+        - project
+        - i18n
+      summary: Create a snapshot of a project, as well as its exported i18n.
+      description: >
+        Snapshots serve as a static reference in time as to how a project ands it's exports was at a point in time.
+
+        These are used to keep releases of project-translations stable and to not include ongoing changes to translations.
+      operationId: createSnapshot
+      parameters:
+        - in: body
+          name: SnapshotInput
+          schema:
+            $ref: '#/definitions/CreateSnapshotInput'
+      responses:
+        "200":
+          schema:
+            $ref: '#/responses/SnapshotResponse'
+        "400":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
   /import/{kind}/{project}/{locale}:
     post: 
       tags:
@@ -536,7 +579,7 @@ paths:
           $ref: '#/responses/apiError'
       parameters:
         - in: path
-          name: id
+          name: projectID
           type: string
           required: true
         - in: body
@@ -737,24 +780,20 @@ responses:
       $ref: '#/definitions/LoginResponse'
       type: object
   LocalesResponse:
-    description: ""
     schema:
       items:
         $ref: '#/definitions/Locale'
       type: array
   ProjectResponse:
-    description: ""
     schema:
       $ref: '#/definitions/Project'
       type: object
   ProjectsResponse:
-    description: ""
     schema:
       items:
         $ref: '#/definitions/Project'
       type: array
   OrganizationResponse:
-    description: ""
     schema:
       $ref: '#/definitions/Organization'
       type: object
@@ -763,40 +802,43 @@ responses:
       $ref: '#/definitions/LoginResponse'
       type: object
   OrganizationsResponse:
-    description: ""
     schema:
       items:
         $ref: '#/definitions/Organization'
       type: array
+  SnapshotResponse:
+    schema:
+      $ref: '#/definitions/ProjectSnapshot'
+      type: object
+  SnapshotsResponse:
+    schema:
+      items:
+        $ref: '#/definitions/ProjectSnapshot'
+        type: object
+      type: array
   CategoryResponse:
-    description: ""
     schema:
       $ref: '#/definitions/Category'
       type: object
   CategoriesResponse:
-    description: ""
     schema:
       items:
         $ref: '#/definitions/Category'
       type: array
   TranslationResponse:
-    description: ""
     schema:
       $ref: '#/definitions/Translation'
       type: object
   TranslationsResponse:
-    description: ""
     schema:
       items:
         $ref: '#/definitions/Translation'
       type: array
   TranslationValueResponse:
-    description: ""
     schema:
       $ref: '#/definitions/TranslationValue'
       type: object
   TranslationValuesResponse:
-    description: ""
     schema:
       items:
         $ref: '#/definitions/TranslationValue'

@@ -6,7 +6,9 @@
   import Tip from '../components/Tip.svelte'
   import ProjectForm from 'forms/ProjectForm.svelte'
   import EntityDetails from 'components/EntityDetails.svelte'
+  import Button from 'components/Button.svelte'
   $: projects = Object.values($db.project)
+  let showCreate = false
 </script>
 
 <h2>Project</h2>
@@ -17,6 +19,14 @@
     optionally use resources from other projects.
   </p>
 </Tip>
+{#if showCreate}
+  <paper>
+    <ProjectForm />
+  </paper>
+{:else}
+  <Button color="primary" icon="create" on:click={() => (showCreate = true)}
+    >Create project</Button>
+{/if}
 <div class="spacer" />
 <paper>
   <EntityList
@@ -48,13 +58,18 @@
         ID={v.id}
         deleted={!!v.deleted}>
         <svelte:fragment slot="header">
-          <a href={'#project/' + v.id}>
-            {v.title}
-          </a>
+          <div class="projectHeader">
+            <a href={'#project/' + v.id}>
+              {v.title}
+            </a>
+          </div>
         </svelte:fragment>
         <svelte:fragment slot="description">
           {v.description}
           <EntityDetails entity={v} />
+        </svelte:fragment>
+        <svelte:fragment slot="actions">
+          <a href={'#project/' + v.id + '/settings'}> Settings </a>
         </svelte:fragment>
       </ListItem>
     {:else}
@@ -66,12 +81,14 @@
     {/each}
   </EntityList>
 </paper>
-<paper>
-  <ProjectForm />
-</paper>
 
 <style>
   .spacer {
     height: var(--size-6);
+  }
+  .projectHeader {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
   }
 </style>

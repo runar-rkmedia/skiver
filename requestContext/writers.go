@@ -25,14 +25,16 @@ func WriteErr(err error, code ErrorCodes, r *http.Request, rw http.ResponseWrite
 	return WriteError(err.Error(), code, r, rw, err)
 }
 func WriteError(msg string, code ErrorCodes, r *http.Request, rw http.ResponseWriter, details ...interface{}) error {
-	ae := APIError{Error: Error{Message: msg, Code: code}}
+	ae := APIError{Err: Error{Message: msg, Code: code}}
 	if details != nil && details[0] != nil {
 		ae.Details = details[0]
 	}
 	statusCode := http.StatusBadGateway
 	switch code {
-	case CodeErrAuthenticationRequired:
+	case CodeErrAuthoriziation:
 		statusCode = http.StatusUnauthorized
+	case CodeErrAuthenticationRequired:
+		statusCode = http.StatusForbidden
 	case CodeErrMethodNotAllowed:
 		statusCode = http.StatusMethodNotAllowed
 	case CodeErrRequestEntityTooLarge:

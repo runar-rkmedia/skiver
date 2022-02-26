@@ -3,6 +3,7 @@ package bboltStorage
 import (
 	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/runar-rkmedia/skiver/types"
 	bolt "go.etcd.io/bbolt"
@@ -98,8 +99,12 @@ func (b *BBolter) UpdateProject(id string, project types.Project) (types.Project
 			c.Description = project.Description
 			needsUpdate = true
 		}
-		if len(project.LocaleIDs) != 0 {
+		if len(project.LocaleIDs) != 0 && !reflect.DeepEqual(project.LocaleIDs, c.LocaleIDs) {
 			c.LocaleIDs = project.LocaleIDs
+			needsUpdate = true
+		}
+		if len(project.Snapshots) != 0 && !reflect.DeepEqual(project.Snapshots, c.Snapshots) {
+			c.Snapshots = project.Snapshots
 			needsUpdate = true
 		}
 

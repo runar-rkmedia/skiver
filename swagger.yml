@@ -6,14 +6,11 @@ consumes:
 definitions:
   APIError:
     properties:
-      code:
-        $ref: '#/definitions/ErrorCodes'
       details:
         type: object
         x-go-name: Details
       error:
-        type: string
-        x-go-name: Message
+        $ref: '#/definitions/Error'
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/requestContext
   Category:
@@ -93,6 +90,92 @@ definitions:
     - project_id
     - title
     type: object
+  CategoryTreeNode:
+    properties:
+      categories:
+        additionalProperties:
+          $ref: '#/definitions/CategoryTreeNode'
+        type: object
+        x-go-name: Categories
+      createdAt:
+        description: Time of which the entity was created in the database
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      createdBy:
+        description: User id refering to the user who created the item
+        type: string
+        x-go-name: CreatedBy
+      deleted:
+        description: |-
+          If set, the item is considered deleted. The item will normally not get deleted from the database,
+          but it may if cleanup is required.
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      description:
+        type: string
+        x-go-name: Description
+      exists:
+        description: 'TODO: change to map'
+        type: boolean
+        x-go-name: Exists
+      id:
+        description: Unique identifier of the entity
+        type: string
+        x-go-name: ID
+      key:
+        type: string
+        x-go-name: Key
+      project_id:
+        type: string
+        x-go-name: ProjectID
+      title:
+        type: string
+        x-go-name: Title
+      translation_ids:
+        items:
+          type: string
+        type: array
+        x-go-name: TranslationIDs
+      translations:
+        additionalProperties:
+          $ref: '#/definitions/ExtendedTranslation'
+        type: object
+        x-go-name: Translations
+      updatedAt:
+        description: Time of which the entity was updated, if any
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updatedBy:
+        description: User id refering to who created the item
+        type: string
+        x-go-name: UpdatedBy
+    required:
+    - createdAt
+    - id
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
+  CreateSnapshotInput:
+    properties:
+      description:
+        maxLength: 300
+        minLength: 3
+        type: string
+      project_id:
+        maxLength: 36
+        minLength: 3
+        type: string
+      tag:
+        maxLength: 36
+        minLength: 3
+        pattern: ^[a-zA-Z0-9-_.]{3,36}$
+        type: string
+    required:
+    - project_id
+    - tag
+    type: object
   CreatorSource:
     type: string
     x-go-package: github.com/runar-rkmedia/skiver/types
@@ -132,9 +215,236 @@ definitions:
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
+  Error:
+    properties:
+      code:
+        $ref: '#/definitions/ErrorCodes'
+      error:
+        type: string
+        x-go-name: Message
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/requestContext
   ErrorCodes:
     type: string
     x-go-package: github.com/runar-rkmedia/skiver/requestContext
+  ExtendedCategory:
+    properties:
+      createdAt:
+        description: Time of which the entity was created in the database
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      createdBy:
+        description: User id refering to the user who created the item
+        type: string
+        x-go-name: CreatedBy
+      deleted:
+        description: |-
+          If set, the item is considered deleted. The item will normally not get deleted from the database,
+          but it may if cleanup is required.
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      description:
+        type: string
+        x-go-name: Description
+      exists:
+        description: 'TODO: change to map'
+        type: boolean
+        x-go-name: Exists
+      id:
+        description: Unique identifier of the entity
+        type: string
+        x-go-name: ID
+      key:
+        type: string
+        x-go-name: Key
+      project_id:
+        type: string
+        x-go-name: ProjectID
+      title:
+        type: string
+        x-go-name: Title
+      translation_ids:
+        items:
+          type: string
+        type: array
+        x-go-name: TranslationIDs
+      translations:
+        additionalProperties:
+          $ref: '#/definitions/ExtendedTranslation'
+        type: object
+        x-go-name: Translations
+      updatedAt:
+        description: Time of which the entity was updated, if any
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updatedBy:
+        description: User id refering to who created the item
+        type: string
+        x-go-name: UpdatedBy
+    required:
+    - createdAt
+    - id
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
+  ExtendedProject:
+    properties:
+      Categories:
+        additionalProperties:
+          $ref: '#/definitions/ExtendedCategory'
+        type: object
+      CategoryTree:
+        $ref: '#/definitions/CategoryTreeNode'
+      Locales:
+        additionalProperties:
+          $ref: '#/definitions/Locale'
+        type: object
+      category_ids:
+        items:
+          type: string
+        type: array
+        x-go-name: CategoryIDs
+      createdAt:
+        description: Time of which the entity was created in the database
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      createdBy:
+        description: User id refering to the user who created the item
+        type: string
+        x-go-name: CreatedBy
+      deleted:
+        description: |-
+          If set, the item is considered deleted. The item will normally not get deleted from the database,
+          but it may if cleanup is required.
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      description:
+        type: string
+        x-go-name: Description
+      exists:
+        type: boolean
+        x-go-name: Exists
+      id:
+        description: Unique identifier of the entity
+        type: string
+        x-go-name: ID
+      included_tags:
+        items:
+          type: string
+        type: array
+        x-go-name: IncludedTags
+      locales:
+        additionalProperties:
+          $ref: '#/definitions/LocaleSetting'
+        type: object
+        x-go-name: LocaleIDs
+      short_name:
+        type: string
+        x-go-name: ShortName
+      snapshots:
+        additionalProperties:
+          $ref: '#/definitions/ProjectSnapshotMeta'
+        type: object
+        x-go-name: Snapshots
+      title:
+        type: string
+        x-go-name: Title
+      updatedAt:
+        description: Time of which the entity was updated, if any
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updatedBy:
+        description: User id refering to who created the item
+        type: string
+        x-go-name: UpdatedBy
+    required:
+    - createdAt
+    - id
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
+  ExtendedTranslation:
+    properties:
+      Values:
+        additionalProperties:
+          $ref: '#/definitions/TranslationValue'
+        type: object
+      aliases:
+        items:
+          type: string
+        type: array
+        x-go-name: Aliases
+      category:
+        type: string
+        x-go-name: CategoryID
+      createdAt:
+        description: Time of which the entity was created in the database
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      createdBy:
+        description: User id refering to the user who created the item
+        type: string
+        x-go-name: CreatedBy
+      deleted:
+        description: |-
+          If set, the item is considered deleted. The item will normally not get deleted from the database,
+          but it may if cleanup is required.
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      description:
+        type: string
+        x-go-name: Description
+      exists:
+        type: boolean
+        x-go-name: Exists
+      id:
+        description: Unique identifier of the entity
+        type: string
+        x-go-name: ID
+      key:
+        type: string
+        x-go-name: Key
+      parent_translation:
+        type: string
+        x-go-name: ParentTranslationID
+      tags:
+        items:
+          type: string
+        type: array
+        x-go-name: Tag
+      title:
+        type: string
+        x-go-name: Title
+      updatedAt:
+        description: Time of which the entity was updated, if any
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updatedBy:
+        description: User id refering to who created the item
+        type: string
+        x-go-name: UpdatedBy
+      value_ids:
+        items:
+          type: string
+        type: array
+        x-go-name: ValueIDs
+      variables:
+        additionalProperties:
+          type: object
+        type: object
+        x-go-name: Variables
+    required:
+    - createdAt
+    - id
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
   ImportInput:
     additionalProperties: true
     type: object
@@ -318,6 +628,9 @@ definitions:
       can_create_users:
         type: boolean
         x-go-name: CanCreateUsers
+      can_manage_snapshots:
+        type: boolean
+        x-go-name: CanManageSnapshots
       can_update_locales:
         type: boolean
         x-go-name: CanUpdateLocales
@@ -563,6 +876,11 @@ definitions:
       short_name:
         type: string
         x-go-name: ShortName
+      snapshots:
+        additionalProperties:
+          $ref: '#/definitions/ProjectSnapshotMeta'
+        type: object
+        x-go-name: Snapshots
       title:
         type: string
         x-go-name: Title
@@ -602,6 +920,73 @@ definitions:
     - title
     - short_name
     type: object
+  ProjectSnapshot:
+    properties:
+      Project:
+        $ref: '#/definitions/ExtendedProject'
+      ProjectHash:
+        format: uint64
+        type: integer
+      createdAt:
+        description: Time of which the entity was created in the database
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      createdBy:
+        description: User id refering to the user who created the item
+        type: string
+        x-go-name: CreatedBy
+      deleted:
+        description: |-
+          If set, the item is considered deleted. The item will normally not get deleted from the database,
+          but it may if cleanup is required.
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      id:
+        description: Unique identifier of the entity
+        type: string
+        x-go-name: ID
+      updatedAt:
+        description: Time of which the entity was updated, if any
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updatedBy:
+        description: User id refering to who created the item
+        type: string
+        x-go-name: UpdatedBy
+    required:
+    - createdAt
+    - id
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
+  ProjectSnapshotMeta:
+    properties:
+      created_at:
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      created_by:
+        type: string
+        x-go-name: CreatedBy
+      description:
+        type: string
+        x-go-name: Description
+      hash:
+        format: uint64
+        type: integer
+        x-go-name: Hash
+      id:
+        type: string
+        x-go-name: SnapshotID
+      tags:
+        items:
+          type: string
+        type: array
+        x-go-name: Tags
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
   ReportMissingInput:
     additionalProperties:
       type: string
@@ -1191,7 +1576,7 @@ paths:
       operationId: updateProject
       parameters:
       - in: path
-        name: id
+        name: projectID
         required: true
         type: string
       - in: body
@@ -1207,6 +1592,30 @@ paths:
       summary: Update a project, including its settings
       tags:
       - project
+  /project/snapshot:
+    post:
+      description: |
+        Snapshots serve as a static reference in time as to how a project ands it's exports was at a point in time.
+        These are used to keep releases of project-translations stable and to not include ongoing changes to translations.
+      operationId: createSnapshot
+      parameters:
+      - in: body
+        name: SnapshotInput
+        schema:
+          $ref: '#/definitions/CreateSnapshotInput'
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: '#/responses/SnapshotResponse'
+        "400":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Create a snapshot of a project, as well as its exported i18n.
+      tags:
+      - project
+      - i18n
   /serverInfo/:
     get:
       operationId: getServerInfo
@@ -1320,6 +1729,18 @@ responses:
     schema:
       items:
         $ref: '#/definitions/Project'
+      type: array
+  SnapshotResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/ProjectSnapshot'
+      type: object
+  SnapshotsResponse:
+    description: ""
+    schema:
+      items:
+        $ref: '#/definitions/ProjectSnapshot'
+        type: object
       type: array
   TranslationResponse:
     description: ""

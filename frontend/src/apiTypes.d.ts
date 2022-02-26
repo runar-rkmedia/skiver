@@ -1,10 +1,9 @@
 declare namespace ApiDef {
     export interface APIError {
-        code?: ErrorCodes;
         details?: {
             [key: string]: any;
         };
-        error?: string;
+        error?: Error;
     }
     export interface Category {
         /**
@@ -44,6 +43,53 @@ declare namespace ApiDef {
         project_id: string;
         title: string;
     }
+    export interface CategoryTreeNode {
+        categories?: {
+            [name: string]: CategoryTreeNode;
+        };
+        /**
+         * Time of which the entity was created in the database
+         */
+        createdAt: string; // date-time
+        /**
+         * User id refering to the user who created the item
+         */
+        createdBy?: string;
+        /**
+         * If set, the item is considered deleted. The item will normally not get deleted from the database,
+         * but it may if cleanup is required.
+         */
+        deleted?: string; // date-time
+        description?: string;
+        /**
+         * TODO: change to map
+         */
+        exists?: boolean;
+        /**
+         * Unique identifier of the entity
+         */
+        id: string;
+        key?: string;
+        project_id?: string;
+        title?: string;
+        translation_ids?: string[];
+        translations?: {
+            [name: string]: ExtendedTranslation;
+        };
+        /**
+         * Time of which the entity was updated, if any
+         */
+        updatedAt?: string; // date-time
+        /**
+         * User id refering to who created the item
+         */
+        updatedBy?: string;
+    }
+    export interface CreateSnapshotInput {
+        description?: string;
+        project_id: string;
+        tag: string; // ^[a-zA-Z0-9-_.]{3,36}$
+    }
     export type CreatorSource = string;
     export interface Entity {
         /**
@@ -72,7 +118,144 @@ declare namespace ApiDef {
          */
         updatedBy?: string;
     }
+    export interface Error {
+        code?: ErrorCodes;
+        error?: string;
+    }
     export type ErrorCodes = string;
+    export interface ExtendedCategory {
+        /**
+         * Time of which the entity was created in the database
+         */
+        createdAt: string; // date-time
+        /**
+         * User id refering to the user who created the item
+         */
+        createdBy?: string;
+        /**
+         * If set, the item is considered deleted. The item will normally not get deleted from the database,
+         * but it may if cleanup is required.
+         */
+        deleted?: string; // date-time
+        description?: string;
+        /**
+         * TODO: change to map
+         */
+        exists?: boolean;
+        /**
+         * Unique identifier of the entity
+         */
+        id: string;
+        key?: string;
+        project_id?: string;
+        title?: string;
+        translation_ids?: string[];
+        translations?: {
+            [name: string]: ExtendedTranslation;
+        };
+        /**
+         * Time of which the entity was updated, if any
+         */
+        updatedAt?: string; // date-time
+        /**
+         * User id refering to who created the item
+         */
+        updatedBy?: string;
+    }
+    export interface ExtendedProject {
+        Categories?: {
+            [name: string]: ExtendedCategory;
+        };
+        CategoryTree?: CategoryTreeNode;
+        Locales?: {
+            [name: string]: /**
+             * # See https://en.wikipedia.org/wiki/Language_code for more information
+             * TODO: consider supporting other standards here, like Windows(?), which seem to have their own thing.
+             */
+            Locale;
+        };
+        category_ids?: string[];
+        /**
+         * Time of which the entity was created in the database
+         */
+        createdAt: string; // date-time
+        /**
+         * User id refering to the user who created the item
+         */
+        createdBy?: string;
+        /**
+         * If set, the item is considered deleted. The item will normally not get deleted from the database,
+         * but it may if cleanup is required.
+         */
+        deleted?: string; // date-time
+        description?: string;
+        exists?: boolean;
+        /**
+         * Unique identifier of the entity
+         */
+        id: string;
+        included_tags?: string[];
+        locales?: {
+            [name: string]: LocaleSetting;
+        };
+        short_name?: string;
+        snapshots?: {
+            [name: string]: ProjectSnapshotMeta;
+        };
+        title?: string;
+        /**
+         * Time of which the entity was updated, if any
+         */
+        updatedAt?: string; // date-time
+        /**
+         * User id refering to who created the item
+         */
+        updatedBy?: string;
+    }
+    export interface ExtendedTranslation {
+        Values?: {
+            [name: string]: TranslationValue;
+        };
+        aliases?: string[];
+        category?: string;
+        /**
+         * Time of which the entity was created in the database
+         */
+        createdAt: string; // date-time
+        /**
+         * User id refering to the user who created the item
+         */
+        createdBy?: string;
+        /**
+         * If set, the item is considered deleted. The item will normally not get deleted from the database,
+         * but it may if cleanup is required.
+         */
+        deleted?: string; // date-time
+        description?: string;
+        exists?: boolean;
+        /**
+         * Unique identifier of the entity
+         */
+        id: string;
+        key?: string;
+        parent_translation?: string;
+        tags?: string[];
+        title?: string;
+        /**
+         * Time of which the entity was updated, if any
+         */
+        updatedAt?: string; // date-time
+        /**
+         * User id refering to who created the item
+         */
+        updatedBy?: string;
+        value_ids?: string[];
+        variables?: {
+            [name: string]: {
+                [key: string]: any;
+            };
+        };
+    }
     export interface ImportInput {
         [name: string]: any;
     }
@@ -206,6 +389,7 @@ declare namespace ApiDef {
         can_create_projects?: boolean;
         can_create_translations?: boolean;
         can_create_users?: boolean;
+        can_manage_snapshots?: boolean;
         can_update_locales?: boolean;
         can_update_organization?: boolean;
         can_update_projects?: boolean;
@@ -346,6 +530,9 @@ declare namespace ApiDef {
             [name: string]: LocaleSetting;
         };
         short_name?: string;
+        snapshots?: {
+            [name: string]: ProjectSnapshotMeta;
+        };
         title?: string;
         /**
          * Time of which the entity was updated, if any
@@ -363,6 +550,43 @@ declare namespace ApiDef {
         };
         short_name: string;
         title: string;
+    }
+    export interface ProjectSnapshot {
+        Project?: ExtendedProject;
+        ProjectHash?: number; // uint64
+        /**
+         * Time of which the entity was created in the database
+         */
+        createdAt: string; // date-time
+        /**
+         * User id refering to the user who created the item
+         */
+        createdBy?: string;
+        /**
+         * If set, the item is considered deleted. The item will normally not get deleted from the database,
+         * but it may if cleanup is required.
+         */
+        deleted?: string; // date-time
+        /**
+         * Unique identifier of the entity
+         */
+        id: string;
+        /**
+         * Time of which the entity was updated, if any
+         */
+        updatedAt?: string; // date-time
+        /**
+         * User id refering to who created the item
+         */
+        updatedBy?: string;
+    }
+    export interface ProjectSnapshotMeta {
+        created_at?: string; // date-time
+        created_by?: string;
+        description?: string;
+        hash?: number; // uint64
+        id?: string;
+        tags?: string[];
     }
     export interface ReportMissingInput {
         [name: string]: string;
@@ -524,6 +748,17 @@ declare namespace ApiPaths {
         }
         namespace Parameters {
             export type OrganizationInput = ApiDef.OrganizationInput;
+        }
+    }
+    namespace CreateSnapshot {
+        export interface BodyParameters {
+            SnapshotInput?: Parameters.SnapshotInput;
+        }
+        namespace Parameters {
+            export type SnapshotInput = ApiDef.CreateSnapshotInput;
+        }
+        namespace Responses {
+            export type $200 = ApiResponses.SnapshotResponse;
         }
     }
     namespace CreateTranslation {
@@ -765,7 +1000,11 @@ declare namespace ApiPaths {
             UpdateProject: Parameters.UpdateProject;
         }
         namespace Parameters {
+            export type ProjectID = string;
             export type UpdateProject = ApiDef.UpdateProjectInput;
+        }
+        export interface PathParameters {
+            projectID: Parameters.ProjectID;
         }
     }
     namespace UpdateTranslationValue {
@@ -799,6 +1038,8 @@ declare namespace ApiResponses {
     export type ProjectResponse = ApiDef.Project;
     export type ProjectsResponse = ApiDef.Project[];
     export type ServerInfo = ApiDef.ServerInfo[];
+    export type SnapshotResponse = ApiDef.ProjectSnapshot;
+    export type SnapshotsResponse = ApiDef.ProjectSnapshot[];
     export type TranslationResponse = ApiDef.Translation;
     export type TranslationValueResponse = ApiDef.TranslationValue;
     export type TranslationValuesResponse = ApiDef.TranslationValue[];

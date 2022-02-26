@@ -18,7 +18,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -30,6 +29,7 @@ import (
 	"github.com/NYTimes/gziphandler"
 	swaggerMiddleware "github.com/go-openapi/runtime/middleware"
 	"github.com/google/uuid"
+	"github.com/julienschmidt/httprouter"
 	"github.com/patrickmn/go-cache"
 	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/skiver/bboltStorage"
@@ -123,7 +123,12 @@ type logPublisher struct {
 }
 
 func (m *logPublisher) Publish(kind, variant string, contents interface{}) {
-	m.l.Debug().Str("kind", kind).Str("variant", variant).Interface("contents", contents).Msg("Event received")
+	if m.l.HasTrace() {
+
+		m.l.Trace().Str("kind", kind).Str("variant", variant).Interface("contents", contents).Msg("Event received")
+		return
+	}
+	m.l.Debug().Str("kind", kind).Str("variant", variant).Msg("Event received")
 }
 
 type Translator interface {
@@ -212,8 +217,6 @@ func (m *translationHook) Publish(kind, variant string, contents interface{}) {
 			}
 
 		}
-
-		runtime.Breakpoint()
 
 		tvs, err := m.db.GetTranslationValuesFilter(0, types.TranslationValue{TranslationID: tv.TranslationID})
 		if err != nil {
@@ -449,9 +452,87 @@ func main() {
 		ctx.L.Fatal().Err(err).Msg("Failed to set up userSessions")
 	}
 
+	router := httprouter.New()
+	router.HandleMethodNotAllowed = true
+	router.HandleOPTIONS = true
+	router.RedirectTrailingSlash = true
+	// router.PanicHandler = func(rw http.ResponseWriter, r *http.Request, i interface{}) {
+	// 	// TODO: in this handler, we should probably get rc from r.context
+	// 	rc := ctx.NewReqContext(rw, r)
+	// 	l.Error().
+	// 		Str("path", r.URL.Path).
+	// 		Str("method", r.Method).
+	// 		Interface("panic-data", i).Msg("Panic")
+
+	// 	rc.WriteError("Internal error. I am terribly sorry, but I must have overlooked something.", "Internal panic")
+	// }
+	auth := handlers.NewAuthHandler(userSessions)
+
+	type routeOptions struct {
+		sessionRole func(s types.Session, r *http.Request) error
+	}
+	c := func(name string, h handlers.AppHandler, opts ...routeOptions) httprouter.Handle {
+		var options routeOptions
+		if len(opts) > 0 {
+			options = opts[0]
+		}
+		return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			// This turned out a bit hacky, but it leaves a nicer pattern for route-handlers
+			// since they don't need to care about auth, logging, or writing
+			// TODO: change the details here
+			l.Debug().Str("Path", r.URL.Path).Str("method", r.Method).Str("handler", name).Msg("Incoming request")
+			rc := ctx.NewReqContext(rw, r)
+			_r, err := auth(rw, r)
+			if err != nil {
+				rc.WriteErr(err, "Internal server error")
+				return
+			}
+			r = _r
+
+			if options.sessionRole != nil {
+				s, err := handlers.GetRequestSession(r)
+				if err != nil {
+					rc.WriteError("Authentication required", requestContext.CodeErrAuthenticationRequired)
+					return
+				}
+				err = options.sessionRole(s, r)
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrAuthoriziation)
+					return
+				}
+			}
+
+			if err != nil {
+				rc.WriteErr(err, "Authentication Error")
+				return
+			}
+			output, err := h(rc, rw, r)
+			if err != nil {
+				rc.WriteErr(err, "")
+				return
+			}
+			if output != nil {
+				rc.WriteOutput(output, http.StatusOK)
+			} else {
+				if rc.L.HasDebug() {
+					rc.L.Warn().Msg("No output produced. This may be a false warning as we are migrating to a new httpMux-pattern")
+				}
+			}
+		}
+	}
+	// We are migrating to using httprouter, but not all routes have been migrated
+	router.GET("/api/export/:params", c("GetExport", handlers.GetExport(exportCache)))
+	router.GET("/api/export/", c("GetExport", handlers.GetExport(exportCache)))
+	router.POST("/api/project/snapshot", c("PostSnapshot", handlers.PostSnapshot(), routeOptions{sessionRole: func(s types.Session, _ *http.Request) error {
+		if !s.User.CanUpdateProjects {
+			return fmt.Errorf("You are not authorized to create snapshots")
+		}
+		return nil
+	}}))
+
 	apiHandler := http.StripPrefix("/api/",
 		handlers.EndpointsHandler(
-			ctx, userSessions, pw, info, []byte(swaggerYml), exportCache,
+			ctx, userSessions, pw, info, []byte(swaggerYml),
 		),
 	)
 	if config.Gzip {
@@ -465,6 +546,8 @@ func main() {
 		// maxBodySize,
 	// 	)
 	)
+	handler.Handle("/api/project/snapshot", router)
+	handler.Handle("/api/export/", router)
 	useCert := false
 	if cfg.CertFile != "" {
 		_, err := os.Stat(cfg.CertFile)
