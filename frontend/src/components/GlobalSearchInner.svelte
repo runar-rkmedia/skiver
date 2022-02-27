@@ -54,7 +54,7 @@
     <div class="resultswrapper">
       <paper class="resultblock">
         <h3>Translation-values</h3>
-        {#each result.translationValues as { item: tv }}
+        {#each result.translationValues as { item: tv } (tv.id)}
           <div>
             {tv.value}
             <ScrollAnchor
@@ -66,7 +66,7 @@
       </paper>
       <paper class="resultblock">
         <h3>Translations</h3>
-        {#each result.translations as { item: tv }}
+        {#each result.translations as { item: tv } (tv.id)}
           <div>
             {tv.key}
             <ScrollAnchor category={$db.category[tv.category || '']} />
@@ -75,7 +75,7 @@
       </paper>
       <paper class="resultblock">
         <h3>Categories</h3>
-        {#each result.categories as { item: category }}
+        {#each result.categories as { item: category } (category.id)}
           <div>
             <ScrollAnchor {category} />
           </div>

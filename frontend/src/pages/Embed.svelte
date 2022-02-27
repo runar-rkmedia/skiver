@@ -39,7 +39,7 @@
 
 {#if $db.login.ok}
   <div class="user-welcome">
-    Welcome, {$db.login.userName}
+    Welcome, {$db.login.username}
     <Button color="tertiary" on:click={api.logout}>Logout</Button>
   </div>
 {/if}
@@ -118,13 +118,15 @@
   </Alert>
 {/if}
 
-<p>You are viewing the embedded version of this page.
-{#if project}
-  <a href={'#project/' + project.id}>Click her to go to the project-view</a>
-{:else}
-  <a href={'#/'}>Click her to go back to the main page</a>
-{/if}
+<p>
+  You are viewing the embedded version of this page.
+  {#if project}
+    <a href={'#project/' + project.id}>Click her to go to the project-view</a>
+  {:else}
+    <a href={'#/'}>Click her to go back to the main page</a>
+  {/if}
 </p>
+
 <style>
   .user-welcome {
     display: flex;

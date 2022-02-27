@@ -16,11 +16,13 @@
 </script>
 
 {#if s && !s.loading && s.error}
-  <Alert kind="error">
-    <h5>{s.error.code}</h5>
-    <p>{s.error.error}</p>
-    {#if s.error.details}
-      {JSON.stringify(s.error.details)}
-    {/if}
-  </Alert>
+  {#if s.error?.error}
+    <Alert kind="error">
+      <h5>{s.error.error.code}</h5>
+      <p>{s.error.error.error}</p>
+      {#if s.error.details}
+        {JSON.stringify(s.error.details)}
+      {/if}
+    </Alert>
+  {/if}
 {/if}

@@ -1,11 +1,11 @@
 import { writable } from 'svelte/store';
 import i18next, { type TFunction } from 'i18next';
-import Fetch from 'i18next-fetch-backend';
+// import Fetch from 'i18next-fetch-backend';
 
 
 let initi18n = (async () => {
   const i18n = i18next
-    .use(Fetch)
+  // .use(Fetch)
 
 
   const t = await i18n.init({
@@ -15,10 +15,10 @@ let initi18n = (async () => {
     saveMissing: true,
     // resources,
     debug: false,
-    backend: {
-      loadPath: "/api/export/l={{lng}}&p={{ns}}.json",
-      addPath: '/api/missing/{{lng}}/{{ns}}',
-    },
+    // backend: {
+    //   loadPath: "/api/export/l={{lng}}&p={{ns}}.json",
+    //   addPath: '/api/missing/{{lng}}/{{ns}}',
+    // },
 
     fallbackLng: 'en',
     defaultNS: 'skiver',

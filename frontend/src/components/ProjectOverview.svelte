@@ -3,10 +3,6 @@
   import Icon from 'components/Icon.svelte'
   import sortOn from 'sort-on'
   import { state } from 'state'
-  import {
-    createCategoryAnchorProps,
-    scrollToCategory,
-  } from 'util/scrollToCategory'
   import ScrollAnchor from './ScrollAnchor.svelte'
 
   export let project: ApiDef.Project

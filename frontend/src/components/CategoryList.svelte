@@ -24,6 +24,7 @@
     <CategoryItem
       bind:category
       bind:locales
+      bind:projectKey={projectID}
       bind:selectedLocale
       bind:selectedTranslation
       bind:selectedCategory

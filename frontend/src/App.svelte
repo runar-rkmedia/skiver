@@ -15,7 +15,8 @@
 
   import ServerInfo from './components/ServerInfo.svelte'
   import { onMount } from 'svelte'
-  let username = $db.login.userName
+  let username = $db.login.username
+  let requiresLogin = false
   let password: ''
   onMount(() => {
     const loadingEl = document.getElementById('loading')
@@ -37,6 +38,14 @@
     } else {
       showHeader = true
       showFooter = true
+    }
+    switch (mainRoute) {
+      case 'about':
+      case 'join':
+        requiresLogin = false
+        break
+      default:
+        requiresLogin = true
     }
     if (!didRunInital && $db.login.ok) {
       api.serverInfo()
@@ -79,7 +88,7 @@
       <Tabs />
       {#if $db.login.ok}
         <div class="user-welcome">
-          Welcome, {$db.login.userName}
+          Welcome, {$db.login.username}
           <Button color="tertiary" on:click={api.logout}>Logout</Button>
         </div>
       {/if}
@@ -87,7 +96,7 @@
   {/if}
   <div />
 
-  {#if !$db.login.ok}
+  {#if !$db.login.ok && requiresLogin}
     <div class="login" transition:scale|local>
       <paper>
         <h2>Login</h2>
@@ -132,11 +141,11 @@
   {/if}
 
   <main>
-    {#if ($db.serverInfo?.DatabaseSize || 0) > dbWarnSize}
+    {#if ($db.serverInfo?.database_size || 0) > dbWarnSize}
       <Alert kind="warning">
         <div slot="title">The servers database has grown a bit big.</div>
 
-        <p>It is currently {$db.serverInfo.DatabaseSizeStr}</p>
+        <p>It is currently {$db.serverInfo.database_size_str}</p>
         <p>This may affect performance.</p>
         <p>Some functionality may have been disabled.</p>
         <p>It is adviced to clean the database</p>

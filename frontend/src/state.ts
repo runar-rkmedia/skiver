@@ -17,6 +17,7 @@ export const state = createStore({
     createCategory: {} as ApiDef.CategoryInput,
     createProject: { locales: {} } as Required<ApiDef.ProjectInput, 'locales'>,
     projectSettings: {} as Record<string, { localeIds: string[] }>,
+    openTranslationValueForm: '',
     createTranslationValue: {} as ApiDef.TranslationValueInput,
     toasts: {} as Record<
       string,

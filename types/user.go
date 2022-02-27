@@ -5,10 +5,10 @@ import (
 )
 
 type User struct {
-	Entity
-	UserName string `json:"userName"`
+	Entity   `json:"entity"`
+	UserName string `json:"username"`
 	// If not active, the account cannot be used until any issues are resolved.
-	Active bool
+	Active bool      `json:"active"`
 	Store  UserStore `json:"-"`
 	// If set, the user must change the password before the account can be used
 	TemporaryPassword bool   `json:"temporary_password,omitempty"`
@@ -61,10 +61,10 @@ type Session struct {
 
 type Organization struct {
 	ID        string     `json:"id"`
-	CreatedAt time.Time  `json:"createdAt"`
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
-	CreatedBy string     `json:"createdBy"`
-	UpdatedBy string     `json:"updatedBy,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	CreatedBy string     `json:"created_by"`
+	UpdatedBy string     `json:"updated_by,omitempty"`
 	Deleted   *time.Time `json:"deleted,omitempty"`
 
 	Title       string `json:"title"`

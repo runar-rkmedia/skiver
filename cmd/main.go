@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,10 +18,37 @@ import (
 	"github.com/runar-rkmedia/skiver/types"
 )
 
+func required(v, s string) {
+	if v != "" {
+		return
+	}
+	fmt.Println(s, "is required")
+	flag.Usage()
+	os.Exit(1)
+}
+
 func main() {
 
-	inFile := "../../phonero/dinbedriftweb/src/locales/nb.json"
-	outFile := "../../phonero/dinbedriftweb/src/locales/exported_keys.ts"
+	// inFile := "../../phonero/dinbedriftweb/src/locales/nb.json"
+	// outFile := "../../phonero/dinbedriftweb/src/locales/exported_keys.ts"
+	inFile := ""
+	outFile := ""
+	endpoint := ""
+	project := ""
+	username := ""
+	password := ""
+	flag.StringVar(&endpoint, "endpoint", "http://localhost:8756", "Endpoint for Skiver")
+	flag.StringVar(&project, "project", "", "Project-id or short-name")
+	flag.StringVar(&username, "username", "", "Username")
+	flag.StringVar(&password, "password", "", "Password")
+	flag.StringVar(&inFile, "in", "", "Points to a locale-file (i18n)")
+	flag.StringVar(&outFile, "ts-keys", "", "Optionally set to output to a typescript-file with keys and ts-docs")
+	flag.Parse()
+	required(inFile, "infile")
+	required(endpoint, "endpoint")
+	required(username, "username")
+	required(password, "password")
+	required(project, "project")
 	createFileIfMissing := false
 	overwrite := true
 
@@ -29,22 +57,6 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	f, err := os.OpenFile(outFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			if !createFileIfMissing {
-				fmt.Println("Not creating file")
-				os.Exit(1)
-			}
-			f, err = os.Create(outFile)
-		} else {
-			panic(err)
-		}
-	} else if !overwrite {
-		fmt.Println("File exists, not overwriting")
-		os.Exit(1)
-	}
-	endpoint := "http://localhost:8756/"
 	api := NewAPI(endpoint)
 	err = api.Login("jom", "jom")
 	if err != nil {
@@ -54,17 +66,35 @@ func main() {
 	b, err := os.ReadFile(inFile)
 	b = []byte(`{"nb":` + string(b) + "}")
 	fmt.Println("importing", inFile)
-	err = api.Import("dbw", "i18n", bytes.NewBuffer(b))
+	err = api.Import(project, "i18n", bytes.NewBuffer(b))
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	if f == nil {
+	if outFile == "" {
+		return
+	}
+	outfile, err := os.OpenFile(outFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			if !createFileIfMissing {
+				fmt.Println("Not creating file")
+				os.Exit(1)
+			}
+			outfile, err = os.Create(outFile)
+		} else {
+			panic(err)
+		}
+	} else if !overwrite {
+		fmt.Println("File exists, not overwriting")
+		os.Exit(1)
+	}
+	if outfile == nil {
 		panic("file is nil")
 	}
 	fmt.Println("exporting", outFile)
-	err = api.Export("dbw", "typescript", "nb", f)
+	err = api.Export("dbw", "typescript", "nb", outfile)
 	if err != nil {
 		fmt.Println(err)
 		return

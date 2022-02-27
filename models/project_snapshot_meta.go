@@ -34,9 +34,6 @@ type ProjectSnapshotMeta struct {
 
 	// snapshot ID
 	SnapshotID string `json:"id,omitempty"`
-
-	// tags
-	Tags []string `json:"tags"`
 }
 
 // Validate validates this project snapshot meta

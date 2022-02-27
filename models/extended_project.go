@@ -20,21 +20,18 @@ import (
 type ExtendedProject struct {
 
 	// categories
-	Categories map[string]ExtendedCategory `json:"Categories,omitempty"`
+	Categories map[string]ExtendedCategory `json:"categories,omitempty"`
 
 	// category i ds
 	CategoryIDs []string `json:"category_ids"`
 
-	// category tree
-	CategoryTree *CategoryTreeNode `json:"CategoryTree,omitempty"`
-
 	// Time of which the entity was created in the database
 	// Required: true
 	// Format: date-time
-	CreatedAt *strfmt.DateTime `json:"createdAt"`
+	CreatedAt *strfmt.DateTime `json:"created_at"`
 
 	// User id refering to the user who created the item
-	CreatedBy string `json:"createdBy,omitempty"`
+	CreatedBy string `json:"created_by,omitempty"`
 
 	// If set, the item is considered deleted. The item will normally not get deleted from the database,
 	// but it may if cleanup is required.
@@ -54,11 +51,8 @@ type ExtendedProject struct {
 	// included tags
 	IncludedTags []string `json:"included_tags"`
 
-	// locale i ds
-	LocaleIDs map[string]LocaleSetting `json:"locales,omitempty"`
-
 	// locales
-	Locales map[string]Locale `json:"Locales,omitempty"`
+	Locales map[string]Locale `json:"locales,omitempty"`
 
 	// short name
 	ShortName string `json:"short_name,omitempty"`
@@ -71,10 +65,13 @@ type ExtendedProject struct {
 
 	// Time of which the entity was updated, if any
 	// Format: date-time
-	UpdatedAt strfmt.DateTime `json:"updatedAt,omitempty"`
+	UpdatedAt strfmt.DateTime `json:"updated_at,omitempty"`
 
 	// User id refering to who created the item
-	UpdatedBy string `json:"updatedBy,omitempty"`
+	UpdatedBy string `json:"updated_by,omitempty"`
+
+	// category tree
+	CategoryTree *CategoryTreeNode `json:"category_tree,omitempty"`
 }
 
 // Validate validates this extended project
@@ -82,10 +79,6 @@ func (m *ExtendedProject) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateCategories(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateCategoryTree(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -101,10 +94,6 @@ func (m *ExtendedProject) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateLocaleIDs(formats); err != nil {
-		res = append(res, err)
-	}
-
 	if err := m.validateLocales(formats); err != nil {
 		res = append(res, err)
 	}
@@ -114,6 +103,10 @@ func (m *ExtendedProject) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateUpdatedAt(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateCategoryTree(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -130,7 +123,7 @@ func (m *ExtendedProject) validateCategories(formats strfmt.Registry) error {
 
 	for k := range m.Categories {
 
-		if err := validate.Required("Categories"+"."+k, "body", m.Categories[k]); err != nil {
+		if err := validate.Required("categories"+"."+k, "body", m.Categories[k]); err != nil {
 			return err
 		}
 		if val, ok := m.Categories[k]; ok {
@@ -144,32 +137,13 @@ func (m *ExtendedProject) validateCategories(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *ExtendedProject) validateCategoryTree(formats strfmt.Registry) error {
-	if swag.IsZero(m.CategoryTree) { // not required
-		return nil
-	}
-
-	if m.CategoryTree != nil {
-		if err := m.CategoryTree.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("CategoryTree")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
-				return ce.ValidateName("CategoryTree")
-			}
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (m *ExtendedProject) validateCreatedAt(formats strfmt.Registry) error {
 
-	if err := validate.Required("createdAt", "body", m.CreatedAt); err != nil {
+	if err := validate.Required("created_at", "body", m.CreatedAt); err != nil {
 		return err
 	}
 
-	if err := validate.FormatOf("createdAt", "body", "date-time", m.CreatedAt.String(), formats); err != nil {
+	if err := validate.FormatOf("created_at", "body", "date-time", m.CreatedAt.String(), formats); err != nil {
 		return err
 	}
 
@@ -197,27 +171,6 @@ func (m *ExtendedProject) validateID(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *ExtendedProject) validateLocaleIDs(formats strfmt.Registry) error {
-	if swag.IsZero(m.LocaleIDs) { // not required
-		return nil
-	}
-
-	for k := range m.LocaleIDs {
-
-		if err := validate.Required("locales"+"."+k, "body", m.LocaleIDs[k]); err != nil {
-			return err
-		}
-		if val, ok := m.LocaleIDs[k]; ok {
-			if err := val.Validate(formats); err != nil {
-				return err
-			}
-		}
-
-	}
-
-	return nil
-}
-
 func (m *ExtendedProject) validateLocales(formats strfmt.Registry) error {
 	if swag.IsZero(m.Locales) { // not required
 		return nil
@@ -225,7 +178,7 @@ func (m *ExtendedProject) validateLocales(formats strfmt.Registry) error {
 
 	for k := range m.Locales {
 
-		if err := validate.Required("Locales"+"."+k, "body", m.Locales[k]); err != nil {
+		if err := validate.Required("locales"+"."+k, "body", m.Locales[k]); err != nil {
 			return err
 		}
 		if val, ok := m.Locales[k]; ok {
@@ -265,8 +218,27 @@ func (m *ExtendedProject) validateUpdatedAt(formats strfmt.Registry) error {
 		return nil
 	}
 
-	if err := validate.FormatOf("updatedAt", "body", "date-time", m.UpdatedAt.String(), formats); err != nil {
+	if err := validate.FormatOf("updated_at", "body", "date-time", m.UpdatedAt.String(), formats); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (m *ExtendedProject) validateCategoryTree(formats strfmt.Registry) error {
+	if swag.IsZero(m.CategoryTree) { // not required
+		return nil
+	}
+
+	if m.CategoryTree != nil {
+		if err := m.CategoryTree.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("category_tree")
+			} else if ce, ok := err.(*errors.CompositeError); ok {
+				return ce.ValidateName("category_tree")
+			}
+			return err
+		}
 	}
 
 	return nil
@@ -280,19 +252,15 @@ func (m *ExtendedProject) ContextValidate(ctx context.Context, formats strfmt.Re
 		res = append(res, err)
 	}
 
-	if err := m.contextValidateCategoryTree(ctx, formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.contextValidateLocaleIDs(ctx, formats); err != nil {
-		res = append(res, err)
-	}
-
 	if err := m.contextValidateLocales(ctx, formats); err != nil {
 		res = append(res, err)
 	}
 
 	if err := m.contextValidateSnapshots(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.contextValidateCategoryTree(ctx, formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -307,37 +275,6 @@ func (m *ExtendedProject) contextValidateCategories(ctx context.Context, formats
 	for k := range m.Categories {
 
 		if val, ok := m.Categories[k]; ok {
-			if err := val.ContextValidate(ctx, formats); err != nil {
-				return err
-			}
-		}
-
-	}
-
-	return nil
-}
-
-func (m *ExtendedProject) contextValidateCategoryTree(ctx context.Context, formats strfmt.Registry) error {
-
-	if m.CategoryTree != nil {
-		if err := m.CategoryTree.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("CategoryTree")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
-				return ce.ValidateName("CategoryTree")
-			}
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (m *ExtendedProject) contextValidateLocaleIDs(ctx context.Context, formats strfmt.Registry) error {
-
-	for k := range m.LocaleIDs {
-
-		if val, ok := m.LocaleIDs[k]; ok {
 			if err := val.ContextValidate(ctx, formats); err != nil {
 				return err
 			}
@@ -373,6 +310,22 @@ func (m *ExtendedProject) contextValidateSnapshots(ctx context.Context, formats 
 			}
 		}
 
+	}
+
+	return nil
+}
+
+func (m *ExtendedProject) contextValidateCategoryTree(ctx context.Context, formats strfmt.Registry) error {
+
+	if m.CategoryTree != nil {
+		if err := m.CategoryTree.ContextValidate(ctx, formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("category_tree")
+			} else if ce, ok := err.(*errors.CompositeError); ok {
+				return ce.ValidateName("category_tree")
+			}
+			return err
+		}
 	}
 
 	return nil

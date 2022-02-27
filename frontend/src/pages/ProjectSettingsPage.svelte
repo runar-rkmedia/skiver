@@ -43,7 +43,7 @@
         </ul>
       </Tip>
     </div>
-    {#each sortOn(Object.entries(project.snapshots || {}), '-1.createdAt') as [tag, snapshot]}
+    {#each sortOn(Object.entries(project.snapshots || {}), '-1.created_at') as [tag, snapshot]}
       <paper>
         <h4>{tag}</h4>
         <a href={apiUrl(`/export/p=${projectID}&f=i18n&t=${tag}&l=nb`)}>

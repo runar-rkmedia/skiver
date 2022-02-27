@@ -41,8 +41,8 @@
         return true
       })
       .sort((a, b) => {
-        const A = a.createdAt
-        const B = b.createdAt
+        const A = a.created_at
+        const B = b.created_at
         if (A > B) {
           return 1
         }
@@ -66,7 +66,9 @@
           </div>
         </svelte:fragment>
         <svelte:fragment slot="description">
-          {v.description}
+          {#if v.description}
+            {v.description}
+          {/if}
           <EntityDetails entity={v} />
         </svelte:fragment>
         <svelte:fragment slot="actions">

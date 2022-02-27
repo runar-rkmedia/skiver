@@ -22,7 +22,7 @@
   <h2>Organizations</h2>
   <paper>
     <EntityList
-      error={$db.responseStates.organization.error?.error}
+      error={$db.responseStates.organization.error?.error?.error}
       loading={$db.responseStates.organization.loading}>
       {#each Object.values($db.organization) as v}
         <ListItem ID={v.id} deleted={!!v.deleted}>
@@ -30,7 +30,7 @@
             {v.title}
           </svelte:fragment>
           <svelte:fragment slot="description">
-            {#if v.join_id && parseDate(v?.join_id_expires)?.getTime() > now.getTime()}
+            {#if v.join_id && v.join_id_expires && parseDate(v.join_id_expires)?.getTime() > now.getTime()}
               Join-id: <a href={'#join/' + v.join_id}>{v.join_id}</a>
               {formatDate(v.join_id_expires)}
             {:else if v.join_id}

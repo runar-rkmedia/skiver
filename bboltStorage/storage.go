@@ -8,7 +8,6 @@ import (
 
 	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/go-common/utils"
-	"github.com/runar-rkmedia/skiver/internal"
 	"github.com/runar-rkmedia/skiver/types"
 	"go.etcd.io/bbolt"
 	bolt "go.etcd.io/bbolt"
@@ -161,7 +160,6 @@ func (bb *BBolter) BucketStats() map[string]interface{} {
 		}
 		return nil
 	})
-	internal.PrintMultiLineYaml("db-stats", stats)
 	return stats
 
 }

@@ -19,8 +19,8 @@ type Project struct {
 
 type ProjectSnapshotMeta struct {
 	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"createdAt"`
-	CreatedBy   string    `json:"createdBy"`
+	CreatedAt   time.Time `json:"created_at"`
+	CreatedBy   string    `json:"created_by"`
 	SnapshotID  string    `json:"id"`
 	Hash        uint64    `json:"hash"`
 }

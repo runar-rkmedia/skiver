@@ -20,8 +20,8 @@
         return true
       })
       .sort((a, b) => {
-        const A = a.createdAt
-        const B = b.createdAt
+        const A = a.created_at
+        const B = b.created_at
         if (A > B) {
           return 1
         }

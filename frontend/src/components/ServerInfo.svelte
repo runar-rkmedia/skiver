@@ -3,8 +3,8 @@
 
   import formatDate, { isValidDate } from '../dates'
 
-  $: serverStartedAt = isValidDate($db.serverInfo.ServerStartedAt)
-  $: buildDate = isValidDate($db.serverInfo.BuildDate)
+  $: serverStartedAt = isValidDate($db.serverInfo.server_started_at)
+  $: buildDate = isValidDate($db.serverInfo.build_date)
 </script>
 
 <div>
@@ -12,8 +12,8 @@
     {formatDate(serverStartedAt)}
   {/if}
 </div>
-<div>{$db.serverInfo.Version} ({$db.serverInfo.Version || 'development'})</div>
-Database-size: {$db.serverInfo.DatabaseSizeStr}
+<div>{$db.serverInfo.version} ({$db.serverInfo.version || 'development'})</div>
+Database-size: {$db.serverInfo.database_size_str}
 <div>
   {#if buildDate}
     {formatDate(buildDate)}

@@ -17,6 +17,23 @@
       const b = t.i18next.getResourceBundle(locale, '__derived__' + ns)
     }
   }
+  function handleVariables(variables: Record<string, any> | undefined) {
+    if (!variables) {
+      return variables
+    }
+    return Object.entries(variables).reduce((previous, [k, v]) => {
+      if (typeof v === 'string' && /\d{4}-\d{2}-\d{2}/.test(v)) {
+        const d = new Date(v)
+        v = d
+        console.log('vvvv', { k, v })
+      }
+
+      console.log('kk', k, v, typeof v, { k, v })
+      previous[k] = v
+
+      return previous
+    }, {})
+  }
 </script>
 
 {#if myT}
@@ -24,7 +41,7 @@
     <div />
 
     <span>
-      {myT(key, variables)}
+      {myT(key, handleVariables(variables))}
     </span>
   </div>
 {/if}
@@ -33,6 +50,4 @@
   <Alert kind="warning">Cannot preview without namespace</Alert>
 {:else if !locale}
   <Alert kind="warning">Cannot preview without locale</Alert>
-{:else if !input}
-  <Alert kind="warning">Cannot preview without input</Alert>
 {/if}

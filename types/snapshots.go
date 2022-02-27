@@ -6,9 +6,9 @@ import (
 
 // swagger:model ProjectSnapshot
 type ProjectSnapshot struct {
-	Entity
-	Project     ExtendedProject
-	ProjectHash uint64
+	Entity      `json:"entity"`
+	Project     ExtendedProject `json:"project"`
+	ProjectHash uint64          `json:"project_hash"`
 }
 
 func (p ExtendedProject) CreateSnapshot(createdBy string) (s ProjectSnapshot, err error) {
