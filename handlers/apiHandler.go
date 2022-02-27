@@ -178,7 +178,7 @@ func EndpointsHandler(
 				return
 			}
 		case "join":
-			if isPost {
+			if isPost || isGet {
 				joinId := getStringSliceIndex(paths, 1)
 				if joinId == "" {
 					rc.WriteError("Missing join-id", requestContext.CodeErrIDEmpty)
@@ -278,7 +278,7 @@ func EndpointsHandler(
 				if isPost {
 					cookie := &http.Cookie{
 						Name:     "token",
-						Path:     "/api/",
+						Path:     "/",
 						MaxAge:   0,
 						HttpOnly: true,
 					}
@@ -399,15 +399,16 @@ func EndpointsHandler(
 				Value:    session.Token,
 				MaxAge:   int(expiresD.Seconds()),
 				Secure:   r.TLS != nil,
-				SameSite: http.SameSiteNoneMode,
 				HttpOnly: true,
 			}
 			xproto := r.Header.Get("X-Forwarded-Proto")
 			switch xproto {
 			case "http":
 				cookie.Secure = false
+				// does not work with http
 			case "https":
 				cookie.Secure = true
+				cookie.SameSite = http.SameSiteNoneMode
 			}
 			rw.Header().Add("session-expires", session.Expires.String())
 			rw.Header().Add("session-expires-in", expiresD.String())
@@ -575,17 +576,12 @@ func EndpointsHandler(
 						rc.WriteError("You are not authorizatiod to update projects", requestContext.CodeErrAuthoriziation)
 						return
 					}
-					pid := getStringSliceIndex(paths, 1)
-					if pid == "" {
-						rc.WriteError("Missing id", requestContext.CodeErrIDEmpty)
-						return
-					}
 					var j models.UpdateProjectInput
 					if err := rc.ValidateBytes(body, &j); err != nil {
 						return
 					}
 
-					p, err := ctx.DB.GetProject(pid)
+					p, err := ctx.DB.GetProject(*j.ID)
 					if err != nil {
 						rc.WriteErr(err, requestContext.CodeErrProject)
 						return
@@ -611,7 +607,7 @@ func EndpointsHandler(
 
 						}
 					}
-					project, err := ctx.DB.UpdateProject(pid, payload)
+					project, err := ctx.DB.UpdateProject(*j.ID, payload)
 
 					rc.WriteAuto(project, err, requestContext.CodeErrProject)
 
@@ -630,12 +626,16 @@ func EndpointsHandler(
 					return
 				}
 				tid := getStringSliceIndex(paths, 1)
-				if tid == "" {
-					rc.WriteError("Missing id", requestContext.CodeErrIDEmpty)
-					return
-				}
 				var j models.UpdateTranslationInput
 				if err := rc.ValidateBytes(body, &j); err != nil {
+					return
+				}
+				if tid == "" {
+					tid = *j.ID
+				}
+
+				if tid == "" {
+					rc.WriteError("Missing id", requestContext.CodeErrIDEmpty)
 					return
 				}
 				existing, err := ctx.DB.GetTranslation(tid)
@@ -786,12 +786,15 @@ func EndpointsHandler(
 				}
 
 				id := getStringSliceIndex(paths, 1)
-				if id == "" {
-					rc.WriteError("Missing id", requestContext.CodeErrIDEmpty)
-					return
-				}
 				var j models.UpdateTranslationValueInput
 				if err := rc.ValidateBytes(body, &j); err != nil {
+					return
+				}
+				if id == "" {
+					id = *j.ID
+				}
+				if id == "" {
+					rc.WriteError("Missing id", requestContext.CodeErrIDEmpty)
 					return
 				}
 				tv := types.TranslationValue{}

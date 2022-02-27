@@ -31,10 +31,10 @@ type MissingTranslation struct {
 	// Time of which the entity was created in the database
 	// Required: true
 	// Format: date-time
-	CreatedAt *strfmt.DateTime `json:"createdAt"`
+	CreatedAt *strfmt.DateTime `json:"created_at"`
 
 	// User id refering to the user who created the item
-	CreatedBy string `json:"createdBy,omitempty"`
+	CreatedBy string `json:"created_by,omitempty"`
 
 	// If set, the item is considered deleted. The item will normally not get deleted from the database,
 	// but it may if cleanup is required.
@@ -71,10 +71,10 @@ type MissingTranslation struct {
 
 	// Time of which the entity was updated, if any
 	// Format: date-time
-	UpdatedAt strfmt.DateTime `json:"updatedAt,omitempty"`
+	UpdatedAt strfmt.DateTime `json:"updated_at,omitempty"`
 
 	// User id refering to who created the item
-	UpdatedBy string `json:"updatedBy,omitempty"`
+	UpdatedBy string `json:"updated_by,omitempty"`
 }
 
 // Validate validates this missing translation
@@ -105,11 +105,11 @@ func (m *MissingTranslation) Validate(formats strfmt.Registry) error {
 
 func (m *MissingTranslation) validateCreatedAt(formats strfmt.Registry) error {
 
-	if err := validate.Required("createdAt", "body", m.CreatedAt); err != nil {
+	if err := validate.Required("created_at", "body", m.CreatedAt); err != nil {
 		return err
 	}
 
-	if err := validate.FormatOf("createdAt", "body", "date-time", m.CreatedAt.String(), formats); err != nil {
+	if err := validate.FormatOf("created_at", "body", "date-time", m.CreatedAt.String(), formats); err != nil {
 		return err
 	}
 
@@ -142,7 +142,7 @@ func (m *MissingTranslation) validateUpdatedAt(formats strfmt.Registry) error {
 		return nil
 	}
 
-	if err := validate.FormatOf("updatedAt", "body", "date-time", m.UpdatedAt.String(), formats); err != nil {
+	if err := validate.FormatOf("updated_at", "body", "date-time", m.UpdatedAt.String(), formats); err != nil {
 		return err
 	}
 

@@ -32,7 +32,7 @@ export type DB = {
 export const api = {
   join: {
     get: (id: string) => fetchApi<ApiDef.Organization>('join/' + id, () => null, { method: 'GET' }),
-    post: (id: string, payload: ApiDef.JoinInput) => fetchApi<ApiDef.Organization>('join/' + id, () => null, { method: 'POST', body: payload }),
+    post: (id: string, payload: ApiDef.JoinInput) => fetchApi<ApiDef.LoginResponse>('join/' + id, () => null, { method: 'POST', body: payload }),
   },
   serverInfo: (options?: ApiFetchOptions) =>
     fetchApi<ApiDef.ServerInfo>(
@@ -134,11 +134,11 @@ const tryJsonParse = <T extends any>(s: string | null): null | T => {
 }
 
 const initialLoginResponse = (): ApiDef.LoginResponse => {
-  const r = {
+  const r: ApiDef.LoginResponse = {
     ok: false,
-    userName: '',
-    createdAt: '',
-    updatedAt: '',
+    username: '',
+    created_at: '',
+    updated_by: '',
     id: '',
   }
 
@@ -337,7 +337,7 @@ function handleMsg(e: MessageEvent) {
         windowPost.error("post-edit failed to find the translation-value ")
         return
       }
-      api.translationValue.update(tv.id, { value, ...context && { contextKey: context } })
+      api.translationValue.update(tv.id, { id: tv.id, value, ...context && { contextKey: context } })
       break
     default:
       windowPost.error("unhandled kind for message:", e.data)
@@ -544,9 +544,13 @@ function apiUpdateFactory<Payload extends {}, K extends DBKeyValue>(
       ...s,
       responseStates: { ...s.responseStates, [storeKey]: { loading: true } }
     }))
+    if (!(body as any).id) {
+      console.warn("No id set on body for request", subPath, id, body);
+      (body as any).id = id
+    }
 
     return fetchApi<DB[K]['s']>(
-      subPath + '/' + id,
+      subPath,// + '/' + id,
       (e) => e.id && replaceField(storeKey, e, e.id, 'update'),
       {
         method: methods.PUT,

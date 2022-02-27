@@ -9,7 +9,6 @@
   import TranslationPreview from './TranslationPreview.svelte'
   /** Map by locale-id */
 
-  let selectedLocale: string
   const dispatch = createEventDispatcher()
   export let translation: ApiDef.Translation
   export let categoryKey: string
@@ -20,18 +19,20 @@
   $: value = contextKey
     ? translationValue?.context?.[contextKey]
     : translationValue?.value
+  $: selected =
+    $state.openTranslationValueForm === translation.id + locale.id + contextKey
 </script>
 
 <tr
   class="locale-item"
   class:auto-translate={translationValue?.source === 'system-translator'}
   class:missing={!value}
-  class:selected={selectedLocale === locale.id}>
+  class:selected>
   <td>
     <LocaleFlag {locale} />
     {locale.title}</td>
   <td>
-    {#if selectedLocale === locale.id}
+    {#if selected}
       {#if translationValue?.source === 'system-translator'}
         <p>
           <Icon icon="warning" color="warning" />
@@ -46,10 +47,9 @@
         {contextKey}
         on:complete={() => {
           dispatch('complete')
-          selectedLocale = ''
+          $state.openTranslationValueForm = ''
         }}
         on:cancel={() => {
-          selectedLocale = ''
           dispatch('showForm', { locale, show: false })
         }}>
         <div slot="preview">
@@ -73,10 +73,15 @@
         class="keep-whitespace click-to-edit"
         on:click={() => {
           dispatch('showForm', { locale, show: true })
-          selectedLocale = locale.id
-          if (value) {
+          {
             $state.createTranslationValue.value = value
           }
+
+          {
+            $state.createTranslationValue.context_key = contextKey
+          }
+          $state.openTranslationValueForm =
+            translation.id + locale.id + contextKey
         }}>
         {#if translationValue?.source === 'system-translator'}
           <Icon icon="warning" color="warning" />

@@ -144,140 +144,151 @@ func (m *translationHook) Publish(kind, variant string, contents interface{}) {
 	// TODO: this function really should cache
 
 	debug := m.l.HasDebug()
-	if kind == string(bboltStorage.PubTypeTranslationValue) && variant == string(bboltStorage.PubVerbCreate) {
-		tv, ok := contents.(types.TranslationValue)
-		if !ok {
-			m.l.Error().Interface("content", contents).Msg("Failed to convert contents to TranslationValue")
-			return
+	if kind != string(types.PubTypeTranslationValue) {
+		return
+	}
+	if variant != string(types.PubVerbCreate) && variant != string(types.PubVerbUpdate) {
+		return
+	}
+	tv, ok := contents.(types.TranslationValue)
+	if !ok {
+		m.l.Error().Interface("content", contents).Msg("Failed to convert contents to TranslationValue")
+		return
+	}
+	orgId := tv.OrganizationID
+	if tv.Source == types.CreatorSourceImport {
+		if debug {
+			m.l.Debug().Interface("content", contents).Msg("ignoring TranslationValue since it was sourced from an import")
 		}
-		orgId := tv.OrganizationID
-		if tv.Source == types.CreatorSourceTranslator {
-			if debug {
-				m.l.Debug().Interface("content", contents).Msg("ignoring TranslationValue since it was sourced from me")
-			}
-			return
+		return
+	}
+	if tv.Source == types.CreatorSourceTranslator {
+		if debug {
+			m.l.Debug().Interface("content", contents).Msg("ignoring TranslationValue since it was sourced from me")
 		}
-		if strings.TrimSpace(tv.Value) == "" {
-			m.l.Error().Interface("content", contents).Msg("Received TranslationValue, but the value appeared to be empty")
-			return
-		}
+		return
+	}
+	if strings.TrimSpace(tv.Value) == "" {
+		m.l.Error().Interface("content", contents).Msg("Received TranslationValue, but the value appeared to be empty")
+		return
+	}
 
-		// We need the project-settings, so we resolve the project
-		var project *types.Project
-		{
-			t, err := m.db.GetTranslation(tv.TranslationID)
-			if err != nil {
-				m.l.Error().Err(err).Msg("failed to lookup translation")
-				return
-			}
-			if t == nil {
-				m.l.Error().Err(err).Msg("Missing translation")
-				return
-			}
-			cat, err := m.db.GetCategory(t.CategoryID)
-			if err != nil {
-				m.l.Error().Err(err).Msg("failed to lookup category")
-				return
-			}
-			if t == nil {
-				m.l.Error().Err(err).Msg("Missing category")
-				return
-			}
-			p, err := m.db.GetProject(cat.ProjectID)
-			if err != nil {
-				m.l.Error().Err(err).Msg("failed to lookup project")
-				return
-			}
-			if t == nil {
-				m.l.Error().Err(err).Msg("Missing project")
-				return
-			}
-			project = p
-
-		}
-		if len(project.LocaleIDs) == 0 {
-			if m.l.HasDebug() {
-				m.l.Debug().Interface("project", project).Msg("project does not have any locale-ids")
-			}
-			return
-		}
-
-		_locales, err := m.db.GetLocales()
+	// We need the project-settings, so we resolve the project
+	var project *types.Project
+	{
+		t, err := m.db.GetTranslation(tv.TranslationID)
 		if err != nil {
-			m.l.Error().Err(err).Msg("failed to lookup locales")
+			m.l.Error().Str("translationID", tv.TranslationID).Err(err).Msg("failed to lookup translation")
 			return
 		}
-		locales := map[string]types.Locale{}
-		for k, v := range project.LocaleIDs {
-			if !v.AutoTranslation {
-				continue
-			}
-			if l, ok := _locales[k]; ok {
-				locales[k] = l
-			}
-
+		if t == nil {
+			m.l.Error().Err(err).Msg("Missing translation")
+			return
 		}
-
-		tvs, err := m.db.GetTranslationValuesFilter(0, types.TranslationValue{TranslationID: tv.TranslationID})
+		cat, err := m.db.GetCategory(t.CategoryID)
 		if err != nil {
-			m.l.Error().Err(err).Msg("failed to lookup translationvalues")
+			m.l.Error().Err(err).Msg("failed to lookup category")
 			return
 		}
-		existingTranslations := map[string]string{}
-		for k, v := range tvs {
-			existingTranslations[v.LocaleID] = k
+		if t == nil {
+			m.l.Error().Err(err).Msg("Missing category")
+			return
 		}
-		sourceLocale := locales[tv.LocaleID]
-		for _, l := range locales {
-			if l.ID == sourceLocale.ID {
-				if debug {
-					m.l.Debug().Interface("locale", l).Msg("Skipped locale, since it is the source-locale")
-				}
-				continue
-			}
-			if _, ok := existingTranslations[l.ID]; ok {
-				if debug {
-					m.l.Debug().Interface("locale", l).Msg("Skipped locale, since it is already translated")
-				}
-				continue
-			}
-			if sourceLocale.Iso639_1 == l.Iso639_1 {
-				if debug {
-					m.l.Debug().Interface("locale", l).Msg("skipping translation, since Iso639_1 is the same as the source")
-				}
-				continue
+		p, err := m.db.GetProject(cat.ProjectID)
+		if err != nil {
+			m.l.Error().Err(err).Msg("failed to lookup project")
+			return
+		}
+		if t == nil {
+			m.l.Error().Err(err).Msg("Missing project")
+			return
+		}
+		project = p
 
-			}
-			// TODO: check if source and target are supported.
-			source := sourceLocale.Iso639_1
-			target := l.Iso639_1
-			result, err := m.translator.Translate(tv.Value, source, target)
-			if err != nil {
-				m.l.Error().Err(err).Str("source", source).Str("target", target).Msg("failed during translation")
-				continue
-			}
-			if result == "" {
-				m.l.Warn().Str("result", result).Msg("The translation returned a empty result")
-				continue
-			}
-			tv := types.TranslationValue{
-				Value:         result,
-				LocaleID:      l.ID,
-				TranslationID: tv.TranslationID,
-				Source:        types.CreatorSourceTranslator,
-			}
-			tv.CreatedBy = string(tv.Source)
-			tv.OrganizationID = orgId
-			_, err = m.db.CreateTranslationValue(tv)
+	}
+	if len(project.LocaleIDs) == 0 {
+		if m.l.HasDebug() {
+			m.l.Debug().Interface("project", project).Msg("project does not have any locale-ids")
+		}
+		return
+	}
 
-			if err != nil {
-				m.l.Error().Err(err).Msg("Failed to create translation-value")
-				continue
-			}
-
+	_locales, err := m.db.GetLocales()
+	if err != nil {
+		m.l.Error().Err(err).Msg("failed to lookup locales")
+		return
+	}
+	locales := map[string]types.Locale{}
+	for k, v := range project.LocaleIDs {
+		if !v.AutoTranslation {
+			continue
+		}
+		if l, ok := _locales[k]; ok {
+			locales[k] = l
 		}
 
 	}
+
+	tvs, err := m.db.GetTranslationValuesFilter(0, types.TranslationValue{TranslationID: tv.TranslationID})
+	if err != nil {
+		m.l.Error().Err(err).Msg("failed to lookup translationvalues")
+		return
+	}
+	existingTranslations := map[string]string{}
+	for k, v := range tvs {
+		existingTranslations[v.LocaleID] = k
+	}
+	sourceLocale := locales[tv.LocaleID]
+	for _, l := range locales {
+		if l.ID == sourceLocale.ID {
+			if debug {
+				m.l.Debug().Interface("locale", l).Msg("Skipped locale, since it is the source-locale")
+			}
+			continue
+		}
+		if _, ok := existingTranslations[l.ID]; ok {
+			if debug {
+				m.l.Debug().Interface("locale", l).Msg("Skipped locale, since it is already translated")
+			}
+			continue
+		}
+		if sourceLocale.Iso639_1 == l.Iso639_1 {
+			if debug {
+				m.l.Debug().Interface("locale", l).Msg("skipping translation, since Iso639_1 is the same as the source")
+			}
+			continue
+
+		}
+		// TODO: check if source and target are supported.
+		// TODO: implement for contexts too
+		source := sourceLocale.Iso639_1
+		target := l.Iso639_1
+		result, err := m.translator.Translate(tv.Value, source, target)
+		if err != nil {
+			m.l.Error().Err(err).Str("source", source).Str("target", target).Msg("failed during translation")
+			continue
+		}
+		if result == "" {
+			m.l.Warn().Str("result", result).Msg("The translation returned a empty result")
+			continue
+		}
+		tv := types.TranslationValue{
+			Value:         result,
+			LocaleID:      l.ID,
+			TranslationID: tv.TranslationID,
+			Source:        types.CreatorSourceTranslator,
+		}
+		tv.CreatedBy = string(tv.Source)
+		tv.OrganizationID = orgId
+		_, err = m.db.CreateTranslationValue(tv)
+
+		if err != nil {
+			m.l.Error().Err(err).Msg("Failed to create translation-value")
+			continue
+		}
+
+	}
+
 }
 
 func main() {

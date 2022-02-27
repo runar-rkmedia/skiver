@@ -9,11 +9,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was created in the database
          */
-        createdAt: string; // date-time
+        created_at: string; // date-time
         /**
          * User id refering to the user who created the item
          */
-        createdBy?: string;
+        created_by?: string;
         /**
          * If set, the item is considered deleted. The item will normally not get deleted from the database,
          * but it may if cleanup is required.
@@ -31,11 +31,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was updated, if any
          */
-        updatedAt?: string; // date-time
+        updated_at?: string; // date-time
         /**
          * User id refering to who created the item
          */
-        updatedBy?: string;
+        updated_by?: string;
     }
     export interface CategoryInput {
         description?: string;
@@ -50,11 +50,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was created in the database
          */
-        createdAt: string; // date-time
+        created_at: string; // date-time
         /**
          * User id refering to the user who created the item
          */
-        createdBy?: string;
+        created_by?: string;
         /**
          * If set, the item is considered deleted. The item will normally not get deleted from the database,
          * but it may if cleanup is required.
@@ -79,11 +79,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was updated, if any
          */
-        updatedAt?: string; // date-time
+        updated_at?: string; // date-time
         /**
          * User id refering to who created the item
          */
-        updatedBy?: string;
+        updated_by?: string;
     }
     export interface CreateSnapshotInput {
         description?: string;
@@ -95,11 +95,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was created in the database
          */
-        createdAt: string; // date-time
+        created_at: string; // date-time
         /**
          * User id refering to the user who created the item
          */
-        createdBy?: string;
+        created_by?: string;
         /**
          * If set, the item is considered deleted. The item will normally not get deleted from the database,
          * but it may if cleanup is required.
@@ -112,11 +112,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was updated, if any
          */
-        updatedAt?: string; // date-time
+        updated_at?: string; // date-time
         /**
          * User id refering to who created the item
          */
-        updatedBy?: string;
+        updated_by?: string;
     }
     export interface Error {
         code?: ErrorCodes;
@@ -127,11 +127,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was created in the database
          */
-        createdAt: string; // date-time
+        created_at: string; // date-time
         /**
          * User id refering to the user who created the item
          */
-        createdBy?: string;
+        created_by?: string;
         /**
          * If set, the item is considered deleted. The item will normally not get deleted from the database,
          * but it may if cleanup is required.
@@ -156,33 +156,26 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was updated, if any
          */
-        updatedAt?: string; // date-time
+        updated_at?: string; // date-time
         /**
          * User id refering to who created the item
          */
-        updatedBy?: string;
+        updated_by?: string;
     }
     export interface ExtendedProject {
-        Categories?: {
+        categories?: {
             [name: string]: ExtendedCategory;
         };
-        CategoryTree?: CategoryTreeNode;
-        Locales?: {
-            [name: string]: /**
-             * # See https://en.wikipedia.org/wiki/Language_code for more information
-             * TODO: consider supporting other standards here, like Windows(?), which seem to have their own thing.
-             */
-            Locale;
-        };
         category_ids?: string[];
+        category_tree?: CategoryTreeNode;
         /**
          * Time of which the entity was created in the database
          */
-        createdAt: string; // date-time
+        created_at: string; // date-time
         /**
          * User id refering to the user who created the item
          */
-        createdBy?: string;
+        created_by?: string;
         /**
          * If set, the item is considered deleted. The item will normally not get deleted from the database,
          * but it may if cleanup is required.
@@ -196,7 +189,11 @@ declare namespace ApiDef {
         id: string;
         included_tags?: string[];
         locales?: {
-            [name: string]: LocaleSetting;
+            [name: string]: /**
+             * # See https://en.wikipedia.org/wiki/Language_code for more information
+             * TODO: consider supporting other standards here, like Windows(?), which seem to have their own thing.
+             */
+            Locale;
         };
         short_name?: string;
         snapshots?: {
@@ -206,26 +203,23 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was updated, if any
          */
-        updatedAt?: string; // date-time
+        updated_at?: string; // date-time
         /**
          * User id refering to who created the item
          */
-        updatedBy?: string;
+        updated_by?: string;
     }
     export interface ExtendedTranslation {
-        Values?: {
-            [name: string]: TranslationValue;
-        };
         aliases?: string[];
         category?: string;
         /**
          * Time of which the entity was created in the database
          */
-        createdAt: string; // date-time
+        created_at: string; // date-time
         /**
          * User id refering to the user who created the item
          */
-        createdBy?: string;
+        created_by?: string;
         /**
          * If set, the item is considered deleted. The item will normally not get deleted from the database,
          * but it may if cleanup is required.
@@ -244,12 +238,15 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was updated, if any
          */
-        updatedAt?: string; // date-time
+        updated_at?: string; // date-time
         /**
          * User id refering to who created the item
          */
-        updatedBy?: string;
+        updated_by?: string;
         value_ids?: string[];
+        values?: {
+            [name: string]: TranslationValue;
+        };
         variables?: {
             [name: string]: {
                 [key: string]: any;
@@ -275,11 +272,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was created in the database
          */
-        createdAt: string; // date-time
+        created_at: string; // date-time
         /**
          * User id refering to the user who created the item
          */
-        createdBy?: string;
+        created_by?: string;
         /**
          * If set, the item is considered deleted. The item will normally not get deleted from the database,
          * but it may if cleanup is required.
@@ -313,11 +310,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was updated, if any
          */
-        updatedAt?: string; // date-time
+        updated_at?: string; // date-time
         /**
          * User id refering to who created the item
          */
-        updatedBy?: string;
+        updated_by?: string;
     }
     export interface LocaleInput {
         /**
@@ -383,7 +380,7 @@ declare namespace ApiDef {
         /**
          * If not active, the account cannot be used until any issues are resolved.
          */
-        Active?: boolean;
+        active?: boolean;
         can_create_locales?: boolean;
         can_create_organization?: boolean;
         can_create_projects?: boolean;
@@ -398,11 +395,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was created in the database
          */
-        createdAt: string; // date-time
+        created_at: string; // date-time
         /**
          * User id refering to the user who created the item
          */
-        createdBy?: string;
+        created_by?: string;
         /**
          * If set, the item is considered deleted. The item will normally not get deleted from the database,
          * but it may if cleanup is required.
@@ -423,12 +420,12 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was updated, if any
          */
-        updatedAt?: string; // date-time
+        updated_at?: string; // date-time
         /**
          * User id refering to who created the item
          */
-        updatedBy?: string;
-        userName?: string;
+        updated_by?: string;
+        username?: string;
     }
     export interface LogoutResponse {
         ok: boolean;
@@ -446,11 +443,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was created in the database
          */
-        createdAt: string; // date-time
+        created_at: string; // date-time
         /**
          * User id refering to the user who created the item
          */
-        createdBy?: string;
+        created_by?: string;
         /**
          * If set, the item is considered deleted. The item will normally not get deleted from the database,
          * but it may if cleanup is required.
@@ -480,15 +477,15 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was updated, if any
          */
-        updatedAt?: string; // date-time
+        updated_at?: string; // date-time
         /**
          * User id refering to who created the item
          */
-        updatedBy?: string;
+        updated_by?: string;
     }
     export interface Organization {
-        createdAt?: string; // date-time
-        createdBy?: string;
+        created_at?: string; // date-time
+        created_by?: string;
         deleted?: string; // date-time
         description?: string;
         id?: string;
@@ -499,8 +496,8 @@ declare namespace ApiDef {
         join_id?: string;
         join_id_expires?: string; // date-time
         title?: string;
-        updatedAt?: string; // date-time
-        updatedBy?: string;
+        updated_at?: string; // date-time
+        updated_by?: string;
     }
     export interface OrganizationInput {
         title: string;
@@ -510,11 +507,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was created in the database
          */
-        createdAt: string; // date-time
+        created_at: string; // date-time
         /**
          * User id refering to the user who created the item
          */
-        createdBy?: string;
+        created_by?: string;
         /**
          * If set, the item is considered deleted. The item will normally not get deleted from the database,
          * but it may if cleanup is required.
@@ -537,11 +534,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was updated, if any
          */
-        updatedAt?: string; // date-time
+        updated_at?: string; // date-time
         /**
          * User id refering to who created the item
          */
-        updatedBy?: string;
+        updated_by?: string;
     }
     export interface ProjectInput {
         description?: string;
@@ -552,16 +549,14 @@ declare namespace ApiDef {
         title: string;
     }
     export interface ProjectSnapshot {
-        Project?: ExtendedProject;
-        ProjectHash?: number; // uint64
         /**
          * Time of which the entity was created in the database
          */
-        createdAt: string; // date-time
+        created_at: string; // date-time
         /**
          * User id refering to the user who created the item
          */
-        createdBy?: string;
+        created_by?: string;
         /**
          * If set, the item is considered deleted. The item will normally not get deleted from the database,
          * but it may if cleanup is required.
@@ -571,14 +566,16 @@ declare namespace ApiDef {
          * Unique identifier of the entity
          */
         id: string;
+        project?: ExtendedProject;
+        project_hash?: number; // uint64
         /**
          * Time of which the entity was updated, if any
          */
-        updatedAt?: string; // date-time
+        updated_at?: string; // date-time
         /**
          * User id refering to who created the item
          */
-        updatedBy?: string;
+        updated_by?: string;
     }
     export interface ProjectSnapshotMeta {
         created_at?: string; // date-time
@@ -586,7 +583,6 @@ declare namespace ApiDef {
         description?: string;
         hash?: number; // uint64
         id?: string;
-        tags?: string[];
     }
     export interface ReportMissingInput {
         [name: string]: string;
@@ -595,24 +591,24 @@ declare namespace ApiDef {
         /**
          * Date of build
          */
-        BuildDate?: string; // date-time
+        build_date?: string; // date-time
         /**
          * Size of database.
          */
-        DatabaseSize?: number; // int64
-        DatabaseSizeStr?: string;
+        database_size?: number; // int64
+        database_size_str?: string;
         /**
          * Short githash for current commit
          */
-        GitHash?: string;
+        git_hash?: string;
         /**
          * When the server was started
          */
-        ServerStartedAt?: string; // date-time
+        server_started_at?: string; // date-time
         /**
          * Version-number for commit
          */
-        Version?: string;
+        version?: string;
     }
     export interface Translation {
         aliases?: string[];
@@ -620,11 +616,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was created in the database
          */
-        createdAt: string; // date-time
+        created_at: string; // date-time
         /**
          * User id refering to the user who created the item
          */
-        createdBy?: string;
+        created_by?: string;
         /**
          * If set, the item is considered deleted. The item will normally not get deleted from the database,
          * but it may if cleanup is required.
@@ -642,11 +638,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was updated, if any
          */
-        updatedAt?: string; // date-time
+        updated_at?: string; // date-time
         /**
          * User id refering to who created the item
          */
-        updatedBy?: string;
+        updated_by?: string;
         value_ids?: string[];
         variables?: {
             [name: string]: {
@@ -675,11 +671,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was created in the database
          */
-        createdAt: string; // date-time
+        created_at: string; // date-time
         /**
          * User id refering to the user who created the item
          */
-        createdBy?: string;
+        created_by?: string;
         /**
          * If set, the item is considered deleted. The item will normally not get deleted from the database,
          * but it may if cleanup is required.
@@ -701,11 +697,11 @@ declare namespace ApiDef {
         /**
          * Time of which the entity was updated, if any
          */
-        updatedAt?: string; // date-time
+        updated_at?: string; // date-time
         /**
          * User id refering to who created the item
          */
-        updatedBy?: string;
+        updated_by?: string;
         /**
          * The pre-interpolated value to use  with translations
          * example:
@@ -714,12 +710,17 @@ declare namespace ApiDef {
         value?: string;
     }
     export interface TranslationValueInput {
+        /**
+         * If set, it will add/update the context for that key instead of the original value
+         */
+        context_key?: string; // ^[^\s]*$
         locale_id: string;
         translation_id: string;
-        value: string;
+        value?: string;
     }
     export interface UpdateProjectInput {
         description?: string;
+        id: string;
         locales?: {
             [name: string]: LocaleSettingInput;
         };
@@ -728,6 +729,7 @@ declare namespace ApiDef {
     }
     export interface UpdateTranslationInput {
         description?: string;
+        id: string;
         title?: string;
         variables?: {
             [name: string]: any;
@@ -737,8 +739,9 @@ declare namespace ApiDef {
         /**
          * If set, it will add/update the context for that key instead of the original value
          */
-        contextKey?: string;
-        value: string;
+        context_key?: string; // ^[^\s]*$
+        id: string;
+        value?: string;
     }
 }
 declare namespace ApiPaths {
@@ -1000,11 +1003,7 @@ declare namespace ApiPaths {
             UpdateProject: Parameters.UpdateProject;
         }
         namespace Parameters {
-            export type ProjectID = string;
             export type UpdateProject = ApiDef.UpdateProjectInput;
-        }
-        export interface PathParameters {
-            projectID: Parameters.ProjectID;
         }
     }
     namespace UpdateTranslationValue {

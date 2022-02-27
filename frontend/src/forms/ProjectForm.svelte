@@ -14,7 +14,7 @@
     if (!project) {
       return
     }
-    api.project.update(project.id, $state.createProject)
+    api.project.update(project.id, { id: project.id, ...$state.createProject })
   }
   function submit() {
     if (project) {

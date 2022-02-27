@@ -6,22 +6,25 @@
   export let localeID: string
   export let existingID: string = ''
   export let translationID: string
-  export let contextKey: string = ''
+  export let withContext = false
   const dispatch = createEventDispatcher()
   async function onCreateTranslationValue() {
     let s: Awaited<ReturnType<typeof api.translationValue.create>>
+    $state.createTranslationValue.locale_id = localeID
+    $state.createTranslationValue.translation_id = translationID
     if (existingID) {
       // Update
       const p = $state.createTranslationValue
+      if (p.context_key == '') {
+        delete p.context_key
+      }
       s = await api.translationValue.update(existingID, {
+        id: existingID,
         ...p,
-        ...(!!contextKey && { contextKey }),
       })
     } else {
       // Create
 
-      $state.createTranslationValue.locale_id = localeID
-      $state.createTranslationValue.translation_id = translationID
       if (!$state.createTranslationValue.locale_id) {
         toast({
           title: 'missing argument',
@@ -58,6 +61,15 @@
 
 <form>
   <!-- svelte-ignore a11y-autofocus -->
+  {#if withContext}
+    <label
+      >Context
+
+      <input
+        name="context"
+        bind:value={$state.createTranslationValue.context_key} />
+    </label>
+  {/if}
   <textarea
     autofocus
     rows={5}
@@ -78,6 +90,7 @@
     color="secondary"
     disabled={loading}
     on:click={() => {
+      $state.openTranslationValueForm = ''
       dispatch('cancel')
     }}
     icon={'cancel'}>Cancel</Button>

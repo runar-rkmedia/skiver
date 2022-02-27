@@ -64,16 +64,16 @@ type Storage interface {
 type Entity struct {
 	// Time of which the entity was created in the database
 	// Required: true
-	CreatedAt time.Time `json:"createdAt,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Time of which the entity was updated, if any
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// Unique identifier of the entity
 	// Required: true
 	ID string `json:"id,omitempty"`
 	// User id refering to the user who created the item
-	CreatedBy string `json:"createdBy,omitempty"`
+	CreatedBy string `json:"created_by,omitempty"`
 	// User id refering to who created the item
-	UpdatedBy string `json:"updatedBy,omitempty"`
+	UpdatedBy string `json:"updated_by,omitempty"`
 	// If set, the item is considered deleted. The item will normally not get deleted from the database,
 	// but it may if cleanup is required.
 	Deleted *time.Time `json:"deleted,omitempty"`

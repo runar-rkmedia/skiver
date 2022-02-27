@@ -4,17 +4,17 @@ import "time"
 
 type ServerInfo struct {
 	// When the server was started
-	ServerStartedAt time.Time
+	ServerStartedAt time.Time `json:"server_started_at"`
 	// Short githash for current commit
-	GitHash string
+	GitHash string `json:"git_hash"`
 	// Version-number for commit
-	Version string
+	Version string `json:"version"`
 	// Date of build
-	BuildDate time.Time
+	BuildDate time.Time `json:"build_date"`
 
 	// Size of database.
-	DatabaseSize    int64
-	DatabaseSizeStr string
+	DatabaseSize    int64  `json:"database_size"`
+	DatabaseSizeStr string `json:"database_size_str"`
 }
 
 // Server info

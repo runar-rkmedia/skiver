@@ -53,11 +53,17 @@ definitions:
     type: object
   UpdateProjectInput:
     type: object
+    required:
+      - id
     properties:
       title:
         type: string
         minLength: 1
         maxLength: 400
+      id:
+        type: string
+        minLength: 3
+        maxLength: 36
       short_name:
         type: string
         minLength: 1
@@ -174,6 +180,12 @@ definitions:
 
   TranslationValueInput:
     properties:
+      context_key:
+        description: If set, it will add/update the context for that key instead of the original value
+        type: string
+        maxLength: 100
+        minLength: 1
+        pattern: ^[^\s]*$
       translation_id:
         maxLength: 100
         minLength: 1
@@ -190,22 +202,32 @@ definitions:
     required:
       - translation_id
       - locale_id
-      - value
   UpdateTranslationValueInput:
     properties:
+      id:
+        maxLength: 36
+        minLength: 3
+        type: string
       value:
         maxLength: 8000
         minLength: 0
         type: string
-      contextKey:
+      context_key:
         description: If set, it will add/update the context for that key instead of the original value
         type: string
+        maxLength: 100
+        minLength: 1
+        pattern: ^[^\s]*$
     type: object
     required:
-      - value
+      - id
   UpdateTranslationInput:
     type: object
     properties:
+      id:
+        maxLength: 36
+        minLength: 3
+        type: string
       title:
         maxLength: 300
         minLength: 0
@@ -217,6 +239,8 @@ definitions:
       variables:
         type: object
         additionalProperties: true
+    required:
+      - id
   ReportMissingInput:
     type: object
     additionalProperties:
@@ -568,7 +592,6 @@ paths:
           $ref: '#/responses/apiError'
       tags:
       - project
-  /project/{projectID}:
     put:
       summary: Update a project, including its settings
       operationId: updateProject
@@ -578,10 +601,6 @@ paths:
         "500":
           $ref: '#/responses/apiError'
       parameters:
-        - in: path
-          name: projectID
-          type: string
-          required: true
         - in: body
           required: true
           name: UpdateProject

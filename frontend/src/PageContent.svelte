@@ -27,10 +27,10 @@
 {#each Object.entries(errs) as [_, [k, v]]}
   <Alert kind="error">
     <h4 slot="title">{k}</h4>
-    <h5>{v.error.code}</h5>
-    <p>{v.error.error}</p>
-    {#if v.error.details}
-      {JSON.stringify(v.error.details)}
+    <h5>{v.error.error.code}</h5>
+    <p>{v.error.error.error}</p>
+    {#if v.error.error.details}
+      {JSON.stringify(v.error.error.details)}
     {/if}
   </Alert>
 {/each}
@@ -63,9 +63,9 @@
   <h2>Welcome to Skiver!</h2>
   <p>
     Skiver is a management-system for translations. It aims to be simple, and
-    convinient to use.
+    convenient to use.
   </p>
-  {#if $db.login?.can_create_organization}
+  {#if $db.login.ok && $db.login?.can_create_organization}
     <OrganizationPage />
   {/if}
 {:else}

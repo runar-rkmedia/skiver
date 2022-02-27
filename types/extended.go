@@ -6,11 +6,11 @@ import (
 )
 
 type ExtendedProject struct {
-	Project
-	Exists       *bool `json:"exists,omitempty"`
-	Categories   map[string]ExtendedCategory
-	CategoryTree CategoryTreeNode
-	Locales      map[string]Locale
+	Project      `json:"project"`
+	Exists       *bool                       `json:"exists,omitempty"`
+	Categories   map[string]ExtendedCategory `json:"categories"`
+	CategoryTree CategoryTreeNode            `json:"category_tree"`
+	Locales      map[string]Locale           `json:"locales"`
 }
 
 type ExtendedCategory struct {
@@ -20,13 +20,13 @@ type ExtendedCategory struct {
 	Translations map[string]ExtendedTranslation `json:"translations,omitempty"`
 }
 type ExtendedTranslation struct {
-	Translation
-	Exists *bool `json:"exists,omitempty"`
-	Values map[string]TranslationValue
+	Translation `json:"translation"`
+	Exists      *bool                       `json:"exists,omitempty"`
+	Values      map[string]TranslationValue `json:"values"`
 }
 type ExtendedLocale struct {
-	Locale
-	Categories map[string]ExtendedCategory
+	Locale     `json:"locale"`
+	Categories map[string]ExtendedCategory `json:"categories"`
 }
 
 func (t Translation) Extend(db Storage, options ...ExtendOptions) (et ExtendedTranslation, err error) {

@@ -11,7 +11,6 @@
   import ProjectOverview from '../components/ProjectOverview.svelte'
   import GlobalSearch from '../components/GlobalSearch.svelte'
   import { scrollToCategoryByKey } from 'util/scrollToCategory'
-  import ProjectForm from 'forms/ProjectForm.svelte'
   import Icon from 'components/Icon.svelte'
 
   $: project = $db.project[projectID]
@@ -54,8 +53,8 @@
   const categorySortOptions: Array<keyof ApiDef.Category> = [
     'key',
     'title',
-    'createdAt',
-    'updatedAt',
+    'created_at',
+    'updated_at',
   ]
 </script>
 
@@ -77,7 +76,10 @@
           Settings
         </a>
       </h2>
-      <p>{project.description}</p>
+
+      {#if project.description}
+        <p>{project.description}</p>
+      {/if}
       <EntityDetails entity={project} />
       {#if $state.projectSettings[projectID]?.localeIds}
         <paper>

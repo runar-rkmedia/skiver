@@ -20,18 +20,34 @@ import (
 type UpdateTranslationValueInput struct {
 
 	// If set, it will add/update the context for that key instead of the original value
-	ContextKey string `json:"contextKey,omitempty"`
+	// Max Length: 100
+	// Min Length: 1
+	// Pattern: ^[^\s]*$
+	ContextKey string `json:"context_key,omitempty"`
+
+	// id
+	// Required: true
+	// Max Length: 36
+	// Min Length: 3
+	ID *string `json:"id"`
 
 	// value
-	// Required: true
 	// Max Length: 8000
 	// Min Length: 0
-	Value *string `json:"value"`
+	Value *string `json:"value,omitempty"`
 }
 
 // Validate validates this update translation value input
 func (m *UpdateTranslationValueInput) Validate(formats strfmt.Registry) error {
 	var res []error
+
+	if err := m.validateContextKey(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateID(formats); err != nil {
+		res = append(res, err)
+	}
 
 	if err := m.validateValue(formats); err != nil {
 		res = append(res, err)
@@ -43,10 +59,46 @@ func (m *UpdateTranslationValueInput) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *UpdateTranslationValueInput) validateValue(formats strfmt.Registry) error {
+func (m *UpdateTranslationValueInput) validateContextKey(formats strfmt.Registry) error {
+	if swag.IsZero(m.ContextKey) { // not required
+		return nil
+	}
 
-	if err := validate.Required("value", "body", m.Value); err != nil {
+	if err := validate.MinLength("context_key", "body", m.ContextKey, 1); err != nil {
 		return err
+	}
+
+	if err := validate.MaxLength("context_key", "body", m.ContextKey, 100); err != nil {
+		return err
+	}
+
+	if err := validate.Pattern("context_key", "body", m.ContextKey, `^[^\s]*$`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *UpdateTranslationValueInput) validateID(formats strfmt.Registry) error {
+
+	if err := validate.Required("id", "body", m.ID); err != nil {
+		return err
+	}
+
+	if err := validate.MinLength("id", "body", *m.ID, 3); err != nil {
+		return err
+	}
+
+	if err := validate.MaxLength("id", "body", *m.ID, 36); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *UpdateTranslationValueInput) validateValue(formats strfmt.Registry) error {
+	if swag.IsZero(m.Value) { // not required
+		return nil
 	}
 
 	if err := validate.MinLength("value", "body", *m.Value, 0); err != nil {

@@ -9,23 +9,23 @@
     <created>
       <created-at>
         Created:
-        {formatDate(entity.createdAt)}
+        {formatDate(entity.created_at)}
       </created-at>
       <created-by>
         by:
-        {entity.createdBy}
+        {entity.created_by}
       </created-by>
     </created>
-    {#if entity.updatedAt}
+    {#if entity.updated_by}
       <updated>
         <updated-at>
           Updated:
-          {formatDate(entity.updatedAt)}
+          {formatDate(entity.updated_at)}
         </updated-at>
-        {#if entity.updatedBy}
+        {#if entity.updated_by}
           <updated-at>
             by:
-            {entity.updatedBy}
+            {entity.updated_by}
           </updated-at>
         {/if}
       </updated>

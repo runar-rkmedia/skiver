@@ -7,7 +7,7 @@
   export let joinID: string
   let loading = false
   let org: ApiDef.Organization | null
-  let joinedResponse: ApiDef.Organization | null
+  let joinedResponse: ApiDef.LoginResponse | null
   let error: ApiDef.APIError | null
   let username = ''
   let password = ''
@@ -41,11 +41,11 @@
 </script>
 
 {#if error}
-  <Alert kind="error">{error.error}</Alert>
+  <Alert kind="error">{error.error?.error}</Alert>
 {/if}
 
 {#if joinedResponse}
-  You have successfully joined {joinedResponse.title} as user {username}.
+  You have successfully joined {joinedResponse.organization?.title} as user {username}.
 {:else if org}
   <paper>
     <h3>Join organization {org.title}</h3>

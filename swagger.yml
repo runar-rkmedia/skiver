@@ -15,12 +15,12 @@ definitions:
     x-go-package: github.com/runar-rkmedia/skiver/requestContext
   Category:
     properties:
-      createdAt:
+      created_at:
         description: Time of which the entity was created in the database
         format: date-time
         type: string
         x-go-name: CreatedAt
-      createdBy:
+      created_by:
         description: User id refering to the user who created the item
         type: string
         x-go-name: CreatedBy
@@ -52,17 +52,17 @@ definitions:
           type: string
         type: array
         x-go-name: TranslationIDs
-      updatedAt:
+      updated_at:
         description: Time of which the entity was updated, if any
         format: date-time
         type: string
         x-go-name: UpdatedAt
-      updatedBy:
+      updated_by:
         description: User id refering to who created the item
         type: string
         x-go-name: UpdatedBy
     required:
-    - createdAt
+    - created_at
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
@@ -97,12 +97,12 @@ definitions:
           $ref: '#/definitions/CategoryTreeNode'
         type: object
         x-go-name: Categories
-      createdAt:
+      created_at:
         description: Time of which the entity was created in the database
         format: date-time
         type: string
         x-go-name: CreatedAt
-      createdBy:
+      created_by:
         description: User id refering to the user who created the item
         type: string
         x-go-name: CreatedBy
@@ -143,17 +143,17 @@ definitions:
           $ref: '#/definitions/ExtendedTranslation'
         type: object
         x-go-name: Translations
-      updatedAt:
+      updated_at:
         description: Time of which the entity was updated, if any
         format: date-time
         type: string
         x-go-name: UpdatedAt
-      updatedBy:
+      updated_by:
         description: User id refering to who created the item
         type: string
         x-go-name: UpdatedBy
     required:
-    - createdAt
+    - created_at
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
@@ -181,12 +181,12 @@ definitions:
     x-go-package: github.com/runar-rkmedia/skiver/types
   Entity:
     properties:
-      createdAt:
+      created_at:
         description: Time of which the entity was created in the database
         format: date-time
         type: string
         x-go-name: CreatedAt
-      createdBy:
+      created_by:
         description: User id refering to the user who created the item
         type: string
         x-go-name: CreatedBy
@@ -201,17 +201,17 @@ definitions:
         description: Unique identifier of the entity
         type: string
         x-go-name: ID
-      updatedAt:
+      updated_at:
         description: Time of which the entity was updated, if any
         format: date-time
         type: string
         x-go-name: UpdatedAt
-      updatedBy:
+      updated_by:
         description: User id refering to who created the item
         type: string
         x-go-name: UpdatedBy
     required:
-    - createdAt
+    - created_at
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
@@ -229,12 +229,12 @@ definitions:
     x-go-package: github.com/runar-rkmedia/skiver/requestContext
   ExtendedCategory:
     properties:
-      createdAt:
+      created_at:
         description: Time of which the entity was created in the database
         format: date-time
         type: string
         x-go-name: CreatedAt
-      createdBy:
+      created_by:
         description: User id refering to the user who created the item
         type: string
         x-go-name: CreatedBy
@@ -275,43 +275,40 @@ definitions:
           $ref: '#/definitions/ExtendedTranslation'
         type: object
         x-go-name: Translations
-      updatedAt:
+      updated_at:
         description: Time of which the entity was updated, if any
         format: date-time
         type: string
         x-go-name: UpdatedAt
-      updatedBy:
+      updated_by:
         description: User id refering to who created the item
         type: string
         x-go-name: UpdatedBy
     required:
-    - createdAt
+    - created_at
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
   ExtendedProject:
     properties:
-      Categories:
+      categories:
         additionalProperties:
           $ref: '#/definitions/ExtendedCategory'
         type: object
-      CategoryTree:
-        $ref: '#/definitions/CategoryTreeNode'
-      Locales:
-        additionalProperties:
-          $ref: '#/definitions/Locale'
-        type: object
+        x-go-name: Categories
       category_ids:
         items:
           type: string
         type: array
         x-go-name: CategoryIDs
-      createdAt:
+      category_tree:
+        $ref: '#/definitions/CategoryTreeNode'
+      created_at:
         description: Time of which the entity was created in the database
         format: date-time
         type: string
         x-go-name: CreatedAt
-      createdBy:
+      created_by:
         description: User id refering to the user who created the item
         type: string
         x-go-name: CreatedBy
@@ -339,9 +336,9 @@ definitions:
         x-go-name: IncludedTags
       locales:
         additionalProperties:
-          $ref: '#/definitions/LocaleSetting'
+          $ref: '#/definitions/Locale'
         type: object
-        x-go-name: LocaleIDs
+        x-go-name: Locales
       short_name:
         type: string
         x-go-name: ShortName
@@ -353,26 +350,22 @@ definitions:
       title:
         type: string
         x-go-name: Title
-      updatedAt:
+      updated_at:
         description: Time of which the entity was updated, if any
         format: date-time
         type: string
         x-go-name: UpdatedAt
-      updatedBy:
+      updated_by:
         description: User id refering to who created the item
         type: string
         x-go-name: UpdatedBy
     required:
-    - createdAt
+    - created_at
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
   ExtendedTranslation:
     properties:
-      Values:
-        additionalProperties:
-          $ref: '#/definitions/TranslationValue'
-        type: object
       aliases:
         items:
           type: string
@@ -381,12 +374,12 @@ definitions:
       category:
         type: string
         x-go-name: CategoryID
-      createdAt:
+      created_at:
         description: Time of which the entity was created in the database
         format: date-time
         type: string
         x-go-name: CreatedAt
-      createdBy:
+      created_by:
         description: User id refering to the user who created the item
         type: string
         x-go-name: CreatedBy
@@ -421,12 +414,12 @@ definitions:
       title:
         type: string
         x-go-name: Title
-      updatedAt:
+      updated_at:
         description: Time of which the entity was updated, if any
         format: date-time
         type: string
         x-go-name: UpdatedAt
-      updatedBy:
+      updated_by:
         description: User id refering to who created the item
         type: string
         x-go-name: UpdatedBy
@@ -435,13 +428,18 @@ definitions:
           type: string
         type: array
         x-go-name: ValueIDs
+      values:
+        additionalProperties:
+          $ref: '#/definitions/TranslationValue'
+        type: object
+        x-go-name: Values
       variables:
         additionalProperties:
           type: object
         type: object
         x-go-name: Variables
     required:
-    - createdAt
+    - created_at
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
@@ -456,12 +454,12 @@ definitions:
       # See https://en.wikipedia.org/wiki/Language_code for more information
       TODO: consider supporting other standards here, like Windows(?), which seem to have their own thing.
     properties:
-      createdAt:
+      created_at:
         description: Time of which the entity was created in the database
         format: date-time
         type: string
         x-go-name: CreatedAt
-      createdBy:
+      created_by:
         description: User id refering to the user who created the item
         type: string
         x-go-name: CreatedBy
@@ -501,17 +499,17 @@ definitions:
       title:
         type: string
         x-go-name: Title
-      updatedAt:
+      updated_at:
         description: Time of which the entity was updated, if any
         format: date-time
         type: string
         x-go-name: UpdatedAt
-      updatedBy:
+      updated_by:
         description: User id refering to who created the item
         type: string
         x-go-name: UpdatedBy
     required:
-    - createdAt
+    - created_at
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
@@ -609,10 +607,11 @@ definitions:
     type: object
   LoginResponse:
     properties:
-      Active:
+      active:
         description: If not active, the account cannot be used until any issues are
           resolved.
         type: boolean
+        x-go-name: Active
       can_create_locales:
         type: boolean
         x-go-name: CanCreateLocales
@@ -646,12 +645,12 @@ definitions:
       can_update_users:
         type: boolean
         x-go-name: CanUpdateUsers
-      createdAt:
+      created_at:
         description: Time of which the entity was created in the database
         format: date-time
         type: string
         x-go-name: CreatedAt
-      createdBy:
+      created_by:
         description: User id refering to the user who created the item
         type: string
         x-go-name: CreatedBy
@@ -683,20 +682,20 @@ definitions:
           can be used
         type: boolean
         x-go-name: TemporaryPassword
-      updatedAt:
+      updated_at:
         description: Time of which the entity was updated, if any
         format: date-time
         type: string
         x-go-name: UpdatedAt
-      updatedBy:
+      updated_by:
         description: User id refering to who created the item
         type: string
         x-go-name: UpdatedBy
-      userName:
+      username:
         type: string
         x-go-name: UserName
     required:
-    - createdAt
+    - created_at
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
@@ -721,12 +720,12 @@ definitions:
         format: int64
         type: integer
         x-go-name: Count
-      createdAt:
+      created_at:
         description: Time of which the entity was created in the database
         format: date-time
         type: string
         x-go-name: CreatedAt
-      createdBy:
+      created_by:
         description: User id refering to the user who created the item
         type: string
         x-go-name: CreatedBy
@@ -769,27 +768,27 @@ definitions:
       translation_id:
         type: string
         x-go-name: TranslationID
-      updatedAt:
+      updated_at:
         description: Time of which the entity was updated, if any
         format: date-time
         type: string
         x-go-name: UpdatedAt
-      updatedBy:
+      updated_by:
         description: User id refering to who created the item
         type: string
         x-go-name: UpdatedBy
     required:
-    - createdAt
+    - created_at
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
   Organization:
     properties:
-      createdAt:
+      created_at:
         format: date-time
         type: string
         x-go-name: CreatedAt
-      createdBy:
+      created_by:
         type: string
         x-go-name: CreatedBy
       deleted:
@@ -815,11 +814,11 @@ definitions:
       title:
         type: string
         x-go-name: Title
-      updatedAt:
+      updated_at:
         format: date-time
         type: string
         x-go-name: UpdatedAt
-      updatedBy:
+      updated_by:
         type: string
         x-go-name: UpdatedBy
     type: object
@@ -840,12 +839,12 @@ definitions:
           type: string
         type: array
         x-go-name: CategoryIDs
-      createdAt:
+      created_at:
         description: Time of which the entity was created in the database
         format: date-time
         type: string
         x-go-name: CreatedAt
-      createdBy:
+      created_by:
         description: User id refering to the user who created the item
         type: string
         x-go-name: CreatedBy
@@ -884,17 +883,17 @@ definitions:
       title:
         type: string
         x-go-name: Title
-      updatedAt:
+      updated_at:
         description: Time of which the entity was updated, if any
         format: date-time
         type: string
         x-go-name: UpdatedAt
-      updatedBy:
+      updated_by:
         description: User id refering to who created the item
         type: string
         x-go-name: UpdatedBy
     required:
-    - createdAt
+    - created_at
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
@@ -922,17 +921,12 @@ definitions:
     type: object
   ProjectSnapshot:
     properties:
-      Project:
-        $ref: '#/definitions/ExtendedProject'
-      ProjectHash:
-        format: uint64
-        type: integer
-      createdAt:
+      created_at:
         description: Time of which the entity was created in the database
         format: date-time
         type: string
         x-go-name: CreatedAt
-      createdBy:
+      created_by:
         description: User id refering to the user who created the item
         type: string
         x-go-name: CreatedBy
@@ -947,17 +941,23 @@ definitions:
         description: Unique identifier of the entity
         type: string
         x-go-name: ID
-      updatedAt:
+      project:
+        $ref: '#/definitions/ExtendedProject'
+      project_hash:
+        format: uint64
+        type: integer
+        x-go-name: ProjectHash
+      updated_at:
         description: Time of which the entity was updated, if any
         format: date-time
         type: string
         x-go-name: UpdatedAt
-      updatedBy:
+      updated_by:
         description: User id refering to who created the item
         type: string
         x-go-name: UpdatedBy
     required:
-    - createdAt
+    - created_at
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
@@ -980,11 +980,6 @@ definitions:
       id:
         type: string
         x-go-name: SnapshotID
-      tags:
-        items:
-          type: string
-        type: array
-        x-go-name: Tags
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
   ReportMissingInput:
@@ -993,26 +988,32 @@ definitions:
     type: object
   ServerInfo:
     properties:
-      BuildDate:
+      build_date:
         description: Date of build
         format: date-time
         type: string
-      DatabaseSize:
+        x-go-name: BuildDate
+      database_size:
         description: Size of database.
         format: int64
         type: integer
-      DatabaseSizeStr:
+        x-go-name: DatabaseSize
+      database_size_str:
         type: string
-      GitHash:
+        x-go-name: DatabaseSizeStr
+      git_hash:
         description: Short githash for current commit
         type: string
-      ServerStartedAt:
+        x-go-name: GitHash
+      server_started_at:
         description: When the server was started
         format: date-time
         type: string
-      Version:
+        x-go-name: ServerStartedAt
+      version:
         description: Version-number for commit
         type: string
+        x-go-name: Version
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
   Translation:
@@ -1025,12 +1026,12 @@ definitions:
       category:
         type: string
         x-go-name: CategoryID
-      createdAt:
+      created_at:
         description: Time of which the entity was created in the database
         format: date-time
         type: string
         x-go-name: CreatedAt
-      createdBy:
+      created_by:
         description: User id refering to the user who created the item
         type: string
         x-go-name: CreatedBy
@@ -1062,12 +1063,12 @@ definitions:
       title:
         type: string
         x-go-name: Title
-      updatedAt:
+      updated_at:
         description: Time of which the entity was updated, if any
         format: date-time
         type: string
         x-go-name: UpdatedAt
-      updatedBy:
+      updated_by:
         description: User id refering to who created the item
         type: string
         x-go-name: UpdatedBy
@@ -1082,7 +1083,7 @@ definitions:
         type: object
         x-go-name: Variables
     required:
-    - createdAt
+    - created_at
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
@@ -1122,12 +1123,12 @@ definitions:
           type: string
         type: object
         x-go-name: Context
-      createdAt:
+      created_at:
         description: Time of which the entity was created in the database
         format: date-time
         type: string
         x-go-name: CreatedAt
-      createdBy:
+      created_by:
         description: User id refering to the user who created the item
         type: string
         x-go-name: CreatedBy
@@ -1152,12 +1153,12 @@ definitions:
         description: Translation ID
         type: string
         x-go-name: TranslationID
-      updatedAt:
+      updated_at:
         description: Time of which the entity was updated, if any
         format: date-time
         type: string
         x-go-name: UpdatedAt
-      updatedBy:
+      updated_by:
         description: User id refering to who created the item
         type: string
         x-go-name: UpdatedBy
@@ -1167,12 +1168,19 @@ definitions:
         type: string
         x-go-name: Value
     required:
-    - createdAt
+    - created_at
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
   TranslationValueInput:
     properties:
+      context_key:
+        description: If set, it will add/update the context for that key instead of
+          the original value
+        maxLength: 100
+        minLength: 1
+        pattern: ^[^\s]*$
+        type: string
       locale_id:
         maxLength: 100
         minLength: 1
@@ -1188,13 +1196,16 @@ definitions:
     required:
     - translation_id
     - locale_id
-    - value
     type: object
   UpdateProjectInput:
     properties:
       description:
         maxLength: 8000
         minLength: 1
+        type: string
+      id:
+        maxLength: 36
+        minLength: 3
         type: string
       locales:
         additionalProperties:
@@ -1208,12 +1219,18 @@ definitions:
         maxLength: 400
         minLength: 1
         type: string
+    required:
+    - id
     type: object
   UpdateTranslationInput:
     properties:
       description:
         maxLength: 8000
         minLength: 0
+        type: string
+      id:
+        maxLength: 36
+        minLength: 3
         type: string
       title:
         maxLength: 300
@@ -1222,19 +1239,28 @@ definitions:
       variables:
         additionalProperties: true
         type: object
+    required:
+    - id
     type: object
   UpdateTranslationValueInput:
     properties:
-      contextKey:
+      context_key:
         description: If set, it will add/update the context for that key instead of
           the original value
+        maxLength: 100
+        minLength: 1
+        pattern: ^[^\s]*$
+        type: string
+      id:
+        maxLength: 36
+        minLength: 3
         type: string
       value:
         maxLength: 8000
         minLength: 0
         type: string
     required:
-    - value
+    - id
     type: object
 host: localhost:8756
 info:
@@ -1571,14 +1597,9 @@ paths:
       summary: Create a new project
       tags:
       - project
-  /project/{projectID}:
     put:
       operationId: updateProject
       parameters:
-      - in: path
-        name: projectID
-        required: true
-        type: string
       - in: body
         name: UpdateProject
         required: true

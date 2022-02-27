@@ -24,7 +24,7 @@ func (bb *BBolter) UpdateTranslationValue(tv types.TranslationValue) (types.Tran
 		if err != nil {
 			return nil, err
 		}
-		if ex.Value != "" {
+		if tv.Value != "" {
 			ex.Value = tv.Value
 		}
 		if tv.Source != "" {
@@ -41,7 +41,7 @@ func (bb *BBolter) UpdateTranslationValue(tv types.TranslationValue) (types.Tran
 		}
 		return bb.Marshal(ex)
 	})
-	bb.PublishChange(PubTypeTranslationValue, PubVerbUpdate, tv)
+	bb.PublishChange(PubTypeTranslationValue, PubVerbUpdate, ex)
 
 	return ex, err
 }

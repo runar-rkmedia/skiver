@@ -24,6 +24,12 @@ type UpdateTranslationInput struct {
 	// Min Length: 0
 	Description *string `json:"description,omitempty"`
 
+	// id
+	// Required: true
+	// Max Length: 36
+	// Min Length: 3
+	ID *string `json:"id"`
+
 	// title
 	// Max Length: 300
 	// Min Length: 0
@@ -38,6 +44,10 @@ func (m *UpdateTranslationInput) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateDescription(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateID(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -61,6 +71,23 @@ func (m *UpdateTranslationInput) validateDescription(formats strfmt.Registry) er
 	}
 
 	if err := validate.MaxLength("description", "body", *m.Description, 8000); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *UpdateTranslationInput) validateID(formats strfmt.Registry) error {
+
+	if err := validate.Required("id", "body", m.ID); err != nil {
+		return err
+	}
+
+	if err := validate.MinLength("id", "body", *m.ID, 3); err != nil {
+		return err
+	}
+
+	if err := validate.MaxLength("id", "body", *m.ID, 36); err != nil {
 		return err
 	}
 

@@ -22,10 +22,10 @@ type ProjectSnapshot struct {
 	// Time of which the entity was created in the database
 	// Required: true
 	// Format: date-time
-	CreatedAt *strfmt.DateTime `json:"createdAt"`
+	CreatedAt *strfmt.DateTime `json:"created_at"`
 
 	// User id refering to the user who created the item
-	CreatedBy string `json:"createdBy,omitempty"`
+	CreatedBy string `json:"created_by,omitempty"`
 
 	// If set, the item is considered deleted. The item will normally not get deleted from the database,
 	// but it may if cleanup is required.
@@ -36,18 +36,18 @@ type ProjectSnapshot struct {
 	// Required: true
 	ID *string `json:"id"`
 
-	// project
-	Project *ExtendedProject `json:"Project,omitempty"`
-
 	// project hash
-	ProjectHash uint64 `json:"ProjectHash,omitempty"`
+	ProjectHash uint64 `json:"project_hash,omitempty"`
 
 	// Time of which the entity was updated, if any
 	// Format: date-time
-	UpdatedAt strfmt.DateTime `json:"updatedAt,omitempty"`
+	UpdatedAt strfmt.DateTime `json:"updated_at,omitempty"`
 
 	// User id refering to who created the item
-	UpdatedBy string `json:"updatedBy,omitempty"`
+	UpdatedBy string `json:"updated_by,omitempty"`
+
+	// project
+	Project *ExtendedProject `json:"project,omitempty"`
 }
 
 // Validate validates this project snapshot
@@ -66,11 +66,11 @@ func (m *ProjectSnapshot) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateProject(formats); err != nil {
+	if err := m.validateUpdatedAt(formats); err != nil {
 		res = append(res, err)
 	}
 
-	if err := m.validateUpdatedAt(formats); err != nil {
+	if err := m.validateProject(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -82,11 +82,11 @@ func (m *ProjectSnapshot) Validate(formats strfmt.Registry) error {
 
 func (m *ProjectSnapshot) validateCreatedAt(formats strfmt.Registry) error {
 
-	if err := validate.Required("createdAt", "body", m.CreatedAt); err != nil {
+	if err := validate.Required("created_at", "body", m.CreatedAt); err != nil {
 		return err
 	}
 
-	if err := validate.FormatOf("createdAt", "body", "date-time", m.CreatedAt.String(), formats); err != nil {
+	if err := validate.FormatOf("created_at", "body", "date-time", m.CreatedAt.String(), formats); err != nil {
 		return err
 	}
 
@@ -114,6 +114,18 @@ func (m *ProjectSnapshot) validateID(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *ProjectSnapshot) validateUpdatedAt(formats strfmt.Registry) error {
+	if swag.IsZero(m.UpdatedAt) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("updated_at", "body", "date-time", m.UpdatedAt.String(), formats); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *ProjectSnapshot) validateProject(formats strfmt.Registry) error {
 	if swag.IsZero(m.Project) { // not required
 		return nil
@@ -122,24 +134,12 @@ func (m *ProjectSnapshot) validateProject(formats strfmt.Registry) error {
 	if m.Project != nil {
 		if err := m.Project.Validate(formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("Project")
+				return ve.ValidateName("project")
 			} else if ce, ok := err.(*errors.CompositeError); ok {
-				return ce.ValidateName("Project")
+				return ce.ValidateName("project")
 			}
 			return err
 		}
-	}
-
-	return nil
-}
-
-func (m *ProjectSnapshot) validateUpdatedAt(formats strfmt.Registry) error {
-	if swag.IsZero(m.UpdatedAt) { // not required
-		return nil
-	}
-
-	if err := validate.FormatOf("updatedAt", "body", "date-time", m.UpdatedAt.String(), formats); err != nil {
-		return err
 	}
 
 	return nil
@@ -164,9 +164,9 @@ func (m *ProjectSnapshot) contextValidateProject(ctx context.Context, formats st
 	if m.Project != nil {
 		if err := m.Project.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("Project")
+				return ve.ValidateName("project")
 			} else if ce, ok := err.(*errors.CompositeError); ok {
-				return ce.ValidateName("Project")
+				return ce.ValidateName("project")
 			}
 			return err
 		}

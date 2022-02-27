@@ -21,23 +21,23 @@ type ServerInfo struct {
 
 	// Date of build
 	// Format: date-time
-	BuildDate strfmt.DateTime `json:"BuildDate,omitempty"`
+	BuildDate strfmt.DateTime `json:"build_date,omitempty"`
 
 	// Size of database.
-	DatabaseSize int64 `json:"DatabaseSize,omitempty"`
+	DatabaseSize int64 `json:"database_size,omitempty"`
 
 	// database size str
-	DatabaseSizeStr string `json:"DatabaseSizeStr,omitempty"`
+	DatabaseSizeStr string `json:"database_size_str,omitempty"`
 
 	// Short githash for current commit
-	GitHash string `json:"GitHash,omitempty"`
+	GitHash string `json:"git_hash,omitempty"`
 
 	// When the server was started
 	// Format: date-time
-	ServerStartedAt strfmt.DateTime `json:"ServerStartedAt,omitempty"`
+	ServerStartedAt strfmt.DateTime `json:"server_started_at,omitempty"`
 
 	// Version-number for commit
-	Version string `json:"Version,omitempty"`
+	Version string `json:"version,omitempty"`
 }
 
 // Validate validates this server info
@@ -63,7 +63,7 @@ func (m *ServerInfo) validateBuildDate(formats strfmt.Registry) error {
 		return nil
 	}
 
-	if err := validate.FormatOf("BuildDate", "body", "date-time", m.BuildDate.String(), formats); err != nil {
+	if err := validate.FormatOf("build_date", "body", "date-time", m.BuildDate.String(), formats); err != nil {
 		return err
 	}
 
@@ -75,7 +75,7 @@ func (m *ServerInfo) validateServerStartedAt(formats strfmt.Registry) error {
 		return nil
 	}
 
-	if err := validate.FormatOf("ServerStartedAt", "body", "date-time", m.ServerStartedAt.String(), formats); err != nil {
+	if err := validate.FormatOf("server_started_at", "body", "date-time", m.ServerStartedAt.String(), formats); err != nil {
 		return err
 	}
 

@@ -4,6 +4,8 @@
   import Alert from './Alert.svelte'
   import { api, db } from 'api'
   import Button from './Button.svelte'
+  import ApiResponseError from './ApiResponseError.svelte'
+  import ContextForm from './ContextForm.svelte'
   export let translation: ApiDef.Translation
   /** Map by locale-id */
   // export let translationValues: Record<string, ApiDef.TranslationValue>
@@ -36,6 +38,8 @@
   let editDescription = ''
   let editVariables = ''
   let editError = ''
+  let addContext = false
+  let contextKey = ''
   function toggleEdit() {
     edit = !edit
     if (!editTitle) {
@@ -60,15 +64,19 @@
       }
     editError = ''
 
-    api.translation
-      .update(translation.id, payload as any)
-      .then(() => (edit = false))
+    api.translation.update(translation.id, payload as any).then(([_, err]) => {
+      if (err) {
+        return
+      }
+      edit = false
+    })
   }
 </script>
 
 {#if translation}
   {#if edit}
     <form>
+      <ApiResponseError key="translation" />
       <label
         >Title<input name="title" bind:value={editTitle} type="text" /></label>
       <label
@@ -130,46 +138,57 @@
     </tbody>
   </table>
 
-  {#if contextKeys && contextKeys.length}
-    <hr />
-    <h5>Contexts</h5>
-    <p>
-      Contexts are variations of the default value, often used programmatically.
-      If not set, the value will typically fall back to the default value
-    </p>
+  <hr />
+  <h5>
+    Contexts
 
-    {#each contextKeys as contextKey}
-      <h6>
-        {contextKey}
-      </h6>
-      <table>
-        <thead>
-          <th>Language</th>
-          <th>Value</th>
-        </thead>
-        <tbody>
-          {#each locales as locale}
-            <TranslationValueRow
-              {categoryKey}
-              {projectKey}
-              {translation}
-              {contextKey}
-              {locale}
-              translationValue={translationValues[locale.id]} />
-          {/each}
-        </tbody>
-      </table>
-    {/each}
-  {/if}
+    {#if !addContext}
+      <Button icon="create" on:click={() => (addContext = true)}>Add</Button>
+    {/if}
+  </h5>
+
+  <!-- <p> -->
+  <!--   Contexts are variations of the default value, often used programmatically. -->
+  <!--   If not set, the value will typically fall back to the default value -->
+  <!-- </p> -->
+
+  {#if addContext}
+    <paper>
+      <ContextForm
+        {categoryKey}
+        {projectKey}
+        {translation}
+        {locales}
+        {translationValues}
+        on:complete={() => (addContext = false)}
+        on:abort={() => (addContext = false)} />
+    </paper>
+  {:else}{/if}
+  {#each contextKeys as contextKey}
+    <h6>
+      {contextKey}
+    </h6>
+    <table>
+      <thead>
+        <th>Language</th>
+        <th>Value</th>
+      </thead>
+      <tbody>
+        {#each locales as locale}
+          <TranslationValueRow
+            {categoryKey}
+            {projectKey}
+            {translation}
+            {contextKey}
+            {locale}
+            translationValue={translationValues[locale.id]} />
+        {/each}
+      </tbody>
+    </table>
+  {/each}
   {#if translation?.variables}
     <h6>Variables</h6>
-    {#each Object.entries(translation.variables) as [k, v]}
-      <var-pair>
-        <var-key>{k}</var-key>
-        <var-value>{JSON.stringify(v)}</var-value>
-      </var-pair>
-      <!-- TODO: allow editing -->
-    {/each}
+    <code>{JSON.stringify(translation.variables, null, 2)}</code>
   {/if}
 {:else}
   ... (no translation???)
@@ -190,13 +209,11 @@
     padding-inline: var(--size-4);
     padding-block: var(--size-2);
   }
-  var-pair {
-    display: block;
-  }
-  var-key::after {
-    content: ': ';
-  }
   textarea[name='variables'] {
     font-family: var(--font-mono);
+  }
+  code {
+    white-space: pre;
+    display: inline-block;
   }
 </style>
