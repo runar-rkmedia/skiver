@@ -12,6 +12,7 @@
   import GlobalSearch from '../components/GlobalSearch.svelte'
   import { scrollToCategoryByKey } from 'util/scrollToCategory'
   import ProjectForm from 'forms/ProjectForm.svelte'
+  import Icon from 'components/Icon.svelte'
 
   $: project = $db.project[projectID]
   $: {
@@ -69,7 +70,13 @@
         Project not found: {projectID}
       {/if}
     {:else}
-      <h2>{project.title}</h2>
+      <h2>
+        {project.title}
+        <a href={'#project/' + project.id + '/settings'}>
+          <Icon icon="settings" />
+          Settings
+        </a>
+      </h2>
       <p>{project.description}</p>
       <EntityDetails entity={project} />
       {#if $state.projectSettings[projectID]?.localeIds}
@@ -171,6 +178,10 @@
 {/if}
 
 <style>
+  h2 {
+    display: flex;
+    justify-content: space-between;
+  }
   .backdrop {
     position: fixed;
     top: 0;

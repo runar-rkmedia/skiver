@@ -9,7 +9,7 @@
   export let projectID: string
   export let selectedTranslation: string
   export let selectedCategory: string
-  export let visibleForm: string
+  export let visibleForm: string | null
   let expandedCategory = ''
   $: categories =
     !!projectID &&
