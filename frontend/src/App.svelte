@@ -147,7 +147,8 @@
   {#if showFooter}
     <footer>
       <ServerInfo />
-      <a href={appUrl("/docs")} target="skiver-swagger">Docs</a>
+      <a href={appUrl('/docs')} target="skiver-swagger">Docs</a>
+      <a href="#about/" target="skiver-swagger">About</a>
     </footer>
   {/if}
 </div>

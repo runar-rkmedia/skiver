@@ -7,6 +7,7 @@
   import ProjectForm from 'forms/ProjectForm.svelte'
   import EntityDetails from 'components/EntityDetails.svelte'
   import Button from 'components/Button.svelte'
+  import Icon from 'components/Icon.svelte'
   $: projects = Object.values($db.project)
   let showCreate = false
 </script>
@@ -69,7 +70,10 @@
           <EntityDetails entity={v} />
         </svelte:fragment>
         <svelte:fragment slot="actions">
-          <a href={'#project/' + v.id + '/settings'}> Settings </a>
+          <a href={'#project/' + v.id + '/settings'}>
+            <Icon icon="settings" />
+            Settings
+          </a>
         </svelte:fragment>
       </ListItem>
     {:else}
@@ -90,5 +94,9 @@
     display: flex;
     width: 100%;
     justify-content: space-between;
+  }
+  a {
+    display: flex;
+    gap: 0.8ch;
   }
 </style>
