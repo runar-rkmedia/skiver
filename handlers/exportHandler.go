@@ -174,7 +174,11 @@ func GetExport(
 			rw.Write(w.Bytes())
 			return
 		} else {
-			toWriter = i18n
+			if len(locales) == 1 {
+				toWriter = i18n[locales[0]]
+			} else {
+				toWriter = i18n
+			}
 		}
 		return
 	}
