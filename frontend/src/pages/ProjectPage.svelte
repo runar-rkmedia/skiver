@@ -15,9 +15,19 @@
 
   $: project = $db.project[projectID]
   $: {
-    if (!$state.projectSettings[projectID]?.localeIds) {
-      $state.projectSettings[projectID] = {
-        localeIds: Object.keys($db.locale || {}),
+    // If the user chooses to ignore all the projects locales, we ignore the users wishes.
+    // Seeing no locales will only leed to frustrations, so we instead show all.
+    const locales = Object.keys(project?.locales || {})
+    if (locales.length > 0) {
+      const setLocs = $state.projectSettings[projectID]?.localeIds
+      if (setLocs?.length > 0) {
+        const hasSome = locales.some((lid) => !setLocs.includes(lid))
+        if (!hasSome) {
+          $state.projectSettings[projectID] = {
+            ...$state.projectSettings[projectID],
+            localeIds: [],
+          }
+        }
       }
     }
   }
