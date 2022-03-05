@@ -482,6 +482,7 @@ func main() {
 	type routeOptions struct {
 		sessionRole func(s types.Session, r *http.Request) error
 	}
+	// This is still being fleshed out...
 	c := func(name string, h handlers.AppHandler, opts ...routeOptions) httprouter.Handle {
 		var options routeOptions
 		if len(opts) > 0 {

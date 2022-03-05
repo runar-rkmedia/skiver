@@ -910,6 +910,7 @@ definitions:
       short_name:
         maxLength: 20
         minLength: 1
+        pattern: ^[a-z1-9]*$
         type: string
       title:
         maxLength: 400
@@ -1214,6 +1215,7 @@ definitions:
       short_name:
         maxLength: 20
         minLength: 1
+        pattern: ^[a-z1-9]*$
         type: string
       title:
         maxLength: 400

@@ -36,6 +36,7 @@ type UpdateProjectInput struct {
 	// short name
 	// Max Length: 20
 	// Min Length: 1
+	// Pattern: ^[a-z1-9]*$
 	ShortName string `json:"short_name,omitempty"`
 
 	// title
@@ -138,6 +139,10 @@ func (m *UpdateProjectInput) validateShortName(formats strfmt.Registry) error {
 	}
 
 	if err := validate.MaxLength("short_name", "body", m.ShortName, 20); err != nil {
+		return err
+	}
+
+	if err := validate.Pattern("short_name", "body", m.ShortName, `^[a-z1-9]*$`); err != nil {
 		return err
 	}
 

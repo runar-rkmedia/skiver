@@ -14,40 +14,43 @@ const (
 	OutputToml
 )
 
+// Deprectated
 func WriteAuto(output interface{}, err error, errCode ErrorCodes, r *http.Request, rw http.ResponseWriter) error {
 	if err != nil {
-		return WriteError(err.Error(), errCode, r, rw)
+		return WriteError(err.Error(), 0, errCode, r, rw)
 	}
 
 	return WriteOutput(false, http.StatusOK, output, r, rw)
 }
-func WriteErr(err error, code ErrorCodes, r *http.Request, rw http.ResponseWriter) error {
-	return WriteError(err.Error(), code, r, rw, err)
+func WriteErr(err error, statusCode int, code ErrorCodes, r *http.Request, rw http.ResponseWriter) error {
+	return WriteError(err.Error(), statusCode, code, r, rw, err)
 }
-func WriteError(msg string, code ErrorCodes, r *http.Request, rw http.ResponseWriter, details ...interface{}) error {
+func WriteError(msg string, statusCode int, code ErrorCodes, r *http.Request, rw http.ResponseWriter, details ...interface{}) error {
 	ae := APIError{Err: Error{Message: msg, Code: code}}
 	if details != nil && details[0] != nil {
 		ae.Details = details[0]
 	}
-	statusCode := http.StatusBadGateway
-	switch code {
-	case CodeErrAuthoriziation:
-		statusCode = http.StatusUnauthorized
-	case CodeErrAuthenticationRequired:
-		statusCode = http.StatusForbidden
-	case CodeErrMethodNotAllowed:
-		statusCode = http.StatusMethodNotAllowed
-	case CodeErrRequestEntityTooLarge:
-		statusCode = http.StatusRequestEntityTooLarge
-		// duplicates??
-	case CodeErrNotFoundLocale, CodeErrNoRoute:
-		statusCode = http.StatusNotFound
-	case CodeErrNotImplemented:
-		statusCode = http.StatusNotImplemented
-	case CodeErrReadBody, CodeErrDBCreateLocale:
-		statusCode = http.StatusBadGateway
-	case CodeErrUnmarshal, CodeErrMarshal, CodeErrJmesPath, CodeErrJmesPathMarshal, CodeErrInputValidation, CodeErrIDNonValid, CodeErrIDTooLong, CodeErrIDEmpty:
-		statusCode = http.StatusBadRequest
+	if statusCode == 0 {
+		statusCode = http.StatusInternalServerError
+		switch code {
+		case CodeErrAuthoriziation:
+			statusCode = http.StatusUnauthorized
+		case CodeErrAuthenticationRequired:
+			statusCode = http.StatusForbidden
+		case CodeErrMethodNotAllowed:
+			statusCode = http.StatusMethodNotAllowed
+		case CodeErrRequestEntityTooLarge:
+			statusCode = http.StatusRequestEntityTooLarge
+			// duplicates??
+		case CodeErrNotFoundLocale, CodeErrNoRoute:
+			statusCode = http.StatusNotFound
+		case CodeErrNotImplemented:
+			statusCode = http.StatusNotImplemented
+		case CodeErrReadBody, CodeErrDBCreateLocale:
+			statusCode = http.StatusBadGateway
+		case CodeErrUnmarshal, CodeErrMarshal, CodeErrJmesPath, CodeErrJmesPathMarshal, CodeErrInputValidation, CodeErrIDNonValid, CodeErrIDTooLong, CodeErrIDEmpty:
+			statusCode = http.StatusBadRequest
+		}
 	}
 	return WriteOutput(true, statusCode, ae, r, rw)
 

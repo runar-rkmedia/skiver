@@ -86,13 +86,14 @@ func (rc ReqContext) WriteAuto(output interface{}, error error, errCode ErrorCod
 	}
 }
 func (rc ReqContext) WriteError(msg string, errCode ErrorCodes, details ...interface{}) {
-	_err := WriteError(msg, errCode, rc.Req, rc.Rw, details...)
+	// TODO: get error-code from above
+	_err := WriteError(msg, 0, errCode, rc.Req, rc.Rw, details...)
 	if _err != nil {
 		rc.L.Error().Err(_err).Msg("Failure in WriteErr")
 	}
 }
 func (rc ReqContext) WriteNotFound(errCode ErrorCodes) {
-	_err := WriteErr(errors.New("Not found"), errCode, rc.Req, rc.Rw)
+	_err := WriteErr(errors.New("Not found"), http.StatusNotFound, errCode, rc.Req, rc.Rw)
 	if _err != nil {
 		rc.L.Error().Err(_err).Msg("Failure in WriteErr")
 	}
@@ -104,13 +105,13 @@ func (rc ReqContext) WriteErr(err error, errCode ErrorCodes) {
 			code = errCode + ": " + code
 		}
 
-		_err := WriteError(apiErr.Err.Message, apiErr.Err.Code, rc.Req, rc.Rw, apiErr.Details)
+		_err := WriteError(apiErr.Err.Message, apiErr.StatusCode, apiErr.Err.Code, rc.Req, rc.Rw, apiErr.Details)
 		if _err != nil {
 			rc.L.Error().Err(_err).Msg("Failure in WriteErr")
 		}
 		return
 	}
-	_err := WriteErr(err, errCode, rc.Req, rc.Rw)
+	_err := WriteErr(err, 0, errCode, rc.Req, rc.Rw)
 	if _err != nil {
 		rc.L.Error().Err(_err).Msg("Failure in WriteErr")
 	}

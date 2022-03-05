@@ -55,16 +55,16 @@ func WriteOutput(isError bool, statusCode int, output interface{}, r *http.Reque
 		if jmesPath != "" {
 			b, err := json.Marshal(output)
 			if err != nil {
-				return combineErr(WriteErr(err, CodeErrMarshal, r, rw))
+				return combineErr(WriteErr(err, http.StatusInternalServerError, CodeErrMarshal, r, rw))
 			}
 			var JSON map[string]interface{}
 			err = json.Unmarshal(b, &JSON)
 			if err != nil {
-				return combineErr(WriteErr(err, CodeErrUnmarshal, r, rw))
+				return combineErr(WriteErr(err, http.StatusInternalServerError, CodeErrUnmarshal, r, rw))
 			}
 			result, err := jmespath.Search(jmesPath, JSON)
 			if err != nil {
-				return combineErr(WriteErr(fmt.Errorf("failed in jmes-path '%s': %w", jmesPath, err), CodeErrJmesPath, r, rw))
+				return combineErr(WriteErr(fmt.Errorf("failed in jmes-path '%s': %w", jmesPath, err), http.StatusInternalServerError, CodeErrJmesPath, r, rw))
 			}
 
 			if o == OutputToml {
@@ -88,13 +88,13 @@ func WriteOutput(isError bool, statusCode int, output interface{}, r *http.Reque
 	case OutputJson:
 		b, err := json.Marshal(output)
 		if err != nil {
-			return combineErr(WriteErr(err, CodeErrMarshal, r, rw))
+			return combineErr(WriteErr(err, http.StatusInternalServerError, CodeErrMarshal, r, rw))
 		}
 		return unpackErr(rw.Write(b))
 	case OutputYaml:
 		b, err := yaml.Marshal(output)
 		if err != nil {
-			return combineErr(WriteErr(err, CodeErrMarshal, r, rw))
+			return combineErr(WriteErr(err, http.StatusInternalServerError, CodeErrMarshal, r, rw))
 		}
 		return unpackErr(rw.Write(b))
 	case OutputToml:
@@ -103,17 +103,17 @@ func WriteOutput(isError bool, statusCode int, output interface{}, r *http.Reque
 		// E.g. it first uses json-marshaller/unmarshal then toml-marshal.
 		jb, err := json.Marshal(output)
 		if err != nil {
-			return combineErr(WriteErr(err, CodeErrMarshal, r, rw))
+			return combineErr(WriteErr(err, http.StatusInternalServerError, CodeErrMarshal, r, rw))
 		}
 
 		var JSON map[string]interface{}
 		err = json.Unmarshal(jb, &JSON)
 		if err != nil {
-			return combineErr(WriteErr(err, CodeErrMarshal, r, rw))
+			return combineErr(WriteErr(err, http.StatusInternalServerError, CodeErrMarshal, r, rw))
 		}
 		b, err := toml.Marshal(JSON)
 		if err != nil {
-			return combineErr(err, WriteErr(err, CodeErrMarshal, r, rw))
+			return combineErr(err, WriteErr(err, http.StatusInternalServerError, CodeErrMarshal, r, rw))
 		}
 		return unpackErr(rw.Write(b))
 	}

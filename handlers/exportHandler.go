@@ -75,7 +75,7 @@ func GetExport(
 			}
 		}
 		if len(projects) != 1 {
-			apiErr = NewApiError("A project must be selected", string(requestContext.CodeErrInputValidation))
+			apiErr = NewApiError("A project must be selected", http.StatusBadRequest, string(requestContext.CodeErrInputValidation))
 			return
 		}
 		cacheKeys := []string{format, localeKey, tag}
@@ -97,7 +97,7 @@ func GetExport(
 			return
 		}
 		if ps == nil {
-			apiErr = NewApiError("Project not found", string(requestContext.CodeErrNotFoundProject))
+			apiErr = NewApiError("Project not found", http.StatusNotFound, string(requestContext.CodeErrNotFoundProject))
 			return
 		}
 		var ep types.ExtendedProject
@@ -113,16 +113,16 @@ func GetExport(
 
 			}
 			if snapshotMeta.SnapshotID == "" {
-				apiErr = NewApiError("Tag not found", "TagNotFound", ps.Snapshots)
+				apiErr = NewApiError("Tag not found", http.StatusNotFound, "TagNotFound", ps.Snapshots)
 				return
 			}
 			s, err := ctx.DB.GetSnapshot(snapshotMeta.SnapshotID)
 			if err != nil {
-				apiErr = NewApiErr(err, string(requestContext.CodeErrSnapshot))
+				apiErr = NewApiErr(err, http.StatusInternalServerError, string(requestContext.CodeErrSnapshot))
 				return
 			}
 			if s == nil {
-				apiErr = NewApiError("The snapshot was not found", string(CodeInternalServerError))
+				apiErr = NewApiError("The snapshot was not found", http.StatusNotFound, string(CodeInternalServerError))
 				return
 			}
 			ep = s.Project
@@ -146,7 +146,7 @@ func GetExport(
 			return
 		}
 		if len(ep.Locales) == 0 {
-			apiErr = NewApiError("No locales were published", "NoLocalesPublished")
+			apiErr = NewApiError("No locales were published", http.StatusBadGateway, "NoLocalesPublished")
 			return
 		}
 		i18nodes, err := importexport.ExportI18N(ep, importexport.ExportI18NOptions{

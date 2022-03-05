@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -19,6 +20,9 @@ func NewAuthHandler(
 	return func(rw http.ResponseWriter, r *http.Request) (*http.Request, error) {
 		cookie, err := r.Cookie("token")
 		if err != nil {
+			if errors.Is(err, http.ErrNoCookie) {
+				return r, nil
+			}
 			return r, err
 		}
 		if err == nil {
@@ -42,7 +46,7 @@ func setValue(r *http.Request, key string, val interface{}) *http.Request {
 }
 
 var (
-	ErrApiInternalErrorMissingSession = NewApiError("Missing session", string(CodeInternalServerError))
+	ErrApiInternalErrorMissingSession = NewApiError("Missing session", http.StatusBadGateway, string(CodeInternalServerError))
 )
 
 // Returns a valid session or nil
