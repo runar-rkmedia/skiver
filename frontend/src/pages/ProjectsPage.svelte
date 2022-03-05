@@ -22,7 +22,7 @@
 </Tip>
 {#if showCreate}
   <paper>
-    <ProjectForm />
+    <ProjectForm  on:complete={() => showCreate = false}/>
   </paper>
 {:else}
   <Button color="primary" icon="create" on:click={() => (showCreate = true)}

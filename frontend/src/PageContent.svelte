@@ -1,5 +1,4 @@
 <script lagn="ts">
-  import Alert from 'components/Alert.svelte'
   import ProjectPage from 'pages/ProjectPage.svelte'
   import router from 'util/router'
   import { db } from './api'
@@ -18,22 +17,7 @@
     mainRoute = routeArgs[0]
     routeArgs = routeArgs.slice(1)
   }
-  $: errs = Object.entries($db.responseStates).filter(([_, v]) => {
-    return v && v.error
-  })
 </script>
-
-<!-- Display any errors... -->
-{#each Object.entries(errs) as [_, [k, v]]}
-  <Alert kind="error">
-    <h4 slot="title">{k}</h4>
-    <h5>{v.error.error.code}</h5>
-    <p>{v.error.error.error}</p>
-    {#if v.error.error.details}
-      {JSON.stringify(v.error.error.details)}
-    {/if}
-  </Alert>
-{/each}
 
 <!-- Simplified routing -->
 {#if mainRoute === 'locale'}

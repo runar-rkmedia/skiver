@@ -545,7 +545,7 @@ declare namespace ApiDef {
         locales?: {
             [name: string]: LocaleSetting;
         };
-        short_name: string;
+        short_name: string; // ^[a-z1-9]*$
         title: string;
     }
     export interface ProjectSnapshot {
@@ -724,7 +724,7 @@ declare namespace ApiDef {
         locales?: {
             [name: string]: LocaleSettingInput;
         };
-        short_name?: string;
+        short_name?: string; // ^[a-z1-9]*$
         title?: string;
     }
     export interface UpdateTranslationInput {

@@ -1,20 +1,42 @@
 <script lang="ts">
+  import ApiResponseError from 'components/ApiResponseError.svelte'
+
   import Button from 'components/Button.svelte'
   import LocaleFlag from 'components/LocaleFlag.svelte'
   import LocaleSearch from 'components/LocaleSearch.svelte'
+  import { createEventDispatcher } from 'svelte'
   import { api, db } from '../api'
-  import { state } from '../state'
+  import { state, toast, toastApiErr } from '../state'
   export let project: ApiDef.Project | null = null
   export let shortNameReadOnly = false
+  const dispatch = createEventDispatcher()
 
-  function createProject() {
-    api.project.create($state.createProject)
+  async function createProject() {
+    const [result, err] = await api.project.create($state.createProject)
+    $state.createProject = {
+      title: '',
+      short_name: '',
+      locales: {},
+    }
+    if (err) {
+      toastApiErr(err as any)
+      return
+    }
+    dispatch('complete', result)
   }
-  function updateProject() {
+  async function updateProject() {
     if (!project) {
       return
     }
-    api.project.update(project.id, { id: project.id, ...$state.createProject })
+    const [result, err] = await api.project.update(project.id, {
+      id: project.id,
+      ...$state.createProject,
+    })
+    if (err) {
+      toastApiErr(err as any)
+      return
+    }
+    dispatch('complete', result)
   }
   function submit() {
     if (project) {
@@ -73,6 +95,7 @@
 </script>
 
 <form>
+  <ApiResponseError key="project" />
   <label>
     Short-name
     <input

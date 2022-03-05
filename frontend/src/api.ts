@@ -5,6 +5,7 @@ import type { AnyFunc } from 'simplytyped'
 import { parseDate } from 'dates'
 import { isPast } from 'date-fns'
 import { derived, get } from 'svelte/store'
+import { toast, toastApiErr } from 'state'
 export function objectKeys<T extends object>(obj: T) {
   return Object.keys(obj) as Array<keyof T>
 }
@@ -477,6 +478,7 @@ const checkError = (apiError?: ApiDef.APIError | null) => {
   if (!apiError) {
     return apiError
   }
+  toastApiErr(apiError)
   if (apiError.error?.code?.includes('Authentication required')) {
     db.update((s) => {
       const login = { ...s.login, ok: false }
@@ -510,7 +512,7 @@ function apiCreateFactory<Payload extends {}, K extends DBKeyValue>(
       ...s,
       responseStates: { ...s.responseStates, [storeKey]: { loading: true } },
     }))
-    const result = await fetchApi<DB[K]['s']>(
+    const [res, err] = await fetchApi<DB[K]['s']>(
       subPath,
       (e) => e.id && replaceField(storeKey, e, e.id, 'create'),
       {
@@ -519,16 +521,19 @@ function apiCreateFactory<Payload extends {}, K extends DBKeyValue>(
         ...options,
       }
     )
-    checkError(result[1])
+    checkError(err)
+    if (!err && res) {
+      toast({ kind: 'info', title: 'Success', message: `${storeKey} created` })
+    }
     db.update((s) => ({
       ...s,
       responseStates: {
         ...s.responseStates,
-        [storeKey]: { loading: false, error: result[1] },
+        [storeKey]: { loading: false, error: err },
       },
     }))
 
-    return result
+    return [res, err]
   }
 }
 
@@ -560,8 +565,12 @@ function apiUpdateFactory<Payload extends {}, K extends DBKeyValue>(
     ).then((r) => {
       const [d, err] = r
       checkError(err)
+
       if (d?.data?.id) {
         replaceField(storeKey, r[0].data, d.data.id, 'update')
+      }
+      if (!err && d) {
+        toast({ kind: 'info', title: 'Success', message: `${storeKey} updated` })
       }
       db.update((s) => ({
         ...s,

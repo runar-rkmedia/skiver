@@ -1,5 +1,5 @@
-import createStore from './store'
 import type { Optional, Required } from 'simplytyped'
+import createStore from './store'
 
 export const state = createStore({
   initialValue: {
@@ -36,10 +36,14 @@ type Toast = {
   timeout: number
 }
 
-function hashCode(s: string) {
-  for (var i = 0, h = 0; i < s.length; i++)
-    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0
-  return h
+function hashCode(str: string) {
+  let hash = 0
+  for (let i = 0; i < str.length; ++i) {
+
+    hash = Math.imul(31, hash) + str.charCodeAt(i)
+  }
+
+  return hash | 0
 }
 
 export function toast(t: Optional<Toast, 'timeout'>, key?: string) {
@@ -65,6 +69,17 @@ export function toast(t: Optional<Toast, 'timeout'>, key?: string) {
         },
       },
     }
+  })
+}
+
+export function toastApiErr(err: ApiDef.APIError) {
+  if (!err) {
+    return
+  }
+  toast({
+    kind: 'error',
+    message: err.error?.code || '',
+    title: err.error?.error || '',
   })
 }
 
