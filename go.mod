@@ -13,6 +13,7 @@ require (
 	github.com/go-test/deep v1.0.8
 	github.com/gobeam/stringy v0.0.5
 	github.com/julienschmidt/httprouter v1.3.0
+	github.com/matthewhartstonge/argon2 v0.2.1
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/runar-rkmedia/go-common v0.0.4
 	github.com/schollz/mnemonicode v1.0.1
@@ -74,10 +75,9 @@ require (
 	github.com/spf13/viper v1.10.1
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/teris-io/shortid v0.0.0-20201117134242-e59966efd125 // indirect
-	github.com/tvdburgt/go-argon2 v0.0.0-20181109175329-49d0f0e5973c
 	go.etcd.io/bbolt v1.3.6
-	golang.org/x/crypto v0.0.0-20211215165025-cf75a172585e // indirect
-	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27 // indirect
+	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
+	golang.org/x/sys v0.0.0-20220222160653-b146bcec3beb // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0
