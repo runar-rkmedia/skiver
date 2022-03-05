@@ -64,6 +64,7 @@ export const api = {
   logout: () => fetchApi<ApiDef.LogoutResponse>('logout', () => {
     return db.update(({ login, ...s }) => {
       login.ok = false
+      windowPost.loginStatus(false)
       localStorage.setItem('login-response', JSON.stringify(login))
 
       return { ...s, login }
@@ -76,6 +77,7 @@ export const api = {
         'login',
         (login) => {
           localStorage.setItem('login-response', JSON.stringify(login))
+          windowPost.loginStatus(!!login.ok)
           return db.update((s) => ({ ...s, login }))
         },
         { method: 'GET' }
@@ -99,6 +101,7 @@ export const api = {
         },
         { method: 'POST', body: args }
       )
+      windowPost.loginStatus(!!res?.data?.ok)
       db.update((s) => ({
         ...s,
         responseStates: {
@@ -267,6 +270,10 @@ const windowPost = {
   error: (msg: string, details?: any) => {
     console.error(msg, details)
     window.parent.postMessage({ kind: 'error', msg, details }, "*")
+  },
+  loginStatus: (ok: boolean) => {
+
+    window.parent.postMessage({ kind: 'login-status', ok }, "*")
   }
 
 }
@@ -278,6 +285,12 @@ function handleMsg(e: MessageEvent) {
   }
   const kind = e.data?.kind
   switch (kind) {
+    case 'login-status':
+      {
+        const store = get(db)
+        windowPost.loginStatus(!!store.login.ok)
+      }
+      return
     case 'post-edit':
       const { context, category, locale, translation, value, project } = e.data as { category?: string, locale?: string, translation?: string, value?: string, project?: string, context?: string }
       if (!category || !locale || !translation || !value || !project) {
@@ -338,7 +351,7 @@ function handleMsg(e: MessageEvent) {
         windowPost.error("post-edit failed to find the translation-value ")
         return
       }
-      api.translationValue.update(tv.id, { id: tv.id, value, ...context && { contextKey: context } })
+      api.translationValue.update(tv.id, { id: tv.id, value, ...context && { context_key: context } })
       break
     default:
       windowPost.error("unhandled kind for message:", e.data)
