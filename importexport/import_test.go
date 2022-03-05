@@ -32,6 +32,8 @@ en:
 		form: 
 		  buttons: 
 			  submit: "Submit {{count}} items"
+			  submit_thing: "Submit one thing"
+			  submit_thing_plural: "Submit {{count}} things"
 		  inputLabel: 
 			  email: "Email"
 			  age: "Between {{minAge}} and {{maxAge}}"
@@ -73,6 +75,10 @@ en:
 										Value:    "Submit {{count}} items",
 										LocaleID: "loc-en",
 										Source:   "test-import",
+										Context: map[string]string{
+											"thing":        "Submit one thing",
+											"thing_plural": "Submit {{count}} things",
+										},
 									},
 								},
 							},

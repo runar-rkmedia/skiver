@@ -113,7 +113,7 @@ func importFromCategoryNode(base types.Project, source types.CreatorSource, key 
 
 			if len(childNode.Value) > 0 {
 
-				translationKey, _ := cutLast(scKey, "_")
+				translationKey, _ := splitTranslationAndContext(scKey, "_")
 				var t types.ExtendedTranslation
 				if tk, ok := cat.Translations[translationKey]; ok {
 					t = tk
@@ -145,7 +145,7 @@ func importFromCategoryNode(base types.Project, source types.CreatorSource, key 
 
 func translationFromNode(t *types.ExtendedTranslation, key string, base types.Project, source types.CreatorSource, node I18NWithLocales, categoryKey string) {
 
-	tranlationKey, context := cutLast(key, "_")
+	tranlationKey, context := splitTranslationAndContext(key, "_")
 	if t.Key == "" {
 
 		t.Key = tranlationKey
@@ -465,26 +465,33 @@ func getValueForVariableKey(key string) interface{} {
 	return "???"
 }
 
-func cutLast(s, sep string) (string, string) {
+func splitTranslationAndContext(s, sep string) (string, string) {
 	if s == "" {
 		return "", ""
 	}
-	split := strings.Split(s, sep)
-	i := len(split) - 1
-	if i == 0 {
-		return s, ""
+	// keys can have leading uderscores, but that is not a context.
+	trimmed := strings.TrimPrefix(s, "_")
+	before, after, _ := strings.Cut(trimmed, sep)
+	if trimmed != s {
+		before = strings.Repeat("_", len(s)-len(trimmed)) + before
 	}
-	first := strings.Join(split[:i], sep)
-	last := strings.Join(split[i:], sep)
-	if first == "" {
-		if last == "" {
-			return "", ""
-		}
-		unos, dos := cutLast(last, sep)
-		return sep + unos, dos
-	}
+	fmt.Printf("\nsplit '%s' '%s' '%s' ", s, before, after)
+	return before, after
+	// i := len(split) - 1
+	// if i == 0 {
+	// 	return s, ""
+	// }
+	// first := strings.Join(split[:i], sep)
+	// last := strings.Join(split[i:], sep)
+	// if first == "" {
+	// 	if last == "" {
+	// 		return "", ""
+	// 	}
+	// 	unos, dos := splitTranslationAndContext(last, sep)
+	// 	return sep + unos, dos
+	// }
 
-	return first, last
+	// return first, last
 }
 
 // TODO: implement
