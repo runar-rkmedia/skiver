@@ -1,38 +1,33 @@
 <script lang="ts">
   import { api } from '../api'
   import Button from 'components/Button.svelte'
-  import { onMount } from 'svelte'
   import Alert from 'components/Alert.svelte'
-  let selected: ApiDef.Organization | null
+  import { appUrl } from 'util/appConstants'
   export let joinID: string
-  let loading = false
   let org: ApiDef.Organization | null
   let joinedResponse: ApiDef.LoginResponse | null
   let error: ApiDef.APIError | null
   let username = ''
   let password = ''
+  let password2 = ''
 
   const reload = async (id: string) => {
     if (!id) {
       return
     }
 
-    loading = true
     const [res, err] = await api.join.get(joinID)
     if (!err) {
       org = res.data
     }
     error = err
-    loading = true
   }
   $: {
     reload(joinID)
   }
 
   const submit = async () => {
-    loading = true
     const [res, err] = await api.join.post(joinID, { username, password })
-    loading = false
     if (!err) {
       joinedResponse = res.data
     }
@@ -46,6 +41,10 @@
 
 {#if joinedResponse}
   You have successfully joined {joinedResponse.organization?.title} as user {username}.
+  <p>
+    Please login to get started by <a href={appUrl('')}
+      >going to the main-page</a>
+  </p>
 {:else if org}
   <paper>
     <h3>Join organization {org.title}</h3>
@@ -58,7 +57,14 @@
         Password
         <input name="password" bind:value={password} type="password" />
       </label>
-      <Button color="primary" on:click={submit}>Join</Button>
+      <label>
+        Confirm Password
+        <input name="password-2" bind:value={password2} type="password" />
+      </label>
+      <Button
+        color="primary"
+        disabled={!username || !password || password !== password2}
+        on:click={submit}>Join</Button>
     </form>
   </paper>
 {:else}
