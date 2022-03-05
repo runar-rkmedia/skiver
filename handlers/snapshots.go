@@ -12,16 +12,17 @@ import (
 	"github.com/runar-rkmedia/skiver/types"
 )
 
-func NewApiError(msg string, code string, details ...interface{}) requestContext.APIError {
-	return NewApiErr(errors.New(msg), code, details...)
+func NewApiError(msg string, statusCode int, code string, details ...interface{}) requestContext.APIError {
+	return NewApiErr(errors.New(msg), statusCode, code, details...)
 }
-func NewApiErr(err error, code string, details ...interface{}) requestContext.APIError {
+func NewApiErr(err error, statusCode int, code string, details ...interface{}) requestContext.APIError {
 	e := requestContext.APIError{
 		Err: requestContext.Error{
 			Code:    requestContext.ErrorCodes(code),
 			Message: err.Error(),
 		},
 		InternalError: err,
+		StatusCode:    statusCode,
 	}
 	switch len(details) {
 	case 0:
@@ -53,20 +54,20 @@ func PostSnapshot() AppHandler {
 		var j models.CreateSnapshotInput
 
 		if err = rc.ValidateBody(&j, false); err != nil {
-			err = NewApiErr(err, string(requestContext.CodeErrInputValidation))
+			err = NewApiErr(err, http.StatusBadRequest, string(requestContext.CodeErrInputValidation))
 			return
 		}
 		project, err := rc.Context.DB.GetProject(*j.ProjectID)
 		if err != nil {
-			err = NewApiErr(err, string(requestContext.CodeErrProject))
+			err = NewApiErr(err, http.StatusInternalServerError, string(requestContext.CodeErrProject))
 			return
 		}
 		if project == nil {
-			err = NewApiError("Project not found", string(requestContext.CodeErrNotFoundProject))
+			err = NewApiError("Project not found", http.StatusNotFound, string(requestContext.CodeErrNotFoundProject))
 			return
 		}
 		if s, ok := project.Snapshots[*j.Tag]; ok {
-			err = NewApiError("The tag already exists", "TaxExists", s)
+			err = NewApiError("The tag already exists", http.StatusNotFound, "TaxExists", s)
 			return
 		}
 
@@ -79,7 +80,7 @@ func PostSnapshot() AppHandler {
 
 		}
 		if len(projectLocaleMap) == 0 {
-			err = NewApiError("There are no published locales for this project", "No published project-locales")
+			err = NewApiError("There are no published locales for this project", http.StatusBadRequest, "No published project-locales")
 			return
 		}
 
@@ -92,7 +93,7 @@ func PostSnapshot() AppHandler {
 			ErrOnNoLocales: true,
 		})
 		if err != nil {
-			err = NewApiErr(err, string(requestContext.CodeErrProject))
+			err = NewApiErr(err, http.StatusInternalServerError, string(requestContext.CodeErrProject))
 			return
 		}
 		s, err := ep.CreateSnapshot(session.User.ID)
@@ -111,7 +112,7 @@ func PostSnapshot() AppHandler {
 		} else {
 			ss, err := rc.Context.DB.CreateSnapshot(s)
 			if err != nil {
-				err = NewApiErr(err, string(requestContext.CodeErrProject))
+				err = NewApiErr(err, http.StatusInternalServerError, string(requestContext.CodeErrProject))
 				return nil, err
 			}
 			projectSnapshot = ss

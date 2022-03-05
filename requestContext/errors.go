@@ -9,6 +9,7 @@ type APIError struct {
 	Details       interface{} `json:"details,omitempty"`
 	Err           Error       `json:"error"`
 	InternalError error       `json:"-"`
+	StatusCode    int         `json:"-"`
 }
 
 // swagger:response
