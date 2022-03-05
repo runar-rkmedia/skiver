@@ -52,49 +52,48 @@
   <p>Gathering information... hold on...</p>
   <progress value={notLoadingCount} max={maxLoadingCount} />
   {notLoadingCount} / {maxLoadingCount}
+{:else if !project}
+  {#if projectKey}
+    Project <code>{projectKey}</code> was not found.
+  {:else}
+    Not project specified
+  {/if}
 {:else}
-  No translation found for input '{translationKeyLike}'
+  No translation found for input <code>{translationKeyLike}</code>
+  <p>Project: <strong>{project.title}</strong></p>
 
-  {#if project}
-    <p>Project: <strong>{project.title}</strong></p>
-
-    {#if !category}
-      The category {categoryKey} was not found. Perhaps you meant one of these?
-      {#each (project.category_ids || []).map((cid) => $db.category[cid]) as c}
-        {#if c}
-          <div>
-            <a
-              href={`#embed/${projectKey}/${c.key}/${
-                translationKeyLike || ''
-              }`}>
-              <h5>
-                {c.title}
-                <code>{c.key}</code>
-              </h5>
-            </a>
-          </div>
-        {:else}
-          ???
-        {/if}
-      {/each}
-    {:else}
-      The translation {translationKeyLike} was not found. Perhaps you meant one of
-      these?
-      {#each (category.translation_ids || []).map((tid) => $db.translation[tid]) as t}
-        {#if t}
-          <div>
-            <a href={`#embed/${projectKey}/${categoryKey}/${t.key}`}>
-              <h5>
-                {t.title}
-                <code>{t.key}</code>
-              </h5>
-            </a>
-          </div>
-        {:else}
-          ???
-        {/if}
-      {/each}
-    {/if}
+  {#if !category}
+    {#each (project.category_ids || []).map((cid) => $db.category[cid]) as c}
+      {#if c}
+        <div>
+          <a href={`#embed/${projectKey}/${c.key}/${translationKeyLike || ''}`}>
+            <h5>
+              {c.title}
+              <code>{c.key}</code>
+            </h5>
+          </a>
+        </div>
+      {:else}
+        ???
+      {/if}
+    {/each}
+  {:else}
+    The translation {translationKeyLike} was not found. Perhaps you meant one of
+    these?
+    {#each (category.translation_ids || []).map((tid) => $db.translation[tid]) as t}
+      {#if t}
+        <div>
+          <a href={`#embed/${projectKey}/${categoryKey}/${t.key}`}>
+            <h5>
+              {t.title}
+              <code>{t.key}</code>
+            </h5>
+          </a>
+        </div>
+      {:else}
+        ???
+      {/if}
+    {/each}
   {/if}
 {/if}
 {#if !projectKey || !translationKeyLike}

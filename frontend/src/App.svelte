@@ -9,7 +9,7 @@
   import Button from './components/Button.svelte'
   import Spinner from './components/Spinner.svelte'
   import PageContent from 'PageContent.svelte'
-  import { state } from 'state'
+  import { clearToast, state } from 'state'
   import { appUrl } from 'util/appConstants'
   import router from 'util/router'
 
@@ -24,6 +24,13 @@
       loadingEl.remove()
     }
     api.login.get()
+    window.addEventListener('click', () => {
+      const toast = Object.keys($state.toasts).pop()
+      if (!toast) {
+        return
+      }
+      clearToast(toast)
+    })
   })
 
   let showHeader = true
@@ -104,7 +111,8 @@
           <Spinner />
         {/if}
         {#if $db.responseStates.login?.error}
-          <Alert kind="error">{$db.responseStates.login.error.error}</Alert>
+          <Alert kind="error"
+            >{$db.responseStates.login.error.error.error}</Alert>
         {/if}
         <form
           on:submit|preventDefault={() => {
