@@ -11,23 +11,13 @@
         Created:
         {formatDate(entity.created_at)}
       </created-at>
-      <created-by>
-        by:
-        {entity.created_by}
-      </created-by>
     </created>
-    {#if entity.updated_by}
+    {#if entity.updated_at}
       <updated>
         <updated-at>
           Updated:
           {formatDate(entity.updated_at)}
         </updated-at>
-        {#if entity.updated_by}
-          <updated-at>
-            by:
-            {entity.updated_by}
-          </updated-at>
-        {/if}
       </updated>
     {/if}
   </wrapper>
