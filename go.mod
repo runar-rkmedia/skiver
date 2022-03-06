@@ -5,6 +5,7 @@ go 1.18
 require (
 	bou.ke/monkey v1.0.2
 	github.com/MarvinJWendt/testza v0.2.14
+	github.com/alecthomas/kong v0.4.1
 	github.com/go-openapi/errors v0.20.1
 	github.com/go-openapi/runtime v0.21.0
 	github.com/go-openapi/strfmt v0.21.1
@@ -36,6 +37,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/pterm/pterm v0.12.34 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect

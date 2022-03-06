@@ -3,16 +3,21 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"strings"
 	"time"
 
+	"github.com/alecthomas/kong"
+	"github.com/dustin/go-humanize"
+	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/skiver/handlers"
 	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/types"
@@ -27,96 +32,136 @@ func required(v, s string) {
 	os.Exit(1)
 }
 
+var CLI struct {
+	Endpoint *url.URL `help:"Endpoint for skiver" `
+	Project  string   `help:"Project-id/ShortName" required:""`
+	Token    string   `help:"Token used for authenticaion"`
+	Locale   string   `help:"Locale to use"`
+
+	Import struct {
+		Source *os.File `help:"Source-file for import" arg:""`
+	} `help:"Import from file" cmd:""`
+
+	Generate struct {
+		Path   string   `help:"Ouput file to write to" type:"path"`
+		TsKeys struct{} `help:"Generate a typescript key file for typesafe referance of translation-keys with TsDoc filled information from project" cmd:""`
+	} `help:"Generate files from project etc." cmd:""`
+
+	Inject struct {
+		Dir string `help:"Directory for source-code" type:"existingdir" arg:""`
+	} `help:"Inject helper-comments into source-files" cmd:""`
+	Config struct {
+		Show struct{} `help:"Print effective config" cmd:""`
+	} `help:"Configuration" cmd:"" json:"-"`
+	LogFormat string `help:"Human or json" default:"human"`
+	Verbose   int    `help:"More verbose logging" type:"counter"`
+	Quiet     int    `help:"Quiet" type:"counter"`
+}
+
 func main() {
 
-	// inFile := "../../phonero/dinbedriftweb/src/locales/nb.json"
-	// outFile := "../../phonero/dinbedriftweb/src/locales/exported_keys.ts"
-	inFile := ""
-	outFile := ""
-	endpoint := ""
-	project := ""
-	username := ""
-	password := ""
-	flag.StringVar(&endpoint, "endpoint", "http://localhost:8756", "Endpoint for Skiver")
-	flag.StringVar(&project, "project", "", "Project-id or short-name")
-	flag.StringVar(&username, "username", "", "Username")
-	flag.StringVar(&password, "password", "", "Password")
-	flag.StringVar(&inFile, "in", "", "Points to a locale-file (i18n)")
-	flag.StringVar(&outFile, "ts-keys", "", "Optionally set to output to a typescript-file with keys and ts-docs")
-	flag.Parse()
-	required(inFile, "infile")
-	required(endpoint, "endpoint")
-	required(username, "username")
-	required(password, "password")
-	required(project, "project")
-	createFileIfMissing := false
-	overwrite := true
+	var paths []string
+	if p, err := os.Getwd(); err == nil {
+		paths = append(paths, path.Join(p, "skiver-cli.json"))
+	}
+	if p, err := os.UserConfigDir(); err == nil {
+		paths = append(paths, path.Join(p, "skiver-cli", "config.json"))
+	}
+	if p, err := os.UserHomeDir(); err == nil {
+		paths = append(paths, path.Join(p, "skiver-cli.json"))
+	}
+	ctx := kong.Parse(&CLI,
+		kong.Name("Skiver CLI"),
+		kong.Description("Interactions with skiver, a developer-focused translation-service"),
+		kong.Configuration(kong.JSON, paths...),
+	)
+	level := "info"
+	if CLI.Verbose > 0 {
+		level = "debug"
+	}
+	if CLI.Quiet > 0 {
+		level = "warn"
+	}
+	l := logger.InitLogger(logger.LogConfig{
+		Format: CLI.LogFormat,
+		Level:  level,
+	})
+	api := NewAPI(l, CLI.Endpoint.String())
+	api.SetToken(CLI.Token)
+	switch ctx.Command() {
+	case "config show":
+		bebo, _ := json.MarshalIndent(CLI, "", "  ")
+		fmt.Println(string(bebo))
+		os.Exit(0)
 
-	_, err := os.Stat(inFile)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	api := NewAPI(endpoint)
-	err = api.Login("jom", "jom")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	b, err := os.ReadFile(inFile)
-	b = []byte(`{"nb":` + string(b) + "}")
-	fmt.Println("importing", inFile)
-	err = api.Import(project, "i18n", bytes.NewBuffer(b))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	if outFile == "" {
-		return
-	}
-	outfile, err := os.OpenFile(outFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			if !createFileIfMissing {
-				fmt.Println("Not creating file")
-				os.Exit(1)
-			}
-			outfile, err = os.Create(outFile)
-		} else {
-			panic(err)
+	case "import <source>":
+		l.Debug().Msg("importing")
+		err := api.Import(CLI.Project, "i18n", CLI.Import.Source)
+		if err != nil {
+			l.Fatal().Err(err).Msg("Failed to import")
 		}
-	} else if !overwrite {
-		fmt.Println("File exists, not overwriting")
-		os.Exit(1)
-	}
-	if outfile == nil {
-		panic("file is nil")
-	}
-	fmt.Println("exporting", outFile)
-	err = api.Export("dbw", "typescript", "nb", outfile)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+		l.Info().Msg("Successful import")
+	case "generate ts-keys":
+		var w io.Writer
+		format := "typescript"
+		locale := CLI.Locale
+		if locale == "" {
+			l.Fatal().Msg("Locale is required")
+		}
+		ll := l.Debug().Str("project", CLI.Project).
+			Str("format", format)
+		if CLI.Generate.Path != "" {
+			outfile, err := os.OpenFile(CLI.Generate.Path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+			if err != nil {
+				log.Fatal(err)
 
+				return
+			}
+			w = outfile
+			ll = ll.Str("path", CLI.Generate.Path)
+		}
+		if w == nil {
+			w = os.Stdout
+			ll = ll.Bool("stdout", true)
+		}
+
+		if l.HasDebug() {
+			ll.Msg("Generating file")
+		}
+		err := api.Export(CLI.Project, format, locale, w)
+		if err != nil {
+			l.Fatal().Err(err).Msg("Failed export")
+		}
+		l.Info().Msg("Successful export")
+	default:
+		l.Fatal().Str("command", ctx.Command()).Msg("Not implemented yet")
+	}
 }
 
 type Api struct {
+	l        logger.AppLogger
 	endpoint string
 	cookies  []*http.Cookie
 	login    *types.LoginResponse
 	client   *http.Client
 }
 
-func NewAPI(endpoint string) Api {
+func NewAPI(l logger.AppLogger, endpoint string) Api {
 	c := http.Client{Timeout: time.Minute}
 	return Api{
+		l:        l,
 		endpoint: strings.TrimSuffix(endpoint, "/"),
 		client:   &c,
 	}
 }
 
+func (a *Api) SetToken(token string) {
+	c := http.Cookie{
+		Name:  "token",
+		Value: token,
+	}
+	a.cookies = append(a.cookies, &c)
+}
 func (a *Api) Login(username, password string) error {
 	if username == "" || password == "" {
 		return fmt.Errorf("Missing username/password")
@@ -156,7 +201,14 @@ func (a *Api) Login(username, password string) error {
 		return fmt.Errorf("failed reading body of login-request: %w", err)
 	}
 	a.cookies = res.Cookies()
-	fmt.Println(res.StatusCode, res.Request.URL, r.Method, res.Request.Method, j)
+	if a.l.HasDebug() {
+		a.l.Debug().
+			Int("statusCode", res.StatusCode).
+			Str("path", res.Request.URL.String()).
+			Str("method", res.Request.Method).
+			Interface("login-response", j).
+			Msg("Result of request")
+	}
 	return nil
 
 }
@@ -196,11 +248,18 @@ func (a Api) Import(projectName string, kind string, reader io.Reader) error {
 	if err != nil {
 		return fmt.Errorf("failed reading body of import-request: %w", err)
 	}
-	fmt.Println(res.StatusCode, res.Request.URL, r.Method, res.Request.Method)
-	fmt.Printf("\nTranslationCreations: %d", len(j.Changes.TranslationCreations))
-	fmt.Printf("\nCategoryCreations: %d", len(j.Changes.CategoryCreations))
-	fmt.Printf("\nTranslationValueUpdates: %d", len(j.Changes.TranslationValueUpdates))
-	fmt.Printf("\nTranslationsValueCreations: %d\n", len(j.Changes.TranslationsValueCreations))
+	if a.l.HasDebug() {
+		a.l.Debug().
+			Int("statusCode", res.StatusCode).
+			Str("path", res.Request.URL.String()).
+			Str("method", res.Request.Method).
+			Interface("import-warnings", j.Warnings).
+			Int("translation-creations", len(j.Changes.TranslationCreations)).
+			Int("category-creations", len(j.Changes.CategoryCreations)).
+			Int("translation-value-creations", len(j.Changes.TranslationValueUpdates)).
+			Int("translation-value-creations", len(j.Changes.TranslationsValueCreations)).
+			Msg("Result of request")
+	}
 	return nil
 
 }
@@ -228,12 +287,12 @@ func (a Api) Export(projectName string, format string, locale string, writer io.
 		return fmt.Errorf("export-request failed: %w", err)
 	}
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return fmt.Errorf("failed reading body of export-request: %w", err)
-	}
-	fmt.Println(res.StatusCode, res.Request.URL, r.Method, res.Request.Method)
+
 	if res.StatusCode >= 300 {
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return fmt.Errorf("failed reading body of export-request: %w", err)
+		}
 		var j models.APIError
 		err = json.Unmarshal(body, &j)
 		if err == nil {
@@ -242,9 +301,15 @@ func (a Api) Export(projectName string, format string, locale string, writer io.
 
 		return fmt.Errorf("export-request return a %d-response: %s", res.StatusCode, string(body))
 	}
-	_, err = writer.Write(body)
-	if err != nil {
-		return fmt.Errorf("failed to write: %w", err)
+	written, err := io.Copy(writer, res.Body)
+	if a.l.HasDebug() {
+		a.l.Debug().
+			Int("statusCode", res.StatusCode).
+			Str("path", res.Request.URL.String()).
+			Str("method", res.Request.Method).
+			Int64("written-bytes", written).
+			Str("written-text", humanize.Bytes(uint64(written))).
+			Msg("Result of request")
 	}
 	return nil
 
