@@ -1,7 +1,6 @@
 <script lang="ts">
   import { db } from 'api'
   import Fuse from 'fuse.js'
-  import { scrollToCategory } from 'util/scrollToCategory'
   import ScrollAnchor from './ScrollAnchor.svelte'
   export let project: ApiDef.Project
 
