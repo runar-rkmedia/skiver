@@ -59,6 +59,10 @@ func importAsI18Nodes(input interface{}) (I18N, error) {
 			if err != nil {
 				return node, err
 			}
+			// Skip empty nodes
+			if n.Value == "" && len(n.Nodes) == 0 {
+				continue
+			}
 			node.Nodes[k] = n
 
 		}
@@ -381,7 +385,7 @@ func ImportI18NTranslation(
 			return &imp, w, err
 		}
 		if len(cats) == 0 {
-			panic("Length zero")
+			continue
 		}
 		for _, cat := range cats {
 
@@ -475,23 +479,7 @@ func splitTranslationAndContext(s, sep string) (string, string) {
 	if trimmed != s {
 		before = strings.Repeat("_", len(s)-len(trimmed)) + before
 	}
-	fmt.Printf("\nsplit '%s' '%s' '%s' ", s, before, after)
 	return before, after
-	// i := len(split) - 1
-	// if i == 0 {
-	// 	return s, ""
-	// }
-	// first := strings.Join(split[:i], sep)
-	// last := strings.Join(split[i:], sep)
-	// if first == "" {
-	// 	if last == "" {
-	// 		return "", ""
-	// 	}
-	// 	unos, dos := splitTranslationAndContext(last, sep)
-	// 	return sep + unos, dos
-	// }
-
-	// return first, last
 }
 
 // TODO: implement
