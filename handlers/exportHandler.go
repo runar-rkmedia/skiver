@@ -16,6 +16,7 @@ func GetExport(
 	exportCache Cache,
 ) AppHandler {
 	return func(rc requestContext.ReqContext, rw http.ResponseWriter, r *http.Request) (toWriter interface{}, apiErr error) {
+		AddAccessControl(r, rw)
 		ctx := rc.Context
 
 		q, err := ExtractParams(r)

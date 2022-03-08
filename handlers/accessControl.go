@@ -20,6 +20,7 @@ var (
 )
 
 func AddAccessControl(r *http.Request, rw http.ResponseWriter) {
+
 	h := rw.Header()
 	switch accessControl.AllowOrigin {
 	case "_any_":

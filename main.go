@@ -489,6 +489,7 @@ func main() {
 			options = opts[0]
 		}
 		return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			handlers.AddAccessControl(r, rw)
 			// This turned out a bit hacky, but it leaves a nicer pattern for route-handlers
 			// since they don't need to care about auth, logging, or writing
 			// TODO: change the details here
