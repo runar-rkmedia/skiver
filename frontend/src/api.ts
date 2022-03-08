@@ -245,6 +245,9 @@ wsSubscribe({
 
 const windowPost = {
   translationMessage: (variant: 'create' | 'update' | 'soft-delete', tv: ApiDef.TranslationValue, store: DB, extra?: any) => {
+    if (!isWithinIframe()) {
+      return
+    }
     const t = !!tv && store.translation[tv.translation_id || '']
     const locale = !!tv && store.locale[tv.locale_id || '']
     const category = store.category[t?.category || '']
@@ -268,18 +271,29 @@ const windowPost = {
 
   },
   error: (msg: string, details?: any) => {
+    if (!isWithinIframe()) {
+      return
+    }
     console.error(msg, details)
     window.parent.postMessage({ kind: 'error', msg, details }, "*")
   },
   loginStatus: (ok: boolean) => {
+    if (!isWithinIframe()) {
+      return
+    }
 
     window.parent.postMessage({ kind: 'login-status', ok }, "*")
   }
 
 }
 
+const isWithinIframe = () => {
+  return window.self !== window.top
+}
+
 /** Messages from parent when webapp is loaded via an iframe */
 function handleMsg(e: MessageEvent) {
+  console.log('login-status')
   if (!e.data) {
     return
   }
@@ -287,6 +301,10 @@ function handleMsg(e: MessageEvent) {
   switch (kind) {
     case 'login-status':
       {
+
+        // some clients which is skiver as an iframe may request this information on an interval, like every second.
+        // This may be a bit too frequent, but skiver should still make this fast.
+        // If this gets slow, skiver should optimize it through any means necessary
         const store = get(db)
         windowPost.loginStatus(!!store.login.ok)
       }
