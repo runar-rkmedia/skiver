@@ -18,24 +18,36 @@ func NewAuthHandler(
 ) func(http.ResponseWriter, *http.Request) (*http.Request, error) {
 
 	return func(rw http.ResponseWriter, r *http.Request) (*http.Request, error) {
-		cookie, err := r.Cookie("token")
-		if err != nil {
-			if errors.Is(err, http.ErrNoCookie) {
-				return r, nil
+
+		token := r.Header.Get("Authorization")
+		if token == "" {
+			cookie, err := r.Cookie("token")
+			if err != nil {
+				if !errors.Is(err, http.ErrNoCookie) {
+					return r, err
+				}
 			}
-			return r, err
+			if cookie != nil {
+				token = cookie.Value
+			}
+
 		}
+		if token == "" {
+			// Using tokens within the url's query-paramaters is not recommended, but Skivers api does not restrict the usage.
+			token = r.URL.Query().Get("token")
+		}
+		if token == "" {
+			return r, nil
+		}
+		sess, err := userSessions.GetSession(token)
 		if err == nil {
-			sess, err := userSessions.GetSession(cookie.Value)
-			if err == nil {
-				expiresD := sess.Expires.Sub(time.Now())
-				rw.Header().Add("session-expires", sess.Expires.String())
-				rw.Header().Add("session-expires-in", expiresD.String())
-				rw.Header().Add("session-expires-in-seconds", strconv.Itoa(int(expiresD.Seconds())))
-				// r = r.WithContext(context.WithValue(r.Context(), ContextKeySession, session))
-				r = setValue(r, ContextKeySession, sess)
-				return r, nil
-			}
+			expiresD := sess.Expires.Sub(time.Now())
+			rw.Header().Add("session-expires", sess.Expires.String())
+			rw.Header().Add("session-expires-in", expiresD.String())
+			rw.Header().Add("session-expires-in-seconds", strconv.Itoa(int(expiresD.Seconds())))
+			// r = r.WithContext(context.WithValue(r.Context(), ContextKeySession, session))
+			r = setValue(r, ContextKeySession, sess)
+			return r, nil
 		}
 
 		return r, nil
