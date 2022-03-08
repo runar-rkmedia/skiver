@@ -58,6 +58,8 @@ func GetExport(
 		switch format {
 		case "typescript":
 			break
+		case "raw":
+			break
 		case "i18n":
 			break
 		default:
@@ -144,6 +146,9 @@ func GetExport(
 		if err != nil {
 			rc.WriteErr(fmt.Errorf("Error extending project '%s' (%s): %w", ep.Title, ep.ID, err), requestContext.CodeErrProject)
 			return
+		}
+		if format == "raw" {
+			return ep, nil
 		}
 		if len(ep.Locales) == 0 {
 			apiErr = NewApiError("No locales were published", http.StatusBadGateway, "NoLocalesPublished")
