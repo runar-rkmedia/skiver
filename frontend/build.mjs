@@ -156,6 +156,9 @@ async function run() {
             console.error('!!! watch build failed:', error)
             handleError(error)
           } else {
+            fs.copyFile(srcDir + 'index.html', outDir + '/index.html', (err) => {
+              if (err) throw err
+            })
             const reduced = Object.entries(result).reduce((r, [k, v]) => {
               if (!v) {
                 return r

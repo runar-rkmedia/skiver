@@ -30,7 +30,7 @@
 	- The `key`-prop is required, and should be a unique key identifying the content.
 	- Use the `version`-prop if the content is significantly changed
  -->
-<Alert kind="info" collapse={read}>
+<Alert kind="info" collapse={read} positionAbsolute={!!$state.seenHints[key]}>
   <slot />
   <Button
     color="secondary"

@@ -5,19 +5,20 @@
 
   export let kind: 'error' | 'warning' | 'info' | 'success'
   export let collapse = false
+  export let float = true
+  export let positionAbsolute = false
 </script>
 
 {#if collapse}
-  <div class="wrapper">
+  <div class="wrapper" class:float>
     <button
       class={`btn-reset circle ${kind}`}
-      on:click|preventDefault={() => (collapse = !collapse)}
-    >
+      on:click|preventDefault={() => (collapse = !collapse)}>
       <Icon icon={kind} class="kind" color="inherit" />
     </button>
   </div>
 {:else}
-  <div transition:slide|local class={`alert ${kind}`}>
+  <div transition:slide|local class={`alert ${kind}`} class:positionAbsolute>
     <div class="alert-icon">
       <Icon icon={kind} class="kind" />
     </div>
@@ -31,9 +32,17 @@
 {/if}
 
 <style>
+  .positionAbsolute {
+    position: absolute;
+    z-index: 1;
+    box-shadow: var(--elevation-4);
+  }
   .wrapper {
     display: flex;
     justify-content: flex-end;
+  }
+  .float {
+    float: right;
   }
   .circle {
     width: 1em;

@@ -19,6 +19,7 @@
       dispatch('scrollTo', { el, e })
     }
   }}>
+  <slot name="pre" />
   <slot>
     {category.title || '(Root)'}
     {#if category.translation_ids?.length}

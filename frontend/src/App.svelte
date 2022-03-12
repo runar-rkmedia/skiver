@@ -29,6 +29,10 @@
       if (!toast) {
         return
       }
+      const diff = new Date().getTime() - $state.toasts[toast].created.getTime()
+      if (diff < 1000) {
+        return
+      }
       clearToast(toast)
     })
   })
@@ -241,7 +245,8 @@
 
   main {
     margin-block-start: var(--size-2);
-    padding-inline: var(--size-4);
+    padding-inline-start: var(--size-4);
+    padding-inline-end: var(--size-8);
   }
   img {
     height: 100px;

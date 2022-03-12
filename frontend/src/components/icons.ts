@@ -26,7 +26,9 @@ export const iconMap = {
   signIn: 'fa-sign-in-alt',
   menu: 'fas fa-hamburger',
   settings: 'fas fa-sliders-h',
-  loading: 'fad fa-spinner fa-spin'
+  loading: 'fad fa-spinner fa-spin',
+  arrowDown: 'fas fa-arrow-down',
+  openModal: 'fas fa-arrow-circle-up',
 } as const
 
 export type Icon = keyof typeof iconMap
