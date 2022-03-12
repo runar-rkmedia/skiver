@@ -22,8 +22,7 @@
     $$props.class,
   ]
     .filter(Boolean)
-    .join(' ')}
-/>
+    .join(' ')} />
 
 <style>
   i {
