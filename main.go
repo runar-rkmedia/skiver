@@ -536,7 +536,7 @@ func main() {
 	// We are migrating to using httprouter, but not all routes have been migrated
 	router.GET("/api/export/:params", c("GetExport", handlers.GetExport(exportCache)))
 	router.GET("/api/export/", c("GetExport", handlers.GetExport(exportCache)))
-	router.POST("/api/project/snapshot", c("PostSnapshot", handlers.PostSnapshot(), routeOptions{sessionRole: func(s types.Session, _ *http.Request) error {
+	router.POST("/api/project/snapshot/", c("PostSnapshot", handlers.PostSnapshot(), routeOptions{sessionRole: func(s types.Session, _ *http.Request) error {
 		if !s.User.CanUpdateProjects {
 			return fmt.Errorf("You are not authorized to create snapshots")
 		}
@@ -559,7 +559,7 @@ func main() {
 		// maxBodySize,
 	// 	)
 	)
-	handler.Handle("/api/project/snapshot", router)
+	handler.Handle("/api/project/snapshot/", router)
 	handler.Handle("/api/export/", router)
 	useCert := false
 	if cfg.CertFile != "" {

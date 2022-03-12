@@ -1,13 +1,16 @@
 <script lang="ts">
   import { db } from 'api'
+  import Button from 'components/Button.svelte'
   import EntityDetails from 'components/EntityDetails.svelte'
   import Spinner from 'components/Spinner.svelte'
   import Tip from 'components/Tip.svelte'
   import ProjectForm from 'forms/ProjectForm.svelte'
+  import ProjectSnapshotForm from 'forms/ProjectSnapshotForm.svelte'
   import sortOn from 'sort-on'
   import { apiUrl } from 'util/appConstants'
   export let projectID: string
   $: project = $db.project[projectID]
+  let showCreateSnapshotForm = false
 </script>
 
 {#if project}
@@ -18,7 +21,6 @@
 
   <paper>
     <div class="tipheader">
-      <h3>Tags</h3>
       <Tip key="project-tags">
         <p>
           Projects can be snapshotted at a given point in time and given tags to
@@ -29,6 +31,11 @@
           This is useful if you want to control when applications receive
           updates to their translations, and still be able to work with
           translations across time.
+        </p>
+
+        <p>
+          When a client requests a set a translations, they can specify a tag to
+          refer to the accompanying snapshot.
         </p>
 
         <p>There are a few special tags.</p>
@@ -42,6 +49,15 @@
           <li>No tag. Will refer to the live project</li>
         </ul>
       </Tip>
+      <h3>Tags</h3>
+      {#if !showCreateSnapshotForm}
+        <Button
+          color="primary"
+          icon="create"
+          on:click={() => (showCreateSnapshotForm = true)}>New snapshot</Button>
+      {:else}
+        <ProjectSnapshotForm {projectID} />
+      {/if}
     </div>
     {#each sortOn(Object.entries(project.snapshots || {}), '-1.created_at') as [tag, snapshot]}
       <paper>
@@ -52,6 +68,8 @@
         {snapshot.description}
         <EntityDetails entity={snapshot} />
       </paper>
+    {:else}
+      <p>There are currenly no snapshots created for this project</p>
     {/each}
   </paper>
 {:else if $db.responseStates.project.loading}
