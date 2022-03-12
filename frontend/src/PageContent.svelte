@@ -26,7 +26,19 @@
   <Embed
     projectKey={routeArgs[0]}
     categoryKey={routeArgs[1]}
-    translationKeyLike={routeArgs[2]} />
+    translationKeyLike={routeArgs[2]}>
+    <div slot="after" let:project>
+      <p>
+        You are viewing the embedded version of this page.
+        {#if project}
+          <a href={'#project/' + project.id}
+            >Click her to go to the project-view</a>
+        {:else}
+          <a href={'#/'}>Click her to go back to the main page</a>
+        {/if}
+      </p>
+    </div>
+  </Embed>
 {:else if mainRoute === 'missing'}
   <MissingTranslationsPage />
 {:else if mainRoute === 'project'}

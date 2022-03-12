@@ -8,7 +8,8 @@
   import CategoryForm from 'forms/CategoryForm.svelte'
   import TranslationForm from 'forms/TranslationForm.svelte'
   import { state } from 'state'
-  import titleCase, { camelCaseToTitleCase } from 'util/titleCase'
+  import { camelCaseToTitleCase } from 'util/titleCase'
+
   // export let translation: ApiDef.Translation
   // export let translationValues: Record<string, ApiDef.TranslationValue>
   export let categoryKey: string
@@ -18,6 +19,7 @@
 
   let showCategoryForm = false
   let showTranslationForm = false
+  export let noHeader = false
 
   $: locales = Object.values($db.locale)
   $: project =
@@ -44,7 +46,7 @@
   $: maxLoadingCount = Object.keys($db.responseStates).length
 </script>
 
-{#if $db.login.ok}
+{#if $db.login.ok && noHeader}
   <div class="user-welcome">
     Welcome, {$db.login.username}
     <Button color="tertiary" on:click={api.logout}>Logout</Button>
@@ -54,20 +56,28 @@
 {#if locales}
   {#if project}
     <!-- Has Project -->
-    <h1>{project.title} <small><code>{project.short_name}</code></small></h1>
-    {#if project.description}
-      <p>{project.description}</p>
+    {#if !noHeader}
+      <h1>{project.title} <small><code>{project.short_name}</code></small></h1>
+      {#if project.description}
+        <p>{project.description}</p>
+      {/if}
     {/if}
     {#if category}
       <!-- Has Category -->
-      <h2>{category.title} <small><code>{category.key}</code></small></h2>
-      {#if category.description}
-        <p>{category.description}</p>
+      {#if !noHeader}
+        <h2>{category.title} <small><code>{category.key}</code></small></h2>
+        {#if category.description}
+          <p>{category.description}</p>
+        {/if}
       {/if}
       {#if translation}
         <!-- Has translation -->
         <paper>
-          <TranslationItem {locales} {translation} {categoryKey} {projectKey} />
+          <TranslationItem
+            {locales}
+            {translation}
+            categoryKey={category.key || '???'}
+            {projectKey} />
         </paper>
         <!-- End has translation -->
       {:else}
@@ -140,7 +150,11 @@
     {:else}
       <!-- No Category -->
       <p>
-        The Category <code>{categoryKey}</code> was not found.
+        {#if categoryKey}
+          The Category <code>{categoryKey}</code> was not found.
+        {:else}
+          Not category-key in input found.
+        {/if}
         {#if project.category_ids?.length}
           Perhaps you meant one of following categories, or maybe you want to
           create a new category?
@@ -248,14 +262,7 @@
   </Alert>
 {/if}
 
-<p>
-  You are viewing the embedded version of this page.
-  {#if project}
-    <a href={'#project/' + project.id}>Click her to go to the project-view</a>
-  {:else}
-    <a href={'#/'}>Click her to go back to the main page</a>
-  {/if}
-</p>
+<slot name="after" {project} />
 
 <style>
   .user-welcome {
