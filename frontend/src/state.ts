@@ -8,6 +8,9 @@ export const state = createStore({
     sidebarVisible: false,
     pageSize: 50,
     searchQuery: '',
+    searchInTranslationValues: true,
+    searchInTrasnaltions: true,
+    searchInCategories: true,
     categorySortOn: 'key' as keyof ApiDef.Category,
     categorySortAsc: true,
     seenHints: {} as Record<string, [version: number, readAt: Date]>,
@@ -26,6 +29,7 @@ export const state = createStore({
   },
   storage: {
     key: 'state',
+    ignoreKeys: ['createOrganization', 'createTranslation', 'createTranslationValue', 'createProject', 'openTranslationValueForm']
   },
 })
 

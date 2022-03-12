@@ -1,6 +1,10 @@
 <script lang="ts">
   import { db } from 'api'
   import Fuse from 'fuse.js'
+  import Embed from 'pages/Embed.svelte'
+  import { state } from 'state'
+  import { fade, blur, slide, scale, fly, draw } from 'svelte/transition'
+  import Button from './Button.svelte'
   import ScrollAnchor from './ScrollAnchor.svelte'
   export let project: ApiDef.Project
 
@@ -34,7 +38,7 @@
     }
     return [...r, ...t.value_ids.map((id) => $db.translationValue[id])]
   }, [])
-  let limit = 10
+  let limit = 20
 
   $: data = {
     translationValues: new Fuse(translationValues, tvOptions),
@@ -42,53 +46,180 @@
     categories: new Fuse(categories, cOptions),
   }
   $: result = {
-    translationValues: data.translationValues.search(query, { limit }),
-    translations: data.translations.search(query, { limit }),
-    categories: data.categories.search(query, { limit }),
+    translationValues: data.translationValues.search(query),
+    translations: data.translations.search(query),
+    categories: data.categories.search(query),
+  }
+  let categoryKey: string = ''
+  let translationID: string = ''
+
+  $: {
+    console.log('i am running')
+    if (categoryKey && translationID) {
+      document.body.classList.add('stop-scrolling')
+    } else {
+      document.body.classList.remove('stop-scrolling')
+    }
+  }
+  const handleKeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      if (categoryKey || translationID) {
+        categoryKey = ''
+        translationID = ''
+      }
+    }
   }
 </script>
 
+<svelte:window on:keydown={handleKeydown} />
 <div>
   {#if result && query}
     <div class="resultswrapper">
-      <paper class="resultblock">
-        <h3>Translation-values</h3>
-        {#each result.translationValues as { item: tv } (tv.id)}
-          <div>
-            {tv.value}
-            <ScrollAnchor
-              category={$db.category[
-                $db.translation[tv.translation_id || '']?.category || ''
-              ]} />
-          </div>
-        {/each}
-      </paper>
-      <paper class="resultblock">
-        <h3>Translations</h3>
-        {#each result.translations as { item: tv } (tv.id)}
-          <div>
-            {tv.key}
-            <ScrollAnchor category={$db.category[tv.category || '']} />
-          </div>
-        {/each}
-      </paper>
-      <paper class="resultblock">
-        <h3>Categories</h3>
-        {#each result.categories as { item: category } (category.id)}
-          <div>
-            <ScrollAnchor {category} />
-          </div>
-        {/each}
-      </paper>
+      {#if $state.searchInTranslationValues && result.translationValues.length}
+        <paper class="resultblock" transition:scale>
+          <h3>
+            Translation-values {result.translationValues.length}
+            <Button
+              icon="closeCross"
+              on:click={() => ($state.searchInTranslationValues = false)} />
+          </h3>
+          {#each result.translationValues.slice(0, limit) as { item: tv } (tv.id)}
+            <div>
+              <Button
+                on:click={() => {
+                  categoryKey =
+                    $db.translation[tv.translation_id || '']?.category || ''
+                  translationID = tv.translation_id || ''
+                }}>
+                {tv.value}
+              </Button>
+            </div>
+          {/each}
+        </paper>
+      {/if}
+      {#if $state.searchInTrasnaltions && result.translations.length}
+        <paper class="resultblock" transition:scale>
+          <h3>
+            Translations {result.translations.length}
+            <Button
+              icon="closeCross"
+              on:click={() => ($state.searchInTrasnaltions = false)} />
+          </h3>
+          {#each result.translations.slice(0, limit) as { item: tv } (tv.id)}
+            <div>
+              <Button
+                on:click={() => {
+                  categoryKey = tv.category || ''
+                  translationID = tv.id || ''
+                }}>
+                {tv.title}
+              </Button>
+            </div>
+          {/each}
+        </paper>
+      {/if}
+      {#if $state.searchInCategories && result.categories.length}
+        <paper class="resultblock" transition:scale>
+          <h3>
+            Categories {result.categories.length}
+
+            <Button
+              icon="closeCross"
+              on:click={() => ($state.searchInCategories = false)} />
+          </h3>
+          {#each result.categories.slice(0, limit) as { item: category } (category.id)}
+            <div>
+              <ScrollAnchor {category} />
+            </div>
+          {/each}
+        </paper>
+      {/if}
     </div>
+    {#if translationID || categoryKey}
+      <embed-wrapper transition:fade={{ duration: 150 }}>
+        <div
+          class="simple-backdrop"
+          on:click={() => {
+            translationID = ''
+            categoryKey = ''
+          }} />
+        <div class="content" transition:scale={{ duration: 250 }}>
+          <Embed
+            noHeader={true}
+            {categoryKey}
+            projectKey={project.id}
+            translationKeyLike={translationID} />
+        </div>
+      </embed-wrapper>
+    {/if}
+    {#if !result.translationValues.length && !result.translations.length && !result.categories.length}
+      No result. Try refining your search.
+    {/if}
+    {#if !$state.searchInCategories}
+      <Button
+        color="secondary"
+        on:click={() => ($state.searchInCategories = true)}
+        >Show results for categories {result.categories.length}</Button>
+    {/if}
+    {#if !$state.searchInTrasnaltions}
+      <Button
+        color="secondary"
+        on:click={() => ($state.searchInTrasnaltions = true)}
+        >Show results for translations {result.translations.length}</Button>
+    {/if}
+    {#if !$state.searchInTranslationValues}
+      <Button
+        color="secondary"
+        on:click={() => ($state.searchInTranslationValues = true)}
+        >Show results for translation-values {result.translationValues
+          .length}</Button>
+    {/if}
   {/if}
 </div>
 
 <style>
+  .simple-backdrop {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    opacity: 0.5;
+  }
+  :global(.resultswrapper button) {
+    padding: 0;
+    text-align: inherit;
+  }
+  h3 {
+    display: flex;
+    justify-content: space-between;
+  }
+  embed-wrapper {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    z-index: 2;
+    overflow-y: auto;
+  }
+  embed-wrapper .content {
+    overflow-y: auto;
+    width: 100%;
+    padding-block: var(--size-8);
+    padding-inline: var(--size-8);
+  }
+
   .resultswrapper {
-    display: grid;
-    gap: 10px;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
+    gap: var(--size-4);
+  }
+  .resultswrapper paper {
+    flex: 1;
+    transition: flex 150ms var(--easing-standard);
+  }
+  .resultswrapper paper:hover {
+    flex: 2;
   }
   .resultblock > div:nth-child(odd) {
     background-color: var(--color-grey-300);

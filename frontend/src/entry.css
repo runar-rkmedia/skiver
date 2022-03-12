@@ -38,12 +38,13 @@ body {
   background-color: var(--color-black);
   font-family: var(--font-sans);
   margin: 0;
-  /* overflow-y: overlay; */
+  overflow-y: overlay;
 }
 
 li {
   all: initial;
   font-family: var(--font-sans);
+  display: list-item;
 }
 
 html,
@@ -62,6 +63,10 @@ body {
       display: inline;
   }
   }
+
+a {
+  color: unset;
+}
 
 .error.fas {
   color: var(--color-error-icon);
@@ -377,4 +382,18 @@ select[aria-invalid] {
   animation-duration: 1s;
   animation-timing-function: var(--easing-standard);
   animation-iteration-count: infinite;
+}
+  .fancy-backdrop, .simple-backdrop {
+    background-color: #092335f0;
+  }
+  @supports ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
+    .fancy-backdrop {
+      background-color: unset;
+      backdrop-filter: brightness(20%) saturate(180%) blur(2px);
+    }
+  }
+
+.stop-scrolling {
+  height: 100%;
+  overflow:hidden;
 }

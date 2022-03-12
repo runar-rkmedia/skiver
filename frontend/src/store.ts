@@ -39,7 +39,10 @@ function createStore<T extends {}, V = null, VK extends string = string>({
   initialValue,
   validator,
 }: {
-  storage?: AppStorage<T> | { key: string }
+  storage?: AppStorage<T> | {
+    key: string,
+    ignoreKeys?: string[]
+  }
   validator?: (
     t: Store<T, V>
   ) => [null, null] | [V, null] | [null, Partial<Record<VK, string>>]
@@ -51,11 +54,11 @@ function createStore<T extends {}, V = null, VK extends string = string>({
 
   const storage: AppStorage<T> | null = _storage?.key
     ? {
-        getItem: (key) => localStorage.getItem(key),
-        // TODO: throttle saving
-        setItem: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
-        ..._storage,
-      }
+      getItem: (key) => localStorage.getItem(key),
+      // TODO: throttle saving
+      setItem: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+      ..._storage,
+    }
     : null
 
   if (storage) {
@@ -88,6 +91,20 @@ function createStore<T extends {}, V = null, VK extends string = string>({
   } = writable<S>(fromStorageValue ?? (initialValue as any))
   const _saveToStorageNow = (value: T) => {
     if (!storage || !_storage?.key) {
+      return
+    }
+    if (storage.ignoreKeys?.length) {
+      const v: any = Object.keys(value).reduce(
+        (r, key) => {
+          if (storage.ignoreKeys?.includes(key)) {
+            return r
+          }
+          r[key] = value[key]
+
+          return r
+        }, {}
+      )
+      storage?.setItem(_storage.key, v)
       return
     }
     storage?.setItem(_storage.key, value)
@@ -184,9 +201,10 @@ function createStore<T extends {}, V = null, VK extends string = string>({
 }
 
 export interface AppStorage<T extends {}> {
-  getItem: (key: string) => string | null
+  getItem: (key: string) => string | T | null
   setItem: (key: string, value: T) => void
   key: string
+  ignoreKeys?: string[]
 }
 
 export default createStore
