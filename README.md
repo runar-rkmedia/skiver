@@ -1,5 +1,7 @@
 # Skiver
 
+An easy to-deploy, single binary management for translations. Focuses on tight integrations.
+
 ## Current feature-set
 
 ### Exports
@@ -16,7 +18,7 @@ a different system.
 With these types generated, the developer can see examples of the real translation directly in their editor, along with any parameters used.
 
 <div style="width: 100%; display: flex; gap: 20px; flex-direction: row; align-items: flex-end;">
-
+ 
 <div>
 
 ![VSCode example](./docs/ts_hover.png)

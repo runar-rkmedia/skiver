@@ -180,6 +180,8 @@ func (p Project) Extend(db Storage, options ...ExtendOptions) (ep ExtendedProjec
 		ep.Categories[key] = ec
 	}
 	ep.CategoryTree = CreateCategoryTreeNode(ep.Categories)
+	fmt.Println("cattree", ep.CategoryTree.Categories[""].ID)
+	fmt.Println("cat", ep.Categories[""].ID)
 	return
 }
 
@@ -200,11 +202,13 @@ func CreateCategoryTreeNode(extendedCategories map[string]ExtendedCategory) Cate
 	for _, mapKeys := range catForPathLength {
 		for _, mapKey := range mapKeys {
 			cat := extendedCategories[mapKey]
+			// path := append([]string{""}, cat.Path()...)
 			path := cat.Path()
 			length := len(path)
 			// FIXME: make recursive, don't overwrite previous values.
 			if length == 0 {
 				node = CategoryTreeNode{ExtendedCategory: cat, Categories: make(map[string]CategoryTreeNode)}
+				fmt.Println("root", node.Translations)
 				continue
 			}
 			if length == 1 {
@@ -215,6 +219,10 @@ func CreateCategoryTreeNode(extendedCategories map[string]ExtendedCategory) Cate
 				continue
 			}
 			if length == 2 {
+				// if node.ID == "" {
+				// 	c := CategoryTreeNode{ExtendedCategory: ExtendedCategory{}, Categories: make(map[string]CategoryTreeNode)}
+				// 	node = CategoryTreeNode{ExtendedCategory: ExtendedCategory{}, Categories: map[string]CategoryTreeNode{path[0]: c}}
+				// }
 				node.Categories[path[0]].Categories[path[1]] = CategoryTreeNode{ExtendedCategory: cat, Categories: make(map[string]CategoryTreeNode)}
 				continue
 			}

@@ -117,7 +117,7 @@ func importFromCategoryNode(base types.Project, source types.CreatorSource, key 
 
 			if len(childNode.Value) > 0 {
 
-				translationKey, _ := splitTranslationAndContext(scKey, "_")
+				translationKey, _ := SplitTranslationAndContext(scKey, "_")
 				var t types.ExtendedTranslation
 				if tk, ok := cat.Translations[translationKey]; ok {
 					t = tk
@@ -149,7 +149,7 @@ func importFromCategoryNode(base types.Project, source types.CreatorSource, key 
 
 func translationFromNode(t *types.ExtendedTranslation, key string, base types.Project, source types.CreatorSource, node I18NWithLocales, categoryKey string) {
 
-	tranlationKey, context := splitTranslationAndContext(key, "_")
+	tranlationKey, context := SplitTranslationAndContext(key, "_")
 	if t.Key == "" {
 
 		t.Key = tranlationKey
@@ -469,7 +469,7 @@ func getValueForVariableKey(key string) interface{} {
 	return "???"
 }
 
-func splitTranslationAndContext(s, sep string) (string, string) {
+func SplitTranslationAndContext(s, sep string) (string, string) {
 	if s == "" {
 		return "", ""
 	}
