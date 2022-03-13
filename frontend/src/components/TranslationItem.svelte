@@ -104,10 +104,12 @@
   {:else}
     <div class="desc">
       <h4>
-        <code>
-          {`${categoryKey !== '' ? categoryKey + '.' : ''}${translation.key}`}
-        </code>
-        {translation.title}
+        <slot name="categoryHeader" {categoryKey} {translation}>
+          <code>
+            {`${categoryKey !== '' ? categoryKey + '.' : ''}${translation.key}`}
+          </code>
+          {translation.title}
+        </slot>
         <Button icon="edit" on:click={toggleEdit}>Edit</Button>
       </h4>
       <div>

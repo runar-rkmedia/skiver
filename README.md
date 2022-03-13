@@ -1,7 +1,5 @@
 # Skiver
 
-[[toc]]
-
 ## Current feature-set
 
 ### Exports
@@ -44,20 +42,20 @@ With these types generated, the developer can see examples of the real translati
 
 - [X] Report missing translation
   - [X] Missing translations can easily be viewed and created from the UI.
-- [ ] Typescript-type-generation with rich comments
-- [ ] Import translations
+- [X] Typescript-type-generation with rich comments
+- [X] Import translations
   - [X] General AST
   - [X] Dry run, with preview of updates and creations
-  - [ ] `i18next`-format
+  - [X] `i18next`-format
     - [X] multiple-language 
     - [X] context-support
     - [X] inferring of variables and nested keys. 
-- [ ] Multi-organization support
+- [X] Multi-organization support
 
 ## Planned feature-set
 
 - [ ] Server-side interpolation via API
-- [ ] Client-side live interpolation via library
+- [X] Client-side live interpolation via library
   - [ ] Support for multiple libraries, including different versions.
   - [ ] Optionally bring your own library, per project. Upload any WebAssembly with the library included, and it will be used on all translations.
 - [ ] Source-code integration with project, to show usage of translation.

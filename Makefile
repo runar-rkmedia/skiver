@@ -6,6 +6,7 @@ ldflags=-X 'main.Version=$(version)' -X 'main.BuildDateStr=$(buildDate)' -X 'mai
 watch:
 	cd frontend && yarn watch &
 	fd -e go -e tmpl  | entr -r  sh -c "echo restarting...; go1.18beta2 run main.go"
+	wait
 gen:
 	go1.18beta2 generate ./...
 build-api:

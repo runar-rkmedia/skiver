@@ -29,7 +29,7 @@
       if (!toast) {
         return
       }
-      const diff = new Date().getTime() - $state.toasts[toast].created.getTime()
+      const diff = new Date().getTime() - new Date($state.toasts[toast].created).getTime()
       if (diff < 1000) {
         return
       }

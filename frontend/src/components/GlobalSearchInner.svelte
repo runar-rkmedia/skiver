@@ -76,7 +76,7 @@
   {#if result && query}
     <div class="resultswrapper">
       {#if $state.searchInTranslationValues && result.translationValues.length}
-        <paper class="resultblock" transition:scale>
+        <paper class="resultblock tv" transition:scale>
           <h3>
             Translation-values {result.translationValues.length}
             <Button
@@ -98,7 +98,7 @@
         </paper>
       {/if}
       {#if $state.searchInTrasnaltions && result.translations.length}
-        <paper class="resultblock" transition:scale>
+        <paper class="resultblock t" transition:scale>
           <h3>
             Translations {result.translations.length}
             <Button
@@ -119,7 +119,7 @@
         </paper>
       {/if}
       {#if $state.searchInCategories && result.categories.length}
-        <paper class="resultblock" transition:scale>
+        <paper class="resultblock c" transition:scale>
           <h3>
             Categories {result.categories.length}
 
@@ -148,7 +148,18 @@
             noHeader={true}
             {categoryKey}
             projectKey={project.id}
-            translationKeyLike={translationID} />
+            translationKeyLike={translationID} >
+            <h4 slot="categoryHeader" let:category let:translation>
+              <ScrollAnchor {category} on:scrollTo={() => {
+                translationID = ''
+                categoryKey = ''
+              }}>
+              <code>
+                {[category?.key, translation?.key].filter(Boolean).join('.')}
+              </code>
+                </ScrollAnchor>
+            </h4>
+            </Embed>
         </div>
       </embed-wrapper>
     {/if}
@@ -212,14 +223,20 @@
 
   .resultswrapper {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--size-4);
   }
   .resultswrapper paper {
     flex: 1;
+    min-width: 200px;
     transition: flex 150ms var(--easing-standard);
   }
-  .resultswrapper paper:hover {
-    flex: 2;
+  .resultswrapper paper {
+    max-width: 45rem;
+  }
+  .resultswrapper paper.tv {
+    flex: 3;
+    min-width: 300px;
   }
   .resultblock > div:nth-child(odd) {
     background-color: var(--color-grey-300);
