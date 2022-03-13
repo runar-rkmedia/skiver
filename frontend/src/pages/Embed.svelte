@@ -65,19 +65,29 @@
     {#if category}
       <!-- Has Category -->
       {#if !noHeader}
-        <h2>{category.title} <small><code>{category.key}</code></small></h2>
-        {#if category.description}
-          <p>{category.description}</p>
-        {/if}
+          <h2>{category.title} <small><code>{category.key}</code></small></h2>
+          {#if category.description}
+            <p>{category.description}</p>
+          {/if}
       {/if}
       {#if translation}
         <!-- Has translation -->
         <paper>
+          {#if $$slots.categoryHeader}
           <TranslationItem
             {locales}
             {translation}
-            categoryKey={category.key || '???'}
+            categoryKey={category.key || ''}
+            {projectKey} >
+              <slot slot="categoryHeader" let:translation name="categoryHeader" {category} {translation}/>
+    </TranslationItem>
+    {:else}
+          <TranslationItem
+            {locales}
+            {translation}
+            categoryKey={category.key || ''}
             {projectKey} />
+    {/if}
         </paper>
         <!-- End has translation -->
       {:else}

@@ -100,7 +100,7 @@ function checkToasts() {
         if (!toast?.created) {
           return r
         }
-        if (toast.created.getTime() + toast.timeout < now) {
+        if (new Date(toast.created).getTime() + toast.timeout < now) {
           return r
         }
         r[k] = toast

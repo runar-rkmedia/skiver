@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/runar-rkmedia/skiver/importexport"
@@ -84,16 +85,17 @@ func ImportIntoProject(db types.Storage, kind string, createdBy string, project 
 	}
 	var locale *types.Locale
 	if localeLike != "" {
-		if true {
-			return nil, NewError("Locale from url is not yet implemented. Please add the locale as the root-key in the body", requestContext.CodeErrNotImplemented)
-		}
-		locale, err := db.GetLocaleByIDOrShortName(localeLike)
+		// if true {
+		// 	return nil, NewError("Locale from url is not yet implemented. Please add the locale as the root-key in the body", requestContext.CodeErrNotImplemented)
+		// }
+		loc, err := db.GetLocaleByIDOrShortName(localeLike)
 		if err != nil {
 			return nil, NewError("Failed ot get locale", requestContext.CodeErrLocale).AddError(err)
 		}
-		if locale == nil {
+		if loc == nil {
 			return nil, NewError("Locale not found", requestContext.CodeErrNotFoundLocale, localeLike)
 		}
+		locale = loc
 	}
 	locales, err := db.GetLocales()
 	if err != nil {
@@ -108,6 +110,7 @@ func ImportIntoProject(db types.Storage, kind string, createdBy string, project 
 	base.ID = project.ID
 	base.CreatedBy = createdBy
 	base.OrganizationID = project.OrganizationID
+	fmt.Println("locale", locale)
 	imp, warnings, err := importexport.ImportI18NTranslation(localesSlice, locale, base, types.CreatorSourceImport, input)
 	if err != nil {
 		return nil, NewError("failed to import", requestContext.CodeErrImport).AddError(err)

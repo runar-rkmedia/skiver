@@ -43,6 +43,9 @@ export const scrollToCategoryByKey = (key: string) => {
 }
 
 export const createCategoryAnchorProps = (c: { key?: string }) => {
+  if (!c) {
+    return
+  }
   const key = c.key || "_root_"
 
   return {

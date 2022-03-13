@@ -10,6 +10,7 @@
   const props = createCategoryAnchorProps(category)
 </script>
 
+{#if props}
 <a
   href={props.href}
   on:click|preventDefault={(e) => {
@@ -29,3 +30,6 @@
     {/if}
   </slot>
 </a>
+  {:else}
+  ???
+{/if}
