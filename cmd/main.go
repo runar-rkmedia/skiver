@@ -26,6 +26,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/skiver/handlers"
+	"github.com/runar-rkmedia/skiver/importexport"
 	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/types"
 	"github.com/runar-rkmedia/skiver/utils"
@@ -54,6 +55,10 @@ var CLI struct {
 		Path   string   `help:"Ouput file to write to" type:"path"`
 		TsKeys struct{} `help:"Generate a typescript key file for typesafe referance of translation-keys with TsDoc filled information from project" cmd:""`
 	} `help:"Generate files from project etc." cmd:""`
+	Unused struct {
+		Source *os.File `help:"Source-file for import"`
+		Dir    string   `help:"Directory for source-code" type:"existingdir" arg:"" required:""`
+	} `help:"Find unused translation-keys" cmd:""`
 
 	Inject struct {
 		IgnoreFilter []string `help:"Ignore-filter for files"`
@@ -66,7 +71,7 @@ var CLI struct {
 	} `help:"Configuration" cmd:"" json:"-"`
 	LogFormat string `help:"Human or json" default:"human"`
 	Verbose   int    `help:"More verbose logging" type:"counter" short:"v"`
-	Quiet     int    `help:"Quiet" type:"counter"`
+	Quiet     int    `help:"Quiet" type:"counter" short:"s"`
 }
 
 func main() {
@@ -87,11 +92,23 @@ func main() {
 		kong.Configuration(kong.JSON, paths...),
 	)
 	level := "info"
-	if CLI.Verbose > 0 {
-		level = "debug"
-	}
-	if CLI.Quiet > 0 {
+	switch CLI.Quiet {
+	case 1:
 		level = "warn"
+	case 2:
+		level = "error"
+	case 3:
+		level = "fatal"
+	case 4:
+		level = "panic"
+	}
+	switch CLI.Verbose {
+	case 1:
+		level = "debug"
+	case 2:
+		level = "trace"
+	case 3:
+		level = "trace"
 	}
 	l := logger.InitLogger(logger.LogConfig{
 		Format: CLI.LogFormat,
@@ -107,7 +124,7 @@ func main() {
 
 	case "import <source>":
 		l.Debug().Msg("importing")
-		err := api.Import(CLI.Project, "i18n", CLI.Import.Source)
+		err := api.Import(CLI.Project, "i18n", CLI.Locale, CLI.Import.Source)
 		if err != nil {
 			l.Fatal().Err(err).Msg("Failed to import")
 		}
@@ -144,36 +161,54 @@ func main() {
 			l.Fatal().Err(err).Msg("Failed export")
 		}
 		l.Info().Msg("Successful export")
-	case "inject <dir>":
-		buf := bytes.Buffer{}
-		err := api.Export(CLI.Project, "raw", CLI.Locale, &buf)
-		if err != nil {
-			l.Fatal().Err(err).Msg("Failed to get exported project")
+	case "unused <dir>":
+		translationKeys, regex := buildTranslationMapWithRegex(l, CLI.Unused.Source, api, CLI.Project, CLI.Locale)
+		found := map[string]bool{}
+		foundCh := make(chan string)
+		quitCh := make(chan struct{})
+		replacementFunc := func(groups []string) (replacement string, changed bool) {
+			foundCh <- groups[1]
+			return "", false
 		}
-		var ep types.ExtendedProject
-		err = json.Unmarshal(buf.Bytes(), &ep)
-		if err != nil {
-			l.Fatal().Err(err).Msg("Failed to unmarshal exported project")
-		}
-		m, err := FlattenExtendedProject(ep, []string{CLI.Locale})
-		if err != nil {
-			l.Fatal().Err(err).Msg("Failed to flatten exported project")
-		}
-		if len(m) == 0 {
-			l.Fatal().Msg("Found no matches")
-		}
-		// os.WriteFile("export-ignore-me.json", buf.Bytes(), 0677)
-		reg := `(.*")(`
-		var regexKeys = make([]string, len(m))
-		i := 0
-		for k := range m {
-			r := regexp.QuoteMeta(k)
-			regexKeys[i] = r
-			i++
-		}
-		reg += strings.Join(regexKeys, "|") + `)("(?: as any)?)(.*)`
 
-		regex := regexp.MustCompile(reg)
+		go func() {
+			for {
+				select {
+				case <-quitCh:
+					return
+				case f := <-foundCh:
+					found[f] = true
+				}
+			}
+		}()
+		filter := []string{"ts", "tsx"}
+
+		in := NewInjector(l, CLI.Unused.Dir, true, "", CLI.Inject.IgnoreFilter, filter, regex, replacementFunc)
+		err := in.Inject()
+		if err != nil {
+			l.Fatal().Err(err).Msg("Failed to inject")
+		}
+		quitCh <- struct{}{}
+		var unused []string
+		for k := range translationKeys {
+			if found[k] {
+				continue
+			}
+			unused = append(unused, k)
+		}
+		sort.Strings(unused)
+
+		count := len(unused)
+		fmt.Println(strings.Join(unused, "\n"))
+		if count > 0 {
+			l.Info().Int("count-unused", len(unused)).Msg("Found some possibly unused translation-keys")
+		} else {
+			l.Info().Msg("Found no unused translation-keys")
+		}
+
+	case "inject <dir>":
+		m := BuildTranslationKeyFromApi(api, l, CLI.Project, CLI.Locale)
+		regex := buildTranslationKeyRegexFromMap(m)
 		replacementFunc := func(groups []string) (replacement string, changed bool) {
 			if len(groups) < 3 {
 				return "", false
@@ -228,12 +263,11 @@ func main() {
 			}
 
 			return prefix + key + suffix + ts + "\n" + rest, true
-
 		}
 		filter := []string{"ts", "tsx"}
 
 		in := NewInjector(l, CLI.Inject.Dir, CLI.Inject.DryRun, CLI.Inject.OnReplace, CLI.Inject.IgnoreFilter, filter, regex, replacementFunc)
-		err = in.Inject()
+		err := in.Inject()
 		if err != nil {
 			l.Fatal().Err(err).Msg("Failed to inject")
 		}
@@ -242,8 +276,95 @@ func main() {
 		l.Fatal().Str("command", ctx.Command()).Msg("Not implemented yet")
 	}
 }
+func BuildTranslationKeyFromApi(api Api, l logger.AppLogger, projectKeyLike, localeLike string) map[string]map[string]string {
+	buf := bytes.Buffer{}
+	err := api.Export(projectKeyLike, "raw", localeLike, &buf)
+	if err != nil {
+		l.Fatal().Err(err).Msg("Failed to get exported project")
+	}
+	var ep types.ExtendedProject
+	err = json.Unmarshal(buf.Bytes(), &ep)
+	if err != nil {
+		l.Fatal().Err(err).Msg("Failed to unmarshal exported project")
+	}
+	m, err := FlattenExtendedProject(ep, []string{localeLike})
+	if err != nil {
+		l.Fatal().Err(err).Msg("Failed to flatten exported project")
+	}
+	if len(m) == 0 {
+		l.Fatal().Msg("Found no matches")
+	}
+	return m
+}
+
+func buildTranslationKeyRegexFromMap[T any](m map[string]T) *regexp.Regexp {
+	reg := `(.*")(`
+	var regexKeys = make([]string, len(m))
+	sorted := utils.SortedMapKeys(m)
+	i := 0
+	for _, k := range sorted {
+		r := regexp.QuoteMeta(k)
+		regexKeys[i] = r
+		i++
+	}
+	reg += strings.Join(regexKeys, "|") + `)("(?: as any)?)(.*)`
+	return regexp.MustCompile(reg)
+
+}
+
+// Creates a flattened map of translationKeys
+// The source can either be a file (i18next), or it will fallback to getting from the api
+func buildTranslationMapWithRegex(l logger.AppLogger, fromSourceFile *os.File, api Api, project, locale string) (map[string]struct{}, *regexp.Regexp) {
+	translationKeys := map[string]struct{}{}
+	// var r1 *regexp.Regexp
+	if fromSourceFile != nil {
+		b, err := ioutil.ReadAll(fromSourceFile)
+		if err != nil {
+			l.Fatal().Err(err).Msg("Failed to read from source")
+		}
+		var j map[string]interface{}
+		if err := json.Unmarshal(b, &j); err != nil {
+			l.Fatal().Err(err).Msg("Failed to unmarshal source")
+		}
+		flat := Flatten(j)
+		// strip context
+		for k := range flat {
+			ts := strings.Split(k, ".")
+			lastTs := ts[len(ts)-1]
+			key, _ := importexport.SplitTranslationAndContext(lastTs, "_")
+			joined := strings.Join(append(ts[:len(ts)-1], key), ".")
+			translationKeys[joined] = struct{}{}
+		}
+	} else {
+		mm := BuildTranslationKeyFromApi(api, l, project, locale)
+		for k := range mm {
+			translationKeys[k] = struct{}{}
+		}
+	}
+
+	regex := buildTranslationKeyRegexFromMap(translationKeys)
+	return translationKeys, regex
+}
 
 var newLineReplacer = strings.NewReplacer("\n", "", "\r", "")
+
+// Flatten takes a map and returns a new one where nested maps are replaced
+// by dot-delimited keys.
+func Flatten(m map[string]interface{}) map[string]interface{} {
+	o := make(map[string]interface{})
+	for k, v := range m {
+		switch child := v.(type) {
+		case map[string]interface{}:
+			nm := Flatten(child)
+			for nk, nv := range nm {
+				o[k+"."+nk] = nv
+			}
+		default:
+			o[k] = v
+		}
+	}
+	return o
+}
 
 func GetFileAndContent(dryRun bool, fn string, fi os.FileInfo) (f *os.File, content []byte, err error) {
 
@@ -293,9 +414,39 @@ func matchesLocale(l types.Locale, locales []string) string {
 }
 func FlattenExtendedProject(ep types.ExtendedProject, locales []string) (map[string]map[string]string, error) {
 	m := map[string]map[string]string{}
+	if ep.CategoryTree.Translations != nil {
+		c := ep.CategoryTree
+		for _, t := range ep.CategoryTree.Translations {
+			key := c.Key + "." + t.Key
+			if c.Key == "" {
+				key = t.Key
+			}
+			for _, tv := range t.Values {
+				loc := matchesLocale(ep.Locales[tv.LocaleID], locales)
+				if loc == "" {
+					continue
+				}
+				mm := map[string]string{}
+				if tv.Value != "" {
+					mm[loc] = tv.Value
+				}
+				for k, c := range tv.Context {
+					mm[loc+"_"+k] = c
+				}
+
+				if len(mm) == 0 {
+					continue
+				}
+				m[key] = mm
+			}
+		}
+	}
 	for _, c := range ep.CategoryTree.Categories {
 		for _, t := range c.Translations {
 			key := c.Key + "." + t.Key
+			if c.Key == "" {
+				key = t.Key
+			}
 			for _, tv := range t.Values {
 				loc := matchesLocale(ep.Locales[tv.LocaleID], locales)
 				if loc == "" {
@@ -315,7 +466,13 @@ func FlattenExtendedProject(ep types.ExtendedProject, locales []string) (map[str
 				m[key] = mm
 
 			}
-
+		}
+		mk, err := FlattenExtendedProject(types.ExtendedProject{CategoryTree: c, Locales: ep.Locales}, locales)
+		if err != nil {
+			return m, err
+		}
+		for k, v := range mk {
+			m[k] = v
 		}
 
 	}
@@ -496,6 +653,9 @@ func (in Injecter) Inject() error {
 	}()
 
 	var walker filepath.WalkFunc = func(fPath string, info fs.FileInfo, err error) error {
+		if info == nil {
+			return fmt.Errorf("fileInfo was nil for %s", fPath)
+		}
 		if info.IsDir() {
 			return nil
 		}
@@ -639,11 +799,11 @@ func (a *Api) Login(username, password string) error {
 	return nil
 
 }
-func (a Api) Import(projectName string, kind string, reader io.Reader) error {
+func (a Api) Import(projectName string, kind string, locale string, reader io.Reader) error {
 	if len(a.cookies) == 0 {
 		return fmt.Errorf("Not logged in")
 	}
-	r, err := http.NewRequest(http.MethodPost, a.endpoint+"/api/import/"+kind+"/"+projectName, reader)
+	r, err := http.NewRequest(http.MethodPost, a.endpoint+"/api/import/"+kind+"/"+projectName+"/"+locale, reader)
 	if err != nil {
 		return fmt.Errorf("failed to create import-request: %w", err)
 	}
