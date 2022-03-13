@@ -198,3 +198,5 @@ skiver.yaml
 main
 skiver
 *__debug*
+
+dist/
