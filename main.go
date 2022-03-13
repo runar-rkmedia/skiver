@@ -50,25 +50,26 @@ var (
 	//go:embed swagger.yml
 	swaggerYml string
 	// These are added at build...
-	Version      string
-	BuildDateStr string
-	BuildDate    time.Time
-	GitHash      string
-	isDev        = true
-	IsDevStr     = "1"
+	version   string
+	date      string
+	buildDate time.Time
+	builtBy   string
+	commit    string
+	isDev     = true
+	IsDevStr  = "1"
 
 	serverStartTime = time.Now()
 )
 
 func init() {
-	if BuildDateStr != "" {
-		t, err := time.Parse("2006-01-02T15:04:05", BuildDateStr)
+	if date != "" {
+		t, err := time.Parse("2006-01-02T15:04:05Z", date)
 		if err != nil {
 			panic(fmt.Errorf("Failed to parse build-date: %w", err))
 		}
-		BuildDate = t
+		buildDate = t
 	}
-	if IsDevStr != "1" {
+	if IsDevStr != "1" || commit != "" {
 		isDev = false
 	}
 }
@@ -317,7 +318,7 @@ func main() {
 		Level:  config.LogLevel,
 		Format: config.LogFormat,
 		// We add this option during local development, but also if loglevel is debug
-		WithCaller: config.LogLevel == "debug" || GitHash == "",
+		WithCaller: config.LogLevel == "debug" || commit == "",
 	})
 	l := logger.GetLogger("main")
 
@@ -329,10 +330,10 @@ func main() {
 	}
 	events := NewMultiPublisher()
 	l.Info().
-		Str("version", Version).
-		Time("buildDate", BuildDate).
-		Time("buildDateLocal", BuildDate.Local()).
-		Str("gitHash", GitHash).
+		Str("version", version).
+		Time("buildDate", buildDate).
+		Time("buildDateLocal", buildDate.Local()).
+		Str("gitHash", commit).
 		Str("db", cfg.DBLocation).
 		Int("pid", os.Getpid()).
 		Msg("Starting")
@@ -450,9 +451,9 @@ func main() {
 
 	info := types.ServerInfo{
 		ServerStartedAt: serverStartTime,
-		GitHash:         GitHash,
-		Version:         Version,
-		BuildDate:       BuildDate,
+		GitHash:         commit,
+		Version:         version,
+		BuildDate:       buildDate,
 	}
 	p, ok := ctx.DB.(localuser.Persistor)
 	if !ok {

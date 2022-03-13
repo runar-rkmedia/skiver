@@ -162,6 +162,8 @@ func main() {
 		}
 		l.Info().Msg("Successful export")
 	case "unused <dir>":
+		// TODO: also check if translations are used within other translations.
+		// For instance, a translation may only be used by refereance.
 		translationKeys, regex := buildTranslationMapWithRegex(l, CLI.Unused.Source, api, CLI.Project, CLI.Locale)
 		found := map[string]bool{}
 		foundCh := make(chan string)
@@ -208,7 +210,8 @@ func main() {
 
 	case "inject <dir>":
 		m := BuildTranslationKeyFromApi(api, l, CLI.Project, CLI.Locale)
-		regex := buildTranslationKeyRegexFromMap(m)
+		sorted := utils.SortedMapKeys(m)
+		regex := buildTranslationKeyRegexFromMap(sorted)
 		replacementFunc := func(groups []string) (replacement string, changed bool) {
 			if len(groups) < 3 {
 				return "", false
@@ -297,10 +300,9 @@ func BuildTranslationKeyFromApi(api Api, l logger.AppLogger, projectKeyLike, loc
 	return m
 }
 
-func buildTranslationKeyRegexFromMap[T any](m map[string]T) *regexp.Regexp {
+func buildTranslationKeyRegexFromMap(sorted []string) *regexp.Regexp {
 	reg := `(.*")(`
-	var regexKeys = make([]string, len(m))
-	sorted := utils.SortedMapKeys(m)
+	var regexKeys = make([]string, len(sorted))
 	i := 0
 	for _, k := range sorted {
 		r := regexp.QuoteMeta(k)
@@ -342,7 +344,8 @@ func buildTranslationMapWithRegex(l logger.AppLogger, fromSourceFile *os.File, a
 		}
 	}
 
-	regex := buildTranslationKeyRegexFromMap(translationKeys)
+	sorted := utils.SortedMapKeys(translationKeys)
+	regex := buildTranslationKeyRegexFromMap(sorted)
 	return translationKeys, regex
 }
 

@@ -2,7 +2,7 @@ repo=github.com/runar-rkmedia/skiver
 version := $(shell git describe --tags)
 gitHash := $(shell git rev-parse --short HEAD)
 buildDate := $(shell TZ=UTC date +"%Y-%m-%dT%H:%M:%S")
-ldflags=-X 'main.Version=$(version)' -X 'main.BuildDateStr=$(buildDate)' -X 'main.GitHash=$(gitHash)' -X 'main.IsDevStr=0'
+ldflags=-X 'main.version=$(version)' -X 'main.date=$(buildDate)' -X 'main.commit=$(gitHash)' -X 'main.IsDevStr=0'
 watch:
 	cd frontend && yarn watch &
 	fd -e go -e tmpl  | entr -r  sh -c "echo restarting...; go1.18beta2 run main.go"
