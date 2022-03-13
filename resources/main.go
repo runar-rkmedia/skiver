@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -18,6 +19,8 @@ var (
 		WithCaller: false,
 	})
 )
+
+type Countries []struct{}
 
 func main() {
 
@@ -38,7 +41,9 @@ func main() {
 			l.Fatal().Err(err).Msg("Failed to read body-data")
 			log.Fatal(err)
 		}
-		c, err := UnmarshalCountries(b)
+		// c, err := UnmarshalCountries(b)
+		var c Countries
+		err = json.Unmarshal(b, &c)
 		if err != nil {
 			l.Fatal().Err(err).Msg("Failed to unmarshal")
 		}
@@ -53,7 +58,9 @@ func main() {
 			l.Fatal().Err(err).Msg("Failed to read file-data")
 			log.Fatal(err)
 		}
-		c, err := UnmarshalCountries(b)
+		// c, err := UnmarshalCountries(b)
+		var c Countries
+		err = json.Unmarshal(b, &c)
 		if err != nil {
 			l.Fatal().Err(err).Msg("Failed to unmarshal")
 		}
