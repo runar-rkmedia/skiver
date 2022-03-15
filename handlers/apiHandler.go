@@ -503,8 +503,14 @@ func EndpointsHandler(
 			}
 		case "organization":
 			if isGet {
-				orgs, err := ctx.DB.GetOrganization(session.User.OrganizationID)
-				rc.WriteAuto(orgs, err, requestContext.CodeErrProject)
+				if session.User.CanCreateOrganization {
+					orgs, err := ctx.DB.GetOrganizations()
+					rc.WriteAuto(orgs, err, requestContext.CodeErrProject)
+					return
+
+				}
+				org, err := ctx.DB.GetOrganization(session.User.OrganizationID)
+				rc.WriteAuto(map[string]*types.Organization{org.ID: org}, err, requestContext.CodeErrProject)
 				return
 			}
 			if isPost {
