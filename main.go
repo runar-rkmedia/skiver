@@ -484,12 +484,21 @@ func main() {
 		sessionRole func(s types.Session, r *http.Request) error
 	}
 	// This is still being fleshed out...
+	// Should use middleware-pattern
 	c := func(name string, h handlers.AppHandler, opts ...routeOptions) httprouter.Handle {
 		var options routeOptions
 		if len(opts) > 0 {
 			options = opts[0]
 		}
 		return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			if len(p) > 0 {
+				ctx := r.Context()
+				ctx = context.WithValue(ctx, httprouter.ParamsKey, p)
+				r = r.WithContext(ctx)
+			}
+			paramsa := httprouter.ParamsFromContext(r.Context())
+			fmt.Println("\n\nhandling", r.Method, r.URL.Path, p, paramsa)
+
 			handlers.AddAccessControl(r, rw)
 			// This turned out a bit hacky, but it leaves a nicer pattern for route-handlers
 			// since they don't need to care about auth, logging, or writing
@@ -537,6 +546,28 @@ func main() {
 	// We are migrating to using httprouter, but not all routes have been migrated
 	router.GET("/api/export/:params", c("GetExport", handlers.GetExport(exportCache)))
 	router.GET("/api/export/", c("GetExport", handlers.GetExport(exportCache)))
+	router.DELETE("/api/translation/:id/", c("DeleteTranslation", handlers.DeleteTranslation(),
+		routeOptions{sessionRole: func(s types.Session, r *http.Request) error {
+			if !s.User.CanUpdateTranslations {
+				return fmt.Errorf("You are not authorized to delete translations")
+			}
+			return nil
+		}}))
+	router.PUT("/api/translation/", c("UpdateTranslation", handlers.UpdateTranslation(),
+		routeOptions{sessionRole: func(s types.Session, r *http.Request) error {
+			if !s.User.CanUpdateTranslations {
+				return fmt.Errorf("You are not authorized to update translations")
+			}
+			return nil
+		}}))
+	router.POST("/api/translation/", c("CreateTranslation", handlers.CreateTranslation(),
+		routeOptions{sessionRole: func(s types.Session, r *http.Request) error {
+			if !s.User.CanCreateTranslations {
+				return fmt.Errorf("You are not authorized to create translations")
+			}
+			return nil
+		}}))
+	router.GET("/api/translation/", c("GetTranslation", handlers.GetTranslations()))
 	router.POST("/api/project/snapshot/", c("PostSnapshot", handlers.PostSnapshot(), routeOptions{sessionRole: func(s types.Session, _ *http.Request) error {
 		if !s.User.CanUpdateProjects {
 			return fmt.Errorf("You are not authorized to create snapshots")
@@ -562,6 +593,7 @@ func main() {
 	)
 	handler.Handle("/api/project/snapshot/", router)
 	handler.Handle("/api/export/", router)
+	handler.Handle("/api/translation/", router)
 	useCert := false
 	if cfg.CertFile != "" {
 		_, err := os.Stat(cfg.CertFile)

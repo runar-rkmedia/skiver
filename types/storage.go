@@ -32,6 +32,7 @@ type Storage interface {
 	GetProjectByIDOrShortName(shortNameOrId string) (*Project, error)
 
 	GetTranslation(ID string) (*Translation, error)
+	SoftDeleteTranslation(id string, byUser string, deleteDate *time.Time) (Translation, error)
 	CreateTranslation(locale Translation) (Translation, error)
 	GetTranslations() (map[string]Translation, error)
 	GetTranslationsFilter(max int, filter ...Translation) (map[string]Translation, error)

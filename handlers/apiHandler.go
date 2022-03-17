@@ -32,6 +32,7 @@ type SessionManager interface {
 	NewSession(user types.User, organization types.Organization, userAgent string) (s types.Session)
 	GetSession(token string) (s types.Session, err error)
 	SessionsForUser(userId string) (s []types.Session)
+	ClearAllSessionsForUser(userId string) error
 	TTL() time.Duration
 }
 
@@ -45,6 +46,9 @@ func EndpointsHandler(
 ) http.HandlerFunc {
 
 	return func(rw http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			return
+		}
 		AddAccessControl(r, rw)
 
 		path := r.URL.Path
@@ -54,8 +58,8 @@ func EndpointsHandler(
 		var body []byte
 		var err error
 		isGet := r.Method == http.MethodGet
+
 		isPost := r.Method == http.MethodPost
-		// isDelete := r.Method == http.MethodDelete
 		isPut := r.Method == http.MethodPut
 		shouldReadBody := rc.ContentKind > 0 && (isPost || isPut)
 
@@ -67,15 +71,40 @@ func EndpointsHandler(
 			}
 		}
 		// Check login
+		authSource := ""
 		var session *types.Session
-		if cookie, err := r.Cookie("token"); err == nil {
-			sess, err := userSessions.GetSession(cookie.Value)
+		var authValue string
+		if v := r.Header.Get("Authorization"); v != "" {
+			authSource = "header"
+			authValue = v
+		}
+		if authValue == "" {
+			if cookie, err := r.Cookie("token"); err == nil {
+				authSource = "cookie"
+				authValue = cookie.Value
+			}
+		}
+		if authValue != "" {
+			sess, err := userSessions.GetSession(authValue)
 			if err == nil {
 				expiresD := sess.Expires.Sub(time.Now())
 				rw.Header().Add("session-expires", sess.Expires.String())
 				rw.Header().Add("session-expires-in", expiresD.String())
 				rw.Header().Add("session-expires-in-seconds", strconv.Itoa(int(expiresD.Seconds())))
 				session = &sess
+			} else {
+				details := map[string]any{"authSource": authSource}
+				if authSource == "cookie" {
+					// Authentication failed, logout the user
+					err := logout(session, userSessions, rw)
+					if err != nil {
+						rc.WriteError(err.Error(), requestContext.CodeErrAuthoriziationFailed, details)
+						return
+					}
+
+				}
+				rc.WriteError("The authorization provided was invalid", requestContext.CodeErrAuthoriziationFailed, details)
+				return
 			}
 		}
 
@@ -276,18 +305,7 @@ func EndpointsHandler(
 		case "logout":
 			{
 				if isPost {
-					cookie := &http.Cookie{
-						Name:     "token",
-						Path:     "/",
-						MaxAge:   0,
-						HttpOnly: true,
-					}
-					http.SetCookie(rw, cookie)
-					if session == nil {
-						rc.WriteError("Not logged in", requestContext.CodeErrAuthenticationRequired)
-						return
-					}
-					userSessions.SessionsForUser(session.User.ID)
+					logout(session, userSessions, rw)
 					rc.WriteOutput(models.LogoutResponse{Ok: boolPointer(true)}, http.StatusOK)
 					return
 				}
@@ -428,7 +446,11 @@ func EndpointsHandler(
 		// Login required beyond this point
 
 		if session == nil {
-			rc.WriteError("Not logged in", requestContext.CodeErrAuthenticationRequired)
+			if authSource == "" {
+				rc.WriteError("No authentication-method provided", requestContext.CodeErrAuthenticationRequired)
+			} else {
+				rc.WriteError("Authentication provided, but failed", requestContext.CodeErrAuthoriziationFailed, map[string]interface{}{"authSource": authSource})
+			}
 			return
 		}
 		orgId := session.Organization.ID
@@ -620,84 +642,6 @@ func EndpointsHandler(
 					return
 				}
 			}
-		case "translation":
-			if isGet {
-				translations, err := ctx.DB.GetTranslations()
-				rc.WriteAuto(translations, err, requestContext.CodeErrTranslation)
-				return
-			}
-			if isPut {
-				if !session.User.CanUpdateTranslations {
-					rc.WriteError("You are not authorizatiod to update translations", requestContext.CodeErrAuthoriziation)
-					return
-				}
-				tid := getStringSliceIndex(paths, 1)
-				var j models.UpdateTranslationInput
-				if err := rc.ValidateBytes(body, &j); err != nil {
-					return
-				}
-				if tid == "" {
-					tid = *j.ID
-				}
-
-				if tid == "" {
-					rc.WriteError("Missing id", requestContext.CodeErrIDEmpty)
-					return
-				}
-				existing, err := ctx.DB.GetTranslation(tid)
-				if err != nil {
-					rc.WriteErr(err, requestContext.CodeErrTranslation)
-				}
-				if existing == nil || existing.OrganizationID != session.User.OrganizationID {
-					rc.WriteErr(err, requestContext.CodeErrNotFoundTranslation)
-					return
-
-				}
-
-				t := types.Translation{
-					Key:         existing.Key,
-					Title:       *j.Title,
-					Description: *j.Description,
-				}
-				if j.Variables != nil {
-					if v, ok := j.Variables.(map[string]interface{}); ok {
-
-						t.Variables = v
-					} else {
-						rc.WriteError("key variables are invalid", requestContext.CodeErrInputValidation)
-						return
-					}
-				}
-
-				updated, err := ctx.DB.UpdateTranslation(tid, t)
-				rc.WriteAuto(updated, err, requestContext.CodeErrTranslation)
-				return
-
-			}
-			if isPost {
-				if !session.User.CanCreateTranslations {
-					rc.WriteError("You are not authorizatiod to create translations", requestContext.CodeErrAuthoriziation)
-					return
-				}
-				var j models.TranslationInput
-				if err := rc.ValidateBytes(body, &j); err != nil {
-					return
-				}
-
-				t := types.Translation{
-					// TranslationInput: j,
-					CategoryID:  *j.CategoryID,
-					Key:         *j.Key,
-					Description: j.Description,
-					Title:       j.Title,
-					Variables:   j.Variables,
-				}
-				t.CreatedBy = session.User.ID
-				t.OrganizationID = session.Organization.ID
-				translation, err := ctx.DB.CreateTranslation(t)
-				rc.WriteAuto(translation, err, requestContext.CodeErrCreateTranslation)
-				return
-			}
 		case "category":
 			if isGet {
 				categories, err := ctx.DB.GetCategories()
@@ -859,7 +803,7 @@ func EndpointsHandler(
 				return
 			}
 		}
-		rc.WriteError(fmt.Sprintf("No route registerd for: %s %s", r.Method, r.URL.Path), requestContext.CodeErrNoRoute)
+		rc.WriteError(fmt.Sprintf("No route registered for: %s %s", r.Method, r.URL.Path), requestContext.CodeErrNoRoute)
 	}
 }
 

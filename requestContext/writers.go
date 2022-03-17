@@ -23,6 +23,8 @@ func WriteAuto(output interface{}, err error, errCode ErrorCodes, r *http.Reques
 	return WriteOutput(false, http.StatusOK, output, r, rw)
 }
 func WriteErr(err error, statusCode int, code ErrorCodes, r *http.Request, rw http.ResponseWriter) error {
+	if err == nil {
+	}
 	return WriteError(err.Error(), statusCode, code, r, rw, err)
 }
 func WriteError(msg string, statusCode int, code ErrorCodes, r *http.Request, rw http.ResponseWriter, details ...interface{}) error {

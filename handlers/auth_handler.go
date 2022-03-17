@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -61,6 +62,27 @@ var (
 	ErrApiInternalErrorMissingSession = NewApiError("Missing session", http.StatusBadGateway, string(CodeInternalServerError))
 )
 
+func ErrApiNotFound(key string) error {
+	return NewApiError("Not found: "+key, http.StatusNotFound, "NotFound:"+key)
+}
+func ErrApiNotAuthorized(key, verb string) error {
+	return NewApiError(fmt.Sprintf("You are not authorized to %s: on %s", verb, key), http.StatusNotFound, "Auth:"+key+"+"+verb)
+}
+func ErrApiMissingArgument(key string) error {
+	return NewApiError("Missign argument: "+key, http.StatusBadRequest, "Missing:"+key)
+}
+func ErrApiInputValidation(msg, key string) error {
+	return NewApiError(msg, http.StatusBadRequest, "InputValidation:"+key)
+}
+func ErrApiDatabase(key string, err error) error {
+	if err == nil {
+		return nil
+	}
+	// TOOD: check the err in a switch-case
+	e := NewApiError(err.Error(), http.StatusBadGateway, "Database:"+key)
+	return &e
+}
+
 // Returns a valid session or nil
 func GetRequestSession(r *http.Request) (session types.Session, err error) {
 	err = ErrApiInternalErrorMissingSession
@@ -78,6 +100,28 @@ func GetRequestSession(r *http.Request) (session types.Session, err error) {
 	err = nil
 	session = s
 	return
+}
+
+func writeLogoutCookie(rw http.ResponseWriter) {
+	cookie := &http.Cookie{
+		Name:     "token",
+		Path:     "/",
+		MaxAge:   0,
+		HttpOnly: true,
+	}
+	http.SetCookie(rw, cookie)
+}
+func logout(session *types.Session, userSessions SessionManager, rw http.ResponseWriter) error {
+
+	writeLogoutCookie(rw)
+	if session == nil || session.User.ID == "" {
+		return NewApiError("Not logged in", http.StatusBadRequest, string(requestContext.CodeErrAuthenticationRequired))
+	}
+	err := userSessions.ClearAllSessionsForUser(session.User.ID)
+	if err != nil {
+		return NewApiError("Logout failed", http.StatusBadGateway, string(CodeInternalServerError))
+	}
+	return nil
 }
 
 var (
