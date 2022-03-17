@@ -3,6 +3,7 @@ package importexport
 import (
 	"bytes"
 	"testing"
+	"time"
 
 	"github.com/MarvinJWendt/testza"
 	"github.com/runar-rkmedia/skiver/internal"
@@ -52,6 +53,71 @@ func Test_Export(t *testing.T) {
 								Translation: types.Translation{
 									Key:   "Welcome",
 									Title: "Welcoming the user to Foo",
+									Variables: map[string]interface{}{
+										"userName": "Rock",
+										"appName":  "20XX",
+									},
+								},
+								Values: map[string]types.TranslationValue{"en-GB": {
+									LocaleID: "en-GB",
+									Value:    "Welcome, {{user}} to {{year}}",
+								}},
+							},
+						},
+					},
+					"cat-b": {
+						Category: types.Category{
+							Title: "For use in forms",
+							Key:   "General.Forms",
+						},
+					},
+					"cat-c": {
+						Category: types.Category{
+							Title:       "Buttons - You click them",
+							Description: "Surely you know what they are!",
+							Key:         "General.Forms.Buttons",
+						},
+						Translations: map[string]types.ExtendedTranslation{
+							"t-b": {
+								Translation: types.Translation{
+									Key:       "GoToCheckout",
+									Title:     "The submit-button",
+									Variables: map[string]interface{}{"count": 42},
+								},
+								Values: map[string]types.TranslationValue{
+									"locale-en": {LocaleID: "en-GB", Value: "Go to checkout ({{count}})"},
+									"locale-no": {LocaleID: "nb-NO", Value: "Gå til utsjekk ({{count}})"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Should ignore deleted values",
+			options: ExportI18NOptions{
+				LocaleKey:    "Iso639_3",
+				LocaleFilter: []string{},
+			},
+			project: types.ExtendedProject{
+				Locales: LocaleListToDict(types.DefaultLocales),
+				Project: types.Project{
+					Title:       "Project Foo",
+					Description: "Foo is Bar for Baz",
+				},
+				Categories: map[string]types.ExtendedCategory{
+					"cat-a": {
+						Category: types.Category{
+							Title: "General Category",
+							Key:   "General",
+						},
+						Translations: map[string]types.ExtendedTranslation{
+							"t-a": {
+								Translation: types.Translation{
+									Entity: types.Entity{Deleted: &time.Time{}},
+									Key:    "Welcome",
+									Title:  "Welcoming the user to Foo",
 									Variables: map[string]interface{}{
 										"userName": "Rock",
 										"appName":  "20XX",

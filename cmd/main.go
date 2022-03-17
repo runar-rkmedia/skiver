@@ -828,10 +828,10 @@ func (a Api) Import(projectName string, kind string, locale string, reader io.Re
 		var j models.APIError
 		err = json.Unmarshal(body, &j)
 		if err == nil {
-			return fmt.Errorf("import-request return a %d-response: %s (%s) %#v", res.StatusCode, j.Error.Message, j.Error.Code, j.Details)
+			return fmt.Errorf("import-request returned %d-response: %s (%s) %#v", res.StatusCode, j.Error.Message, j.Error.Code, j.Details)
 		}
 
-		return fmt.Errorf("import-request return a %d-response: %s", res.StatusCode, string(body))
+		return fmt.Errorf("import-request returned %d-response: %s", res.StatusCode, string(body))
 	}
 	var j handlers.ImportResult
 	err = json.Unmarshal(body, &j)
