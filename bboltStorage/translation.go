@@ -2,6 +2,7 @@ package bboltStorage
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/runar-rkmedia/skiver/types"
 	bolt "go.etcd.io/bbolt"
@@ -74,6 +75,35 @@ func (b *BBolter) CreateTranslation(translation types.Translation) (types.Transl
 	return translation, err
 }
 
+func (bb *BBolter) SoftDeleteTranslation(id string, byUser string, deleteTime *time.Time) (types.Translation, error) {
+	if id == "" {
+		return types.Translation{}, ErrMissingIdArg
+	}
+	if byUser == "" {
+		return types.Translation{}, ErrMissingCreatedBy
+	}
+	tt, err := Update(bb, BucketTranslation, id, func(t types.Translation) (types.Translation, error) {
+		if deleteTime == nil {
+			if t.Deleted == nil {
+				return t, fmt.Errorf("Cannot undelete a non-deleted item")
+			}
+		} else {
+			if t.Deleted != nil {
+				return t, fmt.Errorf("Cannot delete an already deleted item")
+			}
+		}
+		t.Deleted = deleteTime
+
+		t.UpdatedBy = byUser
+		t.UpdatedAt = nowPointer()
+
+		return t, nil
+	})
+
+	return tt, err
+
+}
+
 // TODO: complete implementation
 func (b *BBolter) UpdateTranslation(id string, paylaod types.Translation) (types.Translation, error) {
 	if id == "" {
@@ -111,6 +141,10 @@ func (b *BBolter) UpdateTranslation(id string, paylaod types.Translation) (types
 		}
 		if len(paylaod.Variables) > 0 {
 			c.Variables = paylaod.Variables
+			needsUpdate = true
+		}
+		if paylaod.Deleted != nil {
+			c.Deleted = paylaod.Deleted
 			needsUpdate = true
 		}
 

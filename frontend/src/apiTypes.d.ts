@@ -91,6 +91,17 @@ declare namespace ApiDef {
         tag: string; // ^[a-zA-Z0-9-_.]{3,36}$
     }
     export type CreatorSource = string;
+    export interface DeleteInput {
+        /**
+         * Time of which the item at the earliest can be permanently deleted.
+         *
+         */
+        expiryDate?: string; // date-time
+        /**
+         * If set, will bring the item back from the deletion-queue.
+         */
+        undelete?: boolean;
+    }
     export interface Entity {
         /**
          * Time of which the entity was created in the database
@@ -772,6 +783,18 @@ declare namespace ApiPaths {
             export type TranslationInput = ApiDef.TranslationInput;
         }
     }
+    namespace DeleteTranslation {
+        export interface BodyParameters {
+            DeleteInput?: Parameters.DeleteInput;
+        }
+        namespace Parameters {
+            export type DeleteInput = ApiDef.DeleteInput;
+            export type Id = string;
+        }
+        export interface PathParameters {
+            id: Parameters.Id;
+        }
+    }
     namespace GetExport {
         namespace Parameters {
             /**
@@ -1004,6 +1027,14 @@ declare namespace ApiPaths {
         }
         namespace Parameters {
             export type UpdateProject = ApiDef.UpdateProjectInput;
+        }
+    }
+    namespace UpdateTranslation {
+        export interface BodyParameters {
+            TranslationUpdateInput: Parameters.TranslationUpdateInput;
+        }
+        namespace Parameters {
+            export type TranslationUpdateInput = ApiDef.UpdateTranslationInput;
         }
     }
     namespace UpdateTranslationValue {

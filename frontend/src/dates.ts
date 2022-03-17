@@ -2,11 +2,10 @@ import { deserializeDate } from './apiFetcher'
 import format from 'date-fns/format'
 import isToday from 'date-fns/isToday'
 import formatDistanceToNow from 'date-fns/formatDistanceToNow'
-import nb from 'date-fns/locale/nb'
 
 function getLocale() {
   // TODO: detect users preferred language / settting etc.
-  return nb
+  return undefined
 }
 type DateType = Date | string | undefined | null
 

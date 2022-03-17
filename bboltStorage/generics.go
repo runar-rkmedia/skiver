@@ -153,7 +153,7 @@ func Update[T Identifyable](bb *BBolter, bucket []byte, id string, merge func(t 
 	if err != nil {
 		return t, err
 	}
-	bb.PublishChange(PubType(t.Kind()), PubVerbCreate, t)
+	bb.PublishChange(PubType(t.Kind()), PubVerbUpdate, t)
 	return t, err
 }
 

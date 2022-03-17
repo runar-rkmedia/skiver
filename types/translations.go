@@ -52,6 +52,12 @@ func (e TranslationValue) Namespace() string {
 func (e TranslationValue) Kind() string {
 	return string(PubTypeTranslationValue)
 }
+func (e Translation) Namespace() string {
+	return e.Kind()
+}
+func (e Translation) Kind() string {
+	return string(PubTypeTranslation)
+}
 func (e Locale) Namespace() string {
 	return e.Kind()
 }

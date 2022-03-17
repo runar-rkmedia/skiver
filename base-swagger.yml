@@ -1,4 +1,3 @@
-b/asePath: /api
 consumes:
 - application/json
 - text/vnd.yaml
@@ -223,6 +222,18 @@ definitions:
     type: object
     required:
       - id
+  DeleteInput:
+    type: object
+    properties:
+      undelete:
+        type: boolean
+        description: If set, will bring the item back from the deletion-queue.
+      expiryDate:
+        type: string
+        format: date-time
+        x-nullable: true
+        description: >
+          Time of which the item at the earliest can be permanently deleted.
   UpdateTranslationInput:
     type: object
     properties:
@@ -658,6 +669,44 @@ paths:
           $ref: '#/responses/apiError'
       tags:
       - translation
+    put:
+      summary: Update a  translation
+      operationId: updateTranslation
+      parameters:
+      - in: body
+        required: true
+        name: TranslationUpdateInput
+        schema:
+          $ref: '#/definitions/UpdateTranslationInput'
+      responses:
+        "200":
+          $ref: '#/responses/TranslationResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - translation
+  /translation/{id}:
+    delete:
+      parameters:
+        - in: path
+          name: id
+          type: string
+          required: true
+        - in: body
+          required: false
+          name: DeleteInput
+          schema:
+            $ref: '#/definitions/DeleteInput'
+      summary: "Delete translation"
+      operationId: deleteTranslation
+      responses:
+        "200":
+          $ref: '#/responses/TranslationsResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - translation
+
   /translationValue/:
     get:
       summary: List translation-values

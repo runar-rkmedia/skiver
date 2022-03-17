@@ -179,6 +179,18 @@ definitions:
   CreatorSource:
     type: string
     x-go-package: github.com/runar-rkmedia/skiver/types
+  DeleteInput:
+    properties:
+      expiryDate:
+        description: |
+          Time of which the item at the earliest can be permanently deleted.
+        format: date-time
+        type: string
+        x-nullable: true
+      undelete:
+        description: If set, will bring the item back from the deletion-queue.
+        type: boolean
+    type: object
   Entity:
     properties:
       created_at:
@@ -1675,6 +1687,42 @@ paths:
         "500":
           $ref: '#/responses/apiError'
       summary: Create a new translation
+      tags:
+      - translation
+    put:
+      operationId: updateTranslation
+      parameters:
+      - in: body
+        name: TranslationUpdateInput
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateTranslationInput'
+      responses:
+        "200":
+          $ref: '#/responses/TranslationResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Update a  translation
+      tags:
+      - translation
+  /translation/{id}:
+    delete:
+      operationId: deleteTranslation
+      parameters:
+      - in: path
+        name: id
+        required: true
+        type: string
+      - in: body
+        name: DeleteInput
+        schema:
+          $ref: '#/definitions/DeleteInput'
+      responses:
+        "200":
+          $ref: '#/responses/TranslationsResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Delete translation
       tags:
       - translation
   /translationValue/:

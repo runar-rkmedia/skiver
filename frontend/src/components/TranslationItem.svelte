@@ -34,12 +34,16 @@
     }, new Set<string>())
   )
   let edit = false
+  let showDelete = false
   let editTitle = ''
   let editDescription = ''
   let editVariables = ''
   let editError = ''
   let addContext = false
-  let contextKey = ''
+  function confirmDelete() {
+    showDelete = true
+    edit = false
+  }
   function toggleEdit() {
     edit = !edit
     if (!editTitle) {
@@ -74,6 +78,37 @@
 </script>
 
 {#if translation}
+  {#if showDelete}
+    <form>
+      <ApiResponseError key="translation" />
+      <Alert kind="warning">
+        <h3 slot="title">Are you sure you want to delete this translation?</h3>
+        <p>The translation can be restored at a later time</p>
+        <p>Deleted translations are not visible, and will not be exported</p>
+        <p>
+          Snapshots created before the deletion will still include the
+          translation. New snapshots will not include it
+        </p>
+        <Button
+          on:click={() =>
+            api.translation
+              .delete(translation.id, {
+                undelete: false,
+              })
+              .then(([_, err]) => {
+                if (!err) {
+                  showDelete = false
+                }
+              })}
+          color="danger">Yes, I am sure</Button>
+        <Button
+          color="secondary"
+          on:click={() => {
+            showDelete = false
+          }}>No, not at this time</Button>
+      </Alert>
+    </form>
+  {/if}
   {#if edit}
     <form>
       <ApiResponseError key="translation" />
@@ -96,10 +131,25 @@
           rows={8}
           bind:value={editVariables}
           type="text" /></label>
-      <Button color="primary" icon="submit" on:click={submitEdit}
-        >Submit</Button>
-      <Button color="secondary" icon="cancel" on:click={toggleEdit}
-        >Cancel</Button>
+      <div class="buttonRow">
+        <Button color="primary" icon="submit" on:click={submitEdit}
+          >Submit</Button>
+        <Button color="secondary" icon="cancel" on:click={toggleEdit}
+          >Cancel</Button>
+        <div class="deleteButton">
+          {#if translation.deleted}
+            <Button
+              color="primary"
+              icon="delete"
+              on:click={() =>
+                api.translation.delete(translation.id, { undelete: true })}
+              >Undelete</Button>
+          {:else}
+            <Button color="danger" icon="delete" on:click={confirmDelete}
+              >Delete</Button>
+          {/if}
+        </div>
+      </div>
     </form>
   {:else}
     <div class="desc">
@@ -165,7 +215,7 @@
         on:complete={() => (addContext = false)}
         on:abort={() => (addContext = false)} />
     </paper>
-  {:else}{/if}
+  {/if}
   {#each contextKeys as contextKey}
     <h6>
       {contextKey}
@@ -217,5 +267,11 @@
   code {
     white-space: pre;
     display: inline-block;
+  }
+  .buttonRow {
+    display: flex;
+  }
+  .deleteButton {
+    align-self: flex-end;
   }
 </style>

@@ -41,10 +41,12 @@
   export let selectedTranslation: string
   export let selectedCategory: string
   export let visibleForm: string
+  let showDeleted = true
   // export let forceExpand = false
   $: translations = (category.translation_ids || [])
     .map((tid) => $db.translation[tid])
-    .filter(Boolean)
+    // .filter(Boolean)
+    .filter((t) => !!t && (!t.deleted || showDeleted))
 
   // export let expandedCategory: string | boolean
   $: categoryPath = (category.key || '').split('.')
@@ -130,7 +132,7 @@
       {/if}
       <div class="translations" key="={category.id}">
         {#each sortOn(translations, ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn) as translation}
-          <paper class="translation-item">
+          <paper class="translation-item" class:deleted={!!translation.deleted}>
             <TranslationItem
               {translation}
               {projectKey}
@@ -170,6 +172,15 @@
   }
   .box {
     overflow-x: hidden;
+  }
+  .deleted {
+    background-image: repeating-linear-gradient(
+      45deg,
+      var(--color-grey-100),
+      var(--color-grey-100) 30px,
+      var(--color-grey-300) 30px,
+      var(--color-grey-300) 60px
+    );
   }
   .desc {
     position: sticky;

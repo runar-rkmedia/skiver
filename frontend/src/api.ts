@@ -619,12 +619,13 @@ function apiDeleteFactory<K extends DBKeyValue>(subPath: string, storeKey: K) {
   if (!subPath) {
     subPath = storeKey
   }
-  return (id: string, options?: ApiFetchOptions) =>
+  return (id: string, body: ApiDef.DeleteInput, options?: ApiFetchOptions) =>
     fetchApi<DB[K]['s']>(
       subPath + '/' + id,
       (e) => e.id && replaceField(storeKey, e, e.id, 'soft-delete'),
       {
         method: methods.DELETE,
+        body,
         ...options,
       }
     ).then((r) => {
