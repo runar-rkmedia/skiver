@@ -29,30 +29,22 @@ const (
 )
 
 func addi18nnode(c types.ExtendedCategory, localeID string) (I18N, error) {
-	node := I18N{}
-	// if len(c.SubCategories) > 0 {
-	// 	for _, sc := range c.SubCategories {
-	// 		if !sc.HasTranslationForLocaleDeep(localeID) {
-	// 			continue
-	// 		}
-	// 		nn, err := addi18nnode(sc, localeID)
-	// 		if err != nil {
-	// 			return node, err
-	// 		}
-	// 		if node.Nodes == nil {
-	// 			node.Nodes = make(map[string]I18N)
-	// 		}
-	// 		node.Nodes[sc.Key] = nn
-	// 	}
-	// }
+	node := I18N{
+		Nodes: make(map[string]I18N),
+	}
 	if c.HasTranslationForLocale(localeID) {
+	outer:
 		for _, t := range c.Translations {
+			if t.Deleted != nil {
+				continue outer
+			}
+		inner:
 			for _, tv := range t.Values {
-				if tv.LocaleID != localeID {
-					continue
+				if tv.Deleted != nil {
+					continue inner
 				}
-				if node.Nodes == nil {
-					node.Nodes = make(map[string]I18N)
+				if tv.LocaleID != localeID {
+					continue inner
 				}
 				in := I18N{Value: tv.Value}
 				node.Nodes[t.Key] = in
@@ -105,6 +97,9 @@ func ExportI18N(ex types.ExtendedProject, options ExportI18NOptions) (node I18N,
 		catKeys := utils.SortedMapKeys(l.Categories)
 		for _, k := range catKeys {
 			cat := l.Categories[k]
+			// if cat.Deleted != nil {
+			// 	continue
+			// }
 			// if !cat.HasTranslationForLocaleDeep(l.ID) {
 			// 	continue
 			// }

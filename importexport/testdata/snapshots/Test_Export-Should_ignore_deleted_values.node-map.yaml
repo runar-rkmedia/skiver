@@ -1,0 +1,10 @@
+en:
+  General:
+    Forms:
+      Buttons:
+        GoToCheckout: Go to checkout ({{count}})
+nb:
+  General:
+    Forms:
+      Buttons:
+        GoToCheckout: Gå til utsjekk ({{count}})
