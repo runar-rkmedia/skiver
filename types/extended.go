@@ -47,6 +47,9 @@ func (t Translation) Extend(db Storage, options ...ExtendOptions) (et ExtendedTr
 		if t == nil {
 			continue
 		}
+		if !opts.IncludeDeleted && t.Deleted != nil {
+			continue
+		}
 		key := tid
 		if opts.ByKeyLike {
 			key = t.LocaleID
@@ -80,6 +83,9 @@ func (c Category) Extend(db Storage, options ...ExtendOptions) (ec ExtendedCateg
 		if t == nil {
 			continue
 		}
+		if !opts.IncludeDeleted && t.Deleted != nil {
+			continue
+		}
 		et, err := t.Extend(db, opts)
 		if err != nil {
 			return ec, err
@@ -98,6 +104,7 @@ type ExtendOptions struct {
 	LocaleFilter     []string
 	LocaleFilterFunc func(locale Locale) bool
 	ErrOnNoLocales   bool
+	IncludeDeleted   bool
 }
 
 func (o ExtendOptions) Validate() error {
@@ -169,6 +176,9 @@ func (p Project) Extend(db Storage, options ...ExtendOptions) (ep ExtendedProjec
 		if cat == nil {
 			continue
 		}
+		if !opts.IncludeDeleted && cat.Deleted != nil {
+			continue
+		}
 		ec, err := cat.Extend(db, opts)
 		if err != nil {
 			return ep, err
@@ -180,8 +190,6 @@ func (p Project) Extend(db Storage, options ...ExtendOptions) (ep ExtendedProjec
 		ep.Categories[key] = ec
 	}
 	ep.CategoryTree = CreateCategoryTreeNode(ep.Categories)
-	fmt.Println("cattree", ep.CategoryTree.Categories[""].ID)
-	fmt.Println("cat", ep.Categories[""].ID)
 	return
 }
 
