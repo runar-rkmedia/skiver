@@ -1,15 +1,21 @@
 <script lang="ts">
   import { db } from 'api'
   import Button from 'components/Button.svelte'
+  import Collapse from 'components/Collapse.svelte'
   import EntityDetails from 'components/EntityDetails.svelte'
   import Spinner from 'components/Spinner.svelte'
+  import TagDiff from 'components/TagDiff.svelte'
   import Tip from 'components/Tip.svelte'
   import ProjectForm from 'forms/ProjectForm.svelte'
   import ProjectSnapshotForm from 'forms/ProjectSnapshotForm.svelte'
   import sortOn from 'sort-on'
   import { apiUrl } from 'util/appConstants'
   export let projectID: string
+  let extendedDiff = false
   $: project = $db.project[projectID]
+  $: tags =
+    !!project &&
+    sortOn(Object.entries(project.snapshots || {}), '-1.created_at')
   let showCreateSnapshotForm = false
 </script>
 
@@ -55,17 +61,50 @@
           color="primary"
           icon="create"
           on:click={() => (showCreateSnapshotForm = true)}>New snapshot</Button>
+        {#if tags.length}
+          <label>
+            <input type="checkbox" bind:checked={extendedDiff} />
+            Show Extended diff
+          </label>
+        {/if}
       {:else}
         <ProjectSnapshotForm {projectID} />
       {/if}
     </div>
-    {#each sortOn(Object.entries(project.snapshots || {}), '-1.created_at') as [tag, snapshot]}
-      <paper>
-        <h4>{tag}</h4>
-        <a href={apiUrl(`/export/p=${projectID}&f=i18n&t=${tag}&l=nb`)}>
+    <paper>
+      <div class="tagHeader">
+        <h4>Latest unreleased</h4>
+        <a target={projectID} href={apiUrl(`/export/p=${projectID}&f=i18n`)}>
           i18n
         </a>
+      </div>
+      The latest changes to the project, always available
+      {#if tags.length}
+        <TagDiff
+          tagA={tags[0][0]}
+          tagB={''}
+          {projectID}
+          format={extendedDiff ? 'raw' : 'i18n'} />
+      {/if}
+    </paper>
+    {#each tags as [tag, snapshot], i}
+      <paper>
+        <div class="tagHeader">
+          <h4>{tag}</h4>
+          <a
+            target={projectID + tag}
+            href={apiUrl(`/export/p=${projectID}&f=i18n&t=${tag}`)}>
+            i18n
+          </a>
+        </div>
         {snapshot.description}
+        {#if tags[i + 1]}
+          <TagDiff
+            tagA={tags[i + 1][0]}
+            tagB={tag}
+            {projectID}
+            format={extendedDiff ? 'raw' : 'i18n'} />
+        {/if}
         <EntityDetails entity={snapshot} />
       </paper>
     {:else}
@@ -85,5 +124,11 @@
   }
   li code {
     margin: 0;
+  }
+  .tagHeader {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
 </style>

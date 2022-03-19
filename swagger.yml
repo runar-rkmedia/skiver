@@ -157,6 +157,31 @@ definitions:
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
+  Change:
+    description: Change stores information about a changed item
+    properties:
+      from:
+        type: object
+        x-go-name: From
+      path:
+        items:
+          type: string
+        type: array
+        x-go-name: Path
+      to:
+        type: object
+        x-go-name: To
+      type:
+        type: string
+        x-go-name: Type
+    type: object
+    x-go-package: github.com/r3labs/diff/v2
+  Changelog:
+    description: Changelog stores a list of changed items
+    items:
+      $ref: '#/definitions/Change'
+    type: array
+    x-go-package: github.com/r3labs/diff/v2
   CreateSnapshotInput:
     properties:
       description:
@@ -190,6 +215,32 @@ definitions:
       undelete:
         description: If set, will bring the item back from the deletion-queue.
         type: boolean
+    type: object
+  DiffResponse:
+    properties:
+      a:
+        $ref: '#/definitions/itemStats'
+      b:
+        $ref: '#/definitions/itemStats'
+      diff:
+        $ref: '#/definitions/Changelog'
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/handlers
+  DiffSnapshotInput:
+    properties:
+      a:
+        $ref: '#/definitions/snapshotSelector'
+      b:
+        $ref: '#/definitions/snapshotSelector'
+      format:
+        enum:
+        - raw
+        - i18n
+        - typescript
+        type: string
+    required:
+    - a
+    - b
     type: object
   Entity:
     properties:
@@ -1276,6 +1327,40 @@ definitions:
     required:
     - id
     type: object
+  itemStats:
+    properties:
+      hash:
+        type: string
+        x-go-name: Hash
+      identi_hash:
+        items:
+          format: uint8
+          type: integer
+        type: array
+        x-go-name: IdentiHash
+      project_id:
+        type: string
+        x-go-name: ProjectID
+      size:
+        format: uint64
+        type: integer
+        x-go-name: Size
+      tag:
+        type: string
+        x-go-name: Tag
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/handlers
+  snapshotSelector:
+    properties:
+      project_id:
+        maxLength: 36
+        type: string
+      tag:
+        maxLength: 36
+        type: string
+    required:
+    - project_id
+    type: object
 host: localhost:8756
 info:
   description: |
@@ -1334,9 +1419,12 @@ paths:
           The output is formatted to be i18n-compliant.
           ### `raw`
           The output is not converted, and all data is outputted.
+          ### `typescript`
+          Outputs a typescript-object-map of translation-keys for use with translation-libraries. Information is inclued in the TSDOC for each key.
           The short-alias for this parameter is: `f`
         enum:
         - raw
+        - typescript
         - i18n
         in: query
         name: format
@@ -1651,6 +1739,27 @@ paths:
       tags:
       - project
       - i18n
+  /project/snapshotdiff/:
+    post:
+      operationId: diffSnapshots
+      parameters:
+      - in: body
+        name: SnapshotInput
+        schema:
+          $ref: '#/definitions/DiffSnapshotInput'
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: '#/responses/DiffResponse'
+        "400":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Returns a diff of two snapshots
+      tags:
+      - project
+      - i18n
   /serverInfo/:
     get:
       operationId: getServerInfo
@@ -1768,6 +1877,10 @@ responses:
     schema:
       $ref: '#/definitions/Category'
       type: object
+  DiffResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/DiffResponse'
   JoinResponse:
     description: ""
     schema:

@@ -14,7 +14,7 @@ type Project struct {
 	IncludedTags []string                       `json:"included_tags,omitempty"`
 	CategoryIDs  []string                       `json:"category_ids,omitempty"`
 	LocaleIDs    map[string]LocaleSetting       `json:"locales,omitempty"`
-	Snapshots    map[string]ProjectSnapshotMeta `json:"snapshots,omitempty"`
+	Snapshots    map[string]ProjectSnapshotMeta `json:"snapshots,omitempty" diff:"-"`
 }
 
 type ProjectSnapshotMeta struct {

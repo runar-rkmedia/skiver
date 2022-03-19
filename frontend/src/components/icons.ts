@@ -29,6 +29,7 @@ export const iconMap = {
   loading: 'fad fa-spinner fa-spin',
   arrowDown: 'fas fa-arrow-down',
   openModal: 'fas fa-arrow-circle-up',
+  longArrowRight: 'fas fa-long-arrow-alt-right'
 } as const
 
 export type Icon = keyof typeof iconMap

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/runar-rkmedia/skiver/importexport"
@@ -110,7 +109,6 @@ func ImportIntoProject(db types.Storage, kind string, createdBy string, project 
 	base.ID = project.ID
 	base.CreatedBy = createdBy
 	base.OrganizationID = project.OrganizationID
-	fmt.Println("locale", locale)
 	imp, warnings, err := importexport.ImportI18NTranslation(localesSlice, locale, base, types.CreatorSourceImport, input)
 	if err != nil {
 		return nil, NewError("failed to import", requestContext.CodeErrImport).AddError(err)

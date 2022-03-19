@@ -85,6 +85,23 @@ declare namespace ApiDef {
          */
         updated_by?: string;
     }
+    /**
+     * Change stores information about a changed item
+     */
+    export interface Change {
+        from?: {
+            [key: string]: any;
+        };
+        path?: string[];
+        to?: {
+            [key: string]: any;
+        };
+        type?: string;
+    }
+    /**
+     * Changelog stores a list of changed items
+     */
+    export type Changelog = /* Change stores information about a changed item */ Change[];
     export interface CreateSnapshotInput {
         description?: string;
         project_id: string;
@@ -101,6 +118,16 @@ declare namespace ApiDef {
          * If set, will bring the item back from the deletion-queue.
          */
         undelete?: boolean;
+    }
+    export interface DiffResponse {
+        a?: ItemStats;
+        b?: ItemStats;
+        diff?: /* Changelog stores a list of changed items */ Changelog;
+    }
+    export interface DiffSnapshotInput {
+        a: SnapshotSelector;
+        b: SnapshotSelector;
+        format?: "raw" | "i18n" | "typescript";
     }
     export interface Entity {
         /**
@@ -266,6 +293,13 @@ declare namespace ApiDef {
     }
     export interface ImportInput {
         [name: string]: any;
+    }
+    export interface ItemStats {
+        hash?: string;
+        identi_hash?: number /* uint8 */[];
+        project_id?: string;
+        size?: number; // uint64
+        tag?: string;
     }
     export interface JoinInput {
         password: string;
@@ -621,6 +655,10 @@ declare namespace ApiDef {
          */
         version?: string;
     }
+    export interface SnapshotSelector {
+        project_id: string;
+        tag?: string;
+    }
     export interface Translation {
         aliases?: string[];
         category?: string;
@@ -795,6 +833,17 @@ declare namespace ApiPaths {
             id: Parameters.Id;
         }
     }
+    namespace DiffSnapshots {
+        export interface BodyParameters {
+            SnapshotInput?: Parameters.SnapshotInput;
+        }
+        namespace Parameters {
+            export type SnapshotInput = ApiDef.DiffSnapshotInput;
+        }
+        namespace Responses {
+            export type $200 = ApiResponses.DiffResponse;
+        }
+    }
     namespace GetExport {
         namespace Parameters {
             /**
@@ -803,10 +852,12 @@ declare namespace ApiPaths {
              * The output is formatted to be i18n-compliant.
              * ### `raw`
              * The output is not converted, and all data is outputted.
+             * ### `typescript`
+             * Outputs a typescript-object-map of translation-keys for use with translation-libraries. Information is inclued in the TSDOC for each key.
              * The short-alias for this parameter is: `f`
              *
              */
-            export type Format = "raw" | "i18n";
+            export type Format = "raw" | "typescript" | "i18n";
             /**
              * The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
              * By leaving out the parameters, all locales will be returned.
@@ -847,6 +898,8 @@ declare namespace ApiPaths {
              * The output is formatted to be i18n-compliant.
              * ### `raw`
              * The output is not converted, and all data is outputted.
+             * ### `typescript`
+             * Outputs a typescript-object-map of translation-keys for use with translation-libraries. Information is inclued in the TSDOC for each key.
              * The short-alias for this parameter is: `f`
              *
              */
@@ -1050,6 +1103,7 @@ declare namespace ApiResponses {
     export type ApiError = ApiDef.APIError;
     export type CategoriesResponse = ApiDef.Category[];
     export type CategoryResponse = ApiDef.Category;
+    export type DiffResponse = ApiDef.DiffResponse;
     export type JoinResponse = ApiDef.LoginResponse;
     export type LocaleResponse = /**
      * # See https://en.wikipedia.org/wiki/Language_code for more information
