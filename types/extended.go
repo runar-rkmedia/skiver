@@ -8,7 +8,7 @@ import (
 type ExtendedProject struct {
 	Project      `json:"project"`
 	Exists       *bool                       `json:"exists,omitempty"`
-	Categories   map[string]ExtendedCategory `json:"categories"`
+	Categories   map[string]ExtendedCategory `json:"categories" diff:"-"`
 	CategoryTree CategoryTreeNode            `json:"category_tree"`
 	Locales      map[string]Locale           `json:"locales"`
 }

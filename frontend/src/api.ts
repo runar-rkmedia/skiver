@@ -31,6 +31,11 @@ export type DB = {
 
 
 export const api = {
+  diff: (body: ApiDef.DiffSnapshotInput) => {
+    // Api does not require the question-mark, as it busts the cache
+    console.log("diffing", body)
+    return fetchApi<ApiDef.DiffResponse>('project/snapshotdiff/', () => { }, { method: 'POST', body })
+  },
   join: {
     get: (id: string) => fetchApi<ApiDef.Organization>('join/' + id, () => null, { method: 'GET' }),
     post: (id: string, payload: ApiDef.JoinInput) => fetchApi<ApiDef.LoginResponse>('join/' + id, () => null, { method: 'POST', body: payload }),

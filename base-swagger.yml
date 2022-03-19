@@ -29,6 +29,33 @@ definitions:
         maxLength: 36
         minLength: 3
         pattern: ^[a-zA-Z0-9-_.]{3,36}$
+  snapshotSelector:
+    type: object
+    required:
+      - project_id
+    properties:
+      project_id:
+        type: string
+        maxLength: 36
+      tag:
+        type: string
+        maxLength: 36
+  DiffSnapshotInput:
+    type: object
+    required:
+      - a
+      - b
+    properties:
+      format:
+        type: string
+        enum:
+          - raw
+          - i18n
+          - typescript
+      a:
+        $ref: '#/definitions/snapshotSelector'
+      b:
+        $ref: '#/definitions/snapshotSelector'
   LocaleSettingInput:
     properties:
       auto_translation:
@@ -327,6 +354,26 @@ info:
   title: Skiver API.
   version: 0.0.1
 paths:
+  /project/snapshotdiff/:
+    post:
+      tags:
+        - project
+        - i18n
+      summary: Returns a diff of two snapshots
+      operationId: diffSnapshots
+      parameters:
+        - in: body
+          name: SnapshotInput
+          schema:
+            $ref: '#/definitions/DiffSnapshotInput'
+      responses:
+        "200":
+          schema:
+            $ref: '#/responses/DiffResponse'
+        "400":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
   /project/snapshot:
     post:
       tags:
@@ -451,6 +498,7 @@ paths:
           type: string
           enum:
             - raw
+            - typescript
             - i18n
           description: >
             Used to set the export-format.
@@ -462,6 +510,11 @@ paths:
             ### `raw`
 
             The output is not converted, and all data is outputted.
+            
+            ### `typescript`
+
+            Outputs a typescript-object-map of translation-keys for use with translation-libraries.
+            Information is inclued in the TSDOC for each key.
 
             The short-alias for this parameter is: `f`
         - in: query

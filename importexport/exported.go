@@ -168,7 +168,7 @@ func I18NNodeToI18Next(in I18N) (map[string]interface{}, error) {
 	if mm, ok := m.(map[string]interface{}); ok {
 		return mm, nil
 	}
-	return nil, fmt.Errorf("Expected rootrode, but received: %#v", m)
+	return nil, fmt.Errorf("Expected rootnode, but received: %#v %#v", m, in)
 }
 
 func (in I18N) ToMap() interface{} {

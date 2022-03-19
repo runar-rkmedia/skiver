@@ -44,7 +44,7 @@
     {/if}
   </button>
   {#if show || forceShow}
-    <slot show={$state.collapse[key]} />
+    <slot show={true} />
   {/if}
 </div>
 
@@ -54,6 +54,7 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    padding-inline: 0;
   }
 
   .icon {

@@ -26,7 +26,7 @@
 
 <style>
   i {
-    min-width: 1em;
+    min-width: 1.2em;
     display: inline-block;
   }
 </style>

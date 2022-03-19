@@ -25,7 +25,7 @@ var (
 type Cache interface {
 	// Get
 	Get(k string) (interface{}, bool)
-	// Set(k string, x interface{}, d time.Duration)
+	Set(k string, x interface{}, d time.Duration)
 	SetDefault(k string, x interface{})
 }
 type SessionManager interface {
@@ -454,11 +454,6 @@ func EndpointsHandler(
 			return
 		}
 		orgId := session.Organization.ID
-		rc.L.Debug().
-			Str("path", path).
-			Str("username", session.User.UserName).
-			Str("orgId", orgId).
-			Msg("User is perorming action on route")
 
 		switch paths[0] {
 		case "import":

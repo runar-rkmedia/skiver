@@ -496,14 +496,24 @@ func main() {
 				ctx = context.WithValue(ctx, httprouter.ParamsKey, p)
 				r = r.WithContext(ctx)
 			}
-			paramsa := httprouter.ParamsFromContext(r.Context())
-			fmt.Println("\n\nhandling", r.Method, r.URL.Path, p, paramsa)
 
 			handlers.AddAccessControl(r, rw)
 			// This turned out a bit hacky, but it leaves a nicer pattern for route-handlers
 			// since they don't need to care about auth, logging, or writing
 			// TODO: change the details here
-			l.Debug().Str("Path", r.URL.Path).Str("method", r.Method).Str("handler", name).Msg("Incoming request")
+			if l.HasDebug() {
+				l.Debug().Str("Path", r.URL.Path).Str("method", r.Method).Str("handler", name).Interface("params", p).Msg("Incoming request")
+				defer func() {
+					h := rw.Header().Clone()
+					for k := range h {
+						l := strings.ToLower(k)
+						if strings.Contains(l, "cookie") || strings.Contains(l, "auth") {
+							h.Del(k)
+						}
+					}
+					l.Debug().Str("Path", r.URL.Path).Str("method", r.Method).Str("handler", name).Interface("outgoing-headers", h).Msg("Outgoing response")
+				}()
+			}
 			rc := ctx.NewReqContext(rw, r)
 			_r, err := auth(rw, r)
 			if err != nil {
@@ -546,6 +556,7 @@ func main() {
 	// We are migrating to using httprouter, but not all routes have been migrated
 	router.GET("/api/export/:params", c("GetExport", handlers.GetExport(exportCache)))
 	router.GET("/api/export/", c("GetExport", handlers.GetExport(exportCache)))
+	router.POST("/api/project/snapshotdiff/", c("DiffSnapshot", handlers.GetDiff(exportCache)))
 	router.DELETE("/api/translation/:id/", c("DeleteTranslation", handlers.DeleteTranslation(),
 		routeOptions{sessionRole: func(s types.Session, r *http.Request) error {
 			if !s.User.CanUpdateTranslations {
@@ -592,6 +603,7 @@ func main() {
 	// 	)
 	)
 	handler.Handle("/api/project/snapshot/", router)
+	handler.Handle("/api/project/snapshotdiff/", router)
 	handler.Handle("/api/export/", router)
 	handler.Handle("/api/translation/", router)
 	useCert := false
@@ -615,7 +627,6 @@ func main() {
 				select {
 				case _, ok := <-w.Events:
 					if !ok {
-						fmt.Println("not ok")
 						continue
 					}
 					events.Publish("dist", "change", nil)
