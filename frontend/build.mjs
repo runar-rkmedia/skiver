@@ -169,6 +169,9 @@ async function run() {
               if (Array.isArray(v) && !v.length) {
                 return r
               }
+              if (k === 'metafile') {
+                return r
+              }
               r[k] = v
               return r
             }, {})

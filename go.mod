@@ -20,6 +20,7 @@ require (
 	github.com/r3labs/diff/v2 v2.15.0
 	github.com/runar-rkmedia/go-common v0.0.4
 	github.com/schollz/mnemonicode v1.0.1
+	github.com/zserge/metric v0.1.0
 )
 
 require (

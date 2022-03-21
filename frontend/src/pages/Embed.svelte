@@ -5,6 +5,7 @@
   import Spinner from 'components/Spinner.svelte'
 
   import TranslationItem from 'components/TranslationItem.svelte'
+  import UserButton from 'components/UserButton.svelte'
   import CategoryForm from 'forms/CategoryForm.svelte'
   import TranslationForm from 'forms/TranslationForm.svelte'
   import { state } from 'state'
@@ -46,10 +47,9 @@
   $: maxLoadingCount = Object.keys($db.responseStates).length
 </script>
 
-{#if $db.login.ok && noHeader}
+{#if !noHeader}
   <div class="user-welcome">
-    Welcome, {$db.login.username}
-    <Button color="tertiary" on:click={api.logout}>Logout</Button>
+    <UserButton />
   </div>
 {/if}
 <Spinner active={loadingCount > 0} />
@@ -65,37 +65,49 @@
     {#if category}
       <!-- Has Category -->
       {#if !noHeader}
-          <h2>{category.title} <small><code>{category.key}</code></small></h2>
-          {#if category.description}
-            <p>{category.description}</p>
-          {/if}
+        <h2>{category.title} <small><code>{category.key}</code></small></h2>
+        {#if category.description}
+          <p>{category.description}</p>
+        {/if}
       {/if}
       {#if translation}
         <!-- Has translation -->
         <paper>
           {#if $$slots.categoryHeader}
-          <TranslationItem
-            {locales}
-            {translation}
-            categoryKey={category.key || ''}
-            {projectKey} >
-              <slot slot="categoryHeader" let:translation name="categoryHeader" {category} {translation}/>
-    </TranslationItem>
-    {:else}
-          <TranslationItem
-            {locales}
-            {translation}
-            categoryKey={category.key || ''}
-            {projectKey} />
-    {/if}
+            <TranslationItem
+              {locales}
+              {translation}
+              categoryKey={category.key || ''}
+              {projectKey}>
+              <slot
+                slot="categoryHeader"
+                let:translation
+                name="categoryHeader"
+                {category}
+                {translation} />
+            </TranslationItem>
+          {:else}
+            <TranslationItem
+              {locales}
+              {translation}
+              categoryKey={category.key || ''}
+              {projectKey} />
+          {/if}
         </paper>
         <!-- End has translation -->
       {:else}
         <!-- No Translation -->
         <p>
-          The translation <code>{translationKeyLike}</code> in category
-          <code>{category.key}</code>
-          was not found.
+          {#if translationKeyLike}
+            The translation
+            <code>{translationKeyLike}</code>
+            in category
+            <code>{category.key}</code>
+            was not found.
+          {:else}
+            No translation-key specified for category
+            <code>{category.key}</code>
+          {/if}
 
           {#if category.translation_ids?.length}
             Perhaps you meant one of these?

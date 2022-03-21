@@ -41,7 +41,7 @@ func EndpointsHandler(
 	ctx requestContext.Context,
 	userSessions SessionManager,
 	pw localuser.PwHasher,
-	serverInfo types.ServerInfo,
+	serverInfo func() *types.ServerInfo,
 	swaggerYml []byte,
 ) http.HandlerFunc {
 
@@ -196,14 +196,14 @@ func EndpointsHandler(
 		case "serverInfo":
 			if isGet && len(paths) == 1 {
 				size, sizeErr := ctx.DB.Size()
+				info := serverInfo()
 				if sizeErr != nil {
 					ctx.L.Warn().Err(sizeErr).Msg("Failed to retrieve size of database")
 				} else {
-					serverInfo.DatabaseSize = size
-					serverInfo.DatabaseSizeStr = humanize.Bytes(uint64(size))
+					info.DatabaseSize = size
+					info.DatabaseSizeStr = humanize.Bytes(uint64(size))
 				}
-
-				rc.WriteAuto(serverInfo, err, "serverInfo")
+				rc.WriteAuto(info, err, "serverInfo")
 				return
 			}
 		case "join":

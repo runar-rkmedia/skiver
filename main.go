@@ -10,16 +10,21 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
+	"encoding/json"
 	"expvar"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -42,6 +47,7 @@ import (
 	"github.com/runar-rkmedia/skiver/translator"
 	"github.com/runar-rkmedia/skiver/types"
 	"github.com/runar-rkmedia/skiver/utils"
+	"github.com/zserge/metric"
 )
 
 // TODO: update to use debug.BuildInfo or see https://github.com/carlmjohnson/versioninfo/
@@ -292,6 +298,33 @@ func (m *translationHook) Publish(kind, variant string, contents interface{}) {
 
 }
 
+func getInstanceHash() string {
+	rand.Seed(time.Now().Unix())
+	n := rand.Int63n(1_000_000)
+	buf := new(bytes.Buffer)
+	err := binary.Write(buf, binary.LittleEndian, n)
+	if err != nil {
+		panic(err)
+	}
+	w := utils.HashName(buf.Bytes())
+
+	s := strings.Split(w, "-")
+	j := strings.Join(s[:2], "-")
+	fmt.Println("instance", n, j, w)
+	return j
+}
+func gethostNameHash() string {
+	h, err := os.Hostname()
+	if err != nil {
+		panic(err)
+	}
+	w := utils.HashName([]byte(h))
+	s := strings.Split(w, "-")
+	j := strings.Join(s[:2], "-")
+	fmt.Println("host", h, j)
+	return j
+}
+
 func main() {
 	err := cfg.InitConfig()
 	if err != nil {
@@ -420,6 +453,7 @@ func main() {
 	}, handler))
 	if cfg.Debug {
 		handler.Handle("/debug/vars/", expvar.Handler())
+		handler.Handle("/debug/metrics", metric.Handler(metric.Exposed))
 		handler.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 		handler.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
 		handler.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
@@ -449,12 +483,63 @@ func main() {
 	}()
 	handler.Handle("/api/ping", handlers.PingHandler(handler))
 
-	info := types.ServerInfo{
-		ServerStartedAt: serverStartTime,
-		GitHash:         commit,
-		Version:         version,
-		BuildDate:       buildDate,
+	info := struct {
+		types.ServerInfo
+		sync.RWMutex
+	}{
+		types.ServerInfo{
+			ServerStartedAt: serverStartTime,
+			GitHash:         commit,
+			Version:         version,
+			BuildDate:       buildDate,
+			Instance:        getInstanceHash(),
+			HostHash:        gethostNameHash(),
+		},
+		sync.RWMutex{},
 	}
+
+	go func() {
+		cacheFile := "./latest.cache.json"
+		if isDev {
+			stat, err := os.Stat(cacheFile)
+			if err == nil {
+				diff := time.Now().Sub(stat.ModTime())
+				if diff < time.Hour {
+
+					b, err := os.ReadFile(cacheFile)
+					if err == nil && b != nil {
+						err := json.Unmarshal(b, &info.LatestRelease)
+						if err != nil {
+							l.Error().Err(err).Msg("Failed to unmarshal latest-release from cache")
+						} else {
+							return
+
+						}
+					} else {
+						l.Error().Err(err).Msg("Failed to read latest-release from cache")
+					}
+				}
+			}
+
+		}
+		ticker := time.NewTicker(time.Hour * 1)
+		for ; true; <-ticker.C {
+			r, err := types.GetLatestVersion(http.DefaultClient)
+			if err != nil {
+				l.Error().Err(err).Msg("Failed to check latest release-version")
+				continue
+			}
+			info.Lock()
+			info.LatestRelease = r
+			info.Unlock()
+			if isDev {
+				b, _ := json.Marshal(r)
+				if err := os.WriteFile(cacheFile, b, 0677); err != nil {
+					l.Error().Err(err).Msg("Failed to write release-cache")
+				}
+			}
+		}
+	}()
 	p, ok := ctx.DB.(localuser.Persistor)
 	if !ok {
 		ctx.L.Warn().Str("type", fmt.Sprintf("%T", ctx.DB)).Msg("DB does not implement the localUser.Persistor-interface")
@@ -486,11 +571,19 @@ func main() {
 	// This is still being fleshed out...
 	// Should use middleware-pattern
 	c := func(name string, h handlers.AppHandler, opts ...routeOptions) httprouter.Handle {
+		expvar.Publish("endpoint-"+name, metric.NewHistogram())
+		expvar.Publish("endpoint-count-"+name, metric.NewCounter())
 		var options routeOptions
 		if len(opts) > 0 {
 			options = opts[0]
 		}
 		return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			startTime := time.Now()
+			defer func() {
+				expvar.Get("endpoint-" + name).(metric.Metric).Add(float64(time.Since(startTime).Milliseconds()))
+				expvar.Get("endpoint-count-" + name).(metric.Metric).Add(1)
+			}()
+
 			if len(p) > 0 {
 				ctx := r.Context()
 				ctx = context.WithValue(ctx, httprouter.ParamsKey, p)
@@ -555,7 +648,9 @@ func main() {
 	}
 	// We are migrating to using httprouter, but not all routes have been migrated
 	router.GET("/api/export/:params", c("GetExport", handlers.GetExport(exportCache)))
-	router.GET("/api/export/", c("GetExport", handlers.GetExport(exportCache)))
+	router.GET("/api/export/", c("GetExportx", handlers.GetExport(exportCache)))
+	router.GET("/api/user/", c("GetSimpleUsers", handlers.ListUsers(&db, true)))
+	router.GET("/api/users/", c("GetUsers", handlers.ListUsers(&db, false)))
 	router.POST("/api/project/snapshotdiff/", c("DiffSnapshot", handlers.GetDiff(exportCache)))
 	router.DELETE("/api/translation/:id/", c("DeleteTranslation", handlers.DeleteTranslation(),
 		routeOptions{sessionRole: func(s types.Session, r *http.Request) error {
@@ -588,7 +683,11 @@ func main() {
 
 	apiHandler := http.StripPrefix("/api/",
 		handlers.EndpointsHandler(
-			ctx, userSessions, pw, info, []byte(swaggerYml),
+			ctx, userSessions, pw, func() *types.ServerInfo {
+				info.RLock()
+				defer info.RUnlock()
+				return &info.ServerInfo
+			}, []byte(swaggerYml),
 		),
 	)
 	if config.Gzip {
@@ -606,6 +705,9 @@ func main() {
 	handler.Handle("/api/project/snapshotdiff/", router)
 	handler.Handle("/api/export/", router)
 	handler.Handle("/api/translation/", router)
+	handler.Handle("/api/users/", router)
+	handler.Handle("/api/user/", router)
+	handler.Handle("/api/wordcloud/", router)
 	useCert := false
 	if cfg.CertFile != "" {
 		_, err := os.Stat(cfg.CertFile)

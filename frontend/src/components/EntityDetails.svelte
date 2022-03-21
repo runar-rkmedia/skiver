@@ -1,7 +1,11 @@
 <script lang="ts">
+  import { db } from 'api'
+
   import formatDate from 'dates'
 
   export let entity: Partial<ApiDef.Entity>
+  $: createdBy = entity.created_by && $db.simpleUser[entity.created_by]
+  $: updatedBy = entity.updated_by && $db.simpleUser[entity.updated_by]
 </script>
 
 {#if entity}
@@ -11,6 +15,9 @@
         Created:
         {formatDate(entity.created_at)}
       </created-at>
+      {#if createdBy}
+        by {createdBy}
+      {/if}
     </created>
     {#if entity.updated_at}
       <updated>
@@ -18,6 +25,9 @@
           Updated:
           {formatDate(entity.updated_at)}
         </updated-at>
+        {#if updatedBy}
+          by {updatedBy}
+        {/if}
       </updated>
     {/if}
     {#if entity.deleted}

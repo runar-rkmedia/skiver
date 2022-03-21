@@ -93,7 +93,7 @@ func InitConfig() error {
 	viper.AutomaticEnv()
 
 	viper.SetDefault("Api.ShutdownTimeout", time.Second*20)
-	viper.SetDefault("Api.WriteTimeout", time.Second*10)
+	viper.SetDefault("Api.WriteTimeout", time.Second*40)
 	viper.SetDefault("Api.IdleTimeout", time.Second*120)
 	viper.SetDefault("Api.ReadTimeout", time.Second*5)
 	if err := viper.ReadInConfig(); err != nil {

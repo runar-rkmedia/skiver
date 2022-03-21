@@ -54,7 +54,7 @@
 </script>
 
 {#if response}
-  <Collapse key="" let:show>
+  <Collapse let:show>
     <h5 slot="title">
       <span>
         {#if areEqual}
@@ -137,11 +137,19 @@
         </table>
       {/if}
       <div class="hashes">
-        <img
-          title={`SHA ${response.b?.tag || ''}: ${response.b?.hash}`}
-          alt="Identicon for tag B"
-          src={'data:image/png;base64,' + response.b?.identi_hash} />
-        {#if !areEqual}
+        {#if areEqual}
+          <img
+            title={`SHA ${response.a?.tag || response.b?.tag || ''}: ${
+              response.a?.tag || response.b?.hash
+            }`}
+            alt="Identicon for tag"
+            src={'data:image/png;base64,' +
+              (response.a?.identi_hash || response.b?.identi_hash)} />
+        {:else}
+          <img
+            title={`SHA ${response.b?.tag || ''}: ${response.b?.hash}`}
+            alt="Identicon for tag B"
+            src={'data:image/png;base64,' + response.b?.identi_hash} />
           <img
             title={`SHA ${response.a?.tag || ''}: ${response.a?.hash}`}
             alt="Identicon for tag A"
