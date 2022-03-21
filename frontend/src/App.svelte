@@ -15,6 +15,7 @@
 
   import ServerInfo from './components/ServerInfo.svelte'
   import { onMount } from 'svelte'
+  import UserButton from 'components/UserButton.svelte'
   let username = $db.login.username
   let requiresLogin = false
   let password: ''
@@ -29,7 +30,8 @@
       if (!toast) {
         return
       }
-      const diff = new Date().getTime() - new Date($state.toasts[toast].created).getTime()
+      const diff =
+        new Date().getTime() - new Date($state.toasts[toast].created).getTime()
       if (diff < 1000) {
         return
       }
@@ -66,6 +68,7 @@
       api.translationValue.list()
       api.translation.list()
       api.missingTranslation.list()
+      api.simpleUser.list()
       didRunInital = true
     }
   }
@@ -97,12 +100,9 @@
         </a>
       </div>
       <Tabs />
-      {#if $db.login.ok}
-        <div class="user-welcome">
-          Welcome, {$db.login.username}
-          <Button color="tertiary" on:click={api.logout}>Logout</Button>
-        </div>
-      {/if}
+      <div class="user-welcome">
+        <UserButton />
+      </div>
     </header>
   {/if}
   <div />
@@ -114,7 +114,7 @@
         {#if $db.responseStates.login.loading}
           <Spinner />
         {/if}
-        {#if $db.responseStates.login?.error}
+        {#if $db.responseStates.login?.error?.error}
           <Alert kind="error"
             >{$db.responseStates.login.error.error.error}</Alert>
         {/if}

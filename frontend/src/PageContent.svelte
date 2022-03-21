@@ -10,6 +10,7 @@
   import JoinPage from 'pages/JoinPage.svelte'
   import AboutPage from 'pages/AboutPage.svelte'
   import Embed from 'pages/Embed.svelte'
+  import UserPage from 'pages/UserPage.svelte'
   let mainRoute = ''
   let routeArgs = ''
   $: {
@@ -55,6 +56,8 @@
   <JoinPage joinID={routeArgs[0]} />
 {:else if mainRoute === 'about'}
   <AboutPage />
+{:else if mainRoute === 'user'}
+  <UserPage />
 {:else if mainRoute === ''}
   <h2>Welcome to Skiver!</h2>
   <p>

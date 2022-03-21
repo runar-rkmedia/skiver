@@ -10,6 +10,8 @@ components:
 security:
   - cookieAuth: []
 definitions:
+  SimpleUser:
+    type: string
   CreateSnapshotInput:
     type: object
     required:
@@ -77,6 +79,23 @@ definitions:
           This is useful for when adding new locales, and one don't want to publish it to users until it is complete
         type: boolean
     type: object
+  ChangePasswordInput:
+    type: object
+    required:
+      - password
+    properties:
+      password:
+        type: string
+        minLength: 3
+        maxLength: 2000
+  CreateTokenInput:
+    type: object
+    required:
+      - duration
+    properties:
+      duration:
+        type: integer
+        description: Duration in hours of which the token should be valid
   UpdateProjectInput:
     type: object
     required:
@@ -103,7 +122,7 @@ definitions:
         type: object
         additionalProperties:
           $ref: '#/definitions/LocaleSettingInput'
-  LogoutResponse:
+  OkResponse:
     type: object
     required:
       - ok
@@ -594,6 +613,67 @@ paths:
           $ref: '#/responses/apiError'
       tags:
       - organization
+  /user/:
+    get:
+      summary: Returns a simple representation of each user within the organization
+      operationId: listSimpleUsers
+      responses:
+        "200":
+          $ref: '#/responses/SimpleUsersResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+        - user
+  /users/:
+    get:
+      summary: List of users within organizaion
+      description: Requires the `can_update_users`-privilege
+      operationId: listUsers
+      responses:
+        "200":
+          $ref: '#/responses/UsersResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+        - user
+  /user/password:
+    post:
+      summary: Change the current users password
+      operationId: changePassword
+      parameters:
+        - in: body
+          required: true
+          name: changePassword
+          schema:
+            $ref: '#/definitions/ChangePasswordInput'
+      responses:
+        "200":
+          $ref: '#/responses/okResponse'
+        "400":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+        - user
+  /user/token:
+    post:
+      summary: Create a token
+      operationId: createToken
+      parameters:
+        - in: body
+          required: true
+          name: CreateToken
+          schema:
+            $ref: '#/definitions/CreateTokenInput'
+      tags:
+        - user
+      responses:
+        "200":
+          $ref: '#/responses/okResponse'
+        "400":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
   /join/{id}:
     get:
       summary: Check if a join-id is valid. 
@@ -805,7 +885,7 @@ paths:
       operationId: logout
       responses:
         "200":
-          $ref: '#/responses/logoutResponse'
+          $ref: '#/responses/okResponse'
         "403":
           $ref: '#/responses/apiError'
         "500":
@@ -881,9 +961,9 @@ responses:
     description: "Consistant error-codes"
     schema:
       $ref: '#/definitions/ApiError'
-  logoutResponse:
+  okResponse:
     schema:
-      $ref: '#/definitions/LogoutResponse'
+      $ref: '#/definitions/OkResponse'
       type: object
   loginResponse:
     description: >
@@ -916,6 +996,16 @@ responses:
       items:
         $ref: '#/definitions/Project'
       type: array
+  UsersResponse:
+    schema:
+      additionalProperties:
+        $ref: '#/definitions/User'
+      type: object
+  SimpleUsersResponse:
+    schema:
+      additionalProperties:
+        $ref: '#/definitions/SimpleUser'
+      type: object
   OrganizationResponse:
     schema:
       $ref: '#/definitions/Organization'

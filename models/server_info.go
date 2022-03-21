@@ -38,6 +38,9 @@ type ServerInfo struct {
 
 	// Version-number for commit
 	Version string `json:"version,omitempty"`
+
+	// latest release
+	LatestRelease *ReleaseInfo `json:"latest_release,omitempty"`
 }
 
 // Validate validates this server info
@@ -49,6 +52,10 @@ func (m *ServerInfo) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateServerStartedAt(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateLatestRelease(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -82,8 +89,52 @@ func (m *ServerInfo) validateServerStartedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this server info based on context it is used
+func (m *ServerInfo) validateLatestRelease(formats strfmt.Registry) error {
+	if swag.IsZero(m.LatestRelease) { // not required
+		return nil
+	}
+
+	if m.LatestRelease != nil {
+		if err := m.LatestRelease.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("latest_release")
+			} else if ce, ok := err.(*errors.CompositeError); ok {
+				return ce.ValidateName("latest_release")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ContextValidate validate this server info based on the context it is used
 func (m *ServerInfo) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.contextValidateLatestRelease(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *ServerInfo) contextValidateLatestRelease(ctx context.Context, formats strfmt.Registry) error {
+
+	if m.LatestRelease != nil {
+		if err := m.LatestRelease.ContextValidate(ctx, formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("latest_release")
+			} else if ce, ok := err.(*errors.CompositeError); ok {
+				return ce.ValidateName("latest_release")
+			}
+			return err
+		}
+	}
+
 	return nil
 }
 

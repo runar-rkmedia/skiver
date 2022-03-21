@@ -26,6 +26,7 @@ export type DB = {
   translation: Record<string, ApiDef.Translation>
   login: ApiDef.LoginResponse
   serverInfo: ApiDef.ServerInfo
+  simpleUser: Record<string, ApiDef.SimpleUser>
   responseStates: Omit<Record<keyof DB, { loading: boolean; error?: ApiDef.APIError }>, 'responseStates' | 'serverInfo'>
 }
 
@@ -54,6 +55,14 @@ export const api = {
   missingTranslation: {
     list: apiGetListFactory<'missingTranslation'>('missing', 'missingTranslation')
   },
+  simpleUser: {
+    list: (options?: ApiFetchOptions) =>
+      fetchApi<Record<string, ApiDef.SimpleUser>>(
+        'user',
+        (e) => db.update((s) => ({ ...s, simpleUser: e })),
+        options
+      ),
+  },
   project: CrudFactory<ApiDef.ProjectInput, 'project', ApiDef.UpdateProjectInput>('project'),
   snapshotMeta: {
     create: apiCreateFactory<ApiDef.CreateSnapshotInput, 'project'>('project/snapshot', 'project'),
@@ -66,7 +75,7 @@ export const api = {
     ApiDef.UpdateTranslationValueInput
   >('translationValue'),
   locale: CrudFactory<ApiDef.LocaleInput, 'locale'>('locale'),
-  logout: () => fetchApi<ApiDef.LogoutResponse>('logout', () => {
+  logout: () => fetchApi<ApiDef.OkResponse>('logout', () => {
     return db.update(({ login, ...s }) => {
       login.ok = false
       windowPost.loginStatus(false)
@@ -173,6 +182,7 @@ const initialLoginResponse = (): ApiDef.LoginResponse => {
   return l
 }
 
+console.log('objectKeys', api)
 export const db = createStore<DB, null>({
   initialValue: objectKeys(api).reduce(
     (r, k) => {
@@ -298,11 +308,17 @@ const isWithinIframe = () => {
 
 /** Messages from parent when webapp is loaded via an iframe */
 function handleMsg(e: MessageEvent) {
-  console.log('login-status')
   if (!e.data) {
+    console.warn('[handleMessage]: no data', e)
     return
   }
   const kind = e.data?.kind
+  if (!kind) {
+    // in dev-mode, svelte sends a lot of messages
+    // console.debug('[handleMessage]: ignoring message', e)
+    return
+  }
+  console.debug('[handleMessage]: message received: ', e)
   switch (kind) {
     case 'login-status':
       {
@@ -407,7 +423,7 @@ const mergeMap = <K extends DBKeyValue, V extends DB[K]>(key: K, value: V) => {
 }
 
 // Keys in db that are of type Record<string, T>
-type DBKeyValue = keyof Omit<DB, 'serverInfo' | 'responseStates' | 'login'>
+type DBKeyValue = keyof Omit<DB, 'serverInfo' | 'responseStates' | 'login' | 'simpleUser'>
 
 const replaceField = <K extends DBKeyValue, V extends DB[K]['s']>(
   key: K,

@@ -98,6 +98,9 @@ declare namespace ApiDef {
         };
         type?: string;
     }
+    export interface ChangePasswordInput {
+        password: string;
+    }
     /**
      * Changelog stores a list of changed items
      */
@@ -106,6 +109,12 @@ declare namespace ApiDef {
         description?: string;
         project_id: string;
         tag: string; // ^[a-zA-Z0-9-_.]{3,36}$
+    }
+    export interface CreateTokenInput {
+        /**
+         * Duration in hours of which the token should be valid
+         */
+        duration: number;
     }
     export type CreatorSource = string;
     export interface DeleteInput {
@@ -472,9 +481,6 @@ declare namespace ApiDef {
         updated_by?: string;
         username?: string;
     }
-    export interface LogoutResponse {
-        ok: boolean;
-    }
     export interface MissingTranslation {
         /**
          * The reported category (may not exist), as reported by the client.
@@ -527,6 +533,9 @@ declare namespace ApiDef {
          * User id refering to who created the item
          */
         updated_by?: string;
+    }
+    export interface OkResponse {
+        ok: boolean;
     }
     export interface Organization {
         created_at?: string; // date-time
@@ -629,6 +638,20 @@ declare namespace ApiDef {
         hash?: number; // uint64
         id?: string;
     }
+    export interface ReleaseInfo {
+        assets_url?: string;
+        body?: string;
+        created_at?: string;
+        draft?: boolean;
+        html_url?: string;
+        name?: string;
+        prerelease?: boolean;
+        published_at?: string;
+        tag_name?: string;
+        target_commitish?: string;
+        upload_url?: string;
+        url?: string;
+    }
     export interface ReportMissingInput {
         [name: string]: string;
     }
@@ -646,6 +669,7 @@ declare namespace ApiDef {
          * Short githash for current commit
          */
         git_hash?: string;
+        latest_release?: ReleaseInfo;
         /**
          * When the server was started
          */
@@ -655,6 +679,7 @@ declare namespace ApiDef {
          */
         version?: string;
     }
+    export type SimpleUser = string;
     export interface SnapshotSelector {
         project_id: string;
         tag?: string;
@@ -792,8 +817,63 @@ declare namespace ApiDef {
         id: string;
         value?: string;
     }
+    export interface User {
+        /**
+         * If not active, the account cannot be used until any issues are resolved.
+         */
+        active?: boolean;
+        can_create_locales?: boolean;
+        can_create_organization?: boolean;
+        can_create_projects?: boolean;
+        can_create_translations?: boolean;
+        can_create_users?: boolean;
+        can_manage_snapshots?: boolean;
+        can_update_locales?: boolean;
+        can_update_organization?: boolean;
+        can_update_projects?: boolean;
+        can_update_translations?: boolean;
+        can_update_users?: boolean;
+        /**
+         * Time of which the entity was created in the database
+         */
+        created_at: string; // date-time
+        /**
+         * User id refering to the user who created the item
+         */
+        created_by?: string;
+        /**
+         * If set, the item is considered deleted. The item will normally not get deleted from the database,
+         * but it may if cleanup is required.
+         */
+        deleted?: string; // date-time
+        /**
+         * Unique identifier of the entity
+         */
+        id: string;
+        /**
+         * If set, the user must change the password before the account can be used
+         */
+        temporary_password?: boolean;
+        /**
+         * Time of which the entity was updated, if any
+         */
+        updated_at?: string; // date-time
+        /**
+         * User id refering to who created the item
+         */
+        updated_by?: string;
+        username?: string;
+    }
 }
 declare namespace ApiPaths {
+    namespace ChangePassword {
+        export interface BodyParameters {
+            changePassword: Parameters.ChangePassword;
+        }
+        namespace Parameters {
+            export type ChangePassword = ApiDef.ChangePasswordInput;
+        }
+    }
     namespace CreateOrganization {
         export interface BodyParameters {
             OrganizationInput: Parameters.OrganizationInput;
@@ -811,6 +891,14 @@ declare namespace ApiPaths {
         }
         namespace Responses {
             export type $200 = ApiResponses.SnapshotResponse;
+        }
+    }
+    namespace CreateToken {
+        export interface BodyParameters {
+            CreateToken: Parameters.CreateToken;
+        }
+        namespace Parameters {
+            export type CreateToken = ApiDef.CreateTokenInput;
         }
     }
     namespace CreateTranslation {
@@ -1116,16 +1204,22 @@ declare namespace ApiResponses {
      */
     ApiDef.Locale[];
     export type LoginResponse = ApiDef.LoginResponse;
-    export type LogoutResponse = ApiDef.LogoutResponse;
+    export type OkResponse = ApiDef.OkResponse;
     export type OrganizationResponse = ApiDef.Organization;
     export type OrganizationsResponse = ApiDef.Organization[];
     export type ProjectResponse = ApiDef.Project;
     export type ProjectsResponse = ApiDef.Project[];
     export type ServerInfo = ApiDef.ServerInfo[];
+    export interface SimpleUsersResponse {
+        [name: string]: ApiDef.SimpleUser;
+    }
     export type SnapshotResponse = ApiDef.ProjectSnapshot;
     export type SnapshotsResponse = ApiDef.ProjectSnapshot[];
     export type TranslationResponse = ApiDef.Translation;
     export type TranslationValueResponse = ApiDef.TranslationValue;
     export type TranslationValuesResponse = ApiDef.TranslationValue[];
     export type TranslationsResponse = ApiDef.Translation[];
+    export interface UsersResponse {
+        [name: string]: ApiDef.User;
+    }
 }

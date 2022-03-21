@@ -63,11 +63,16 @@ func getExport(l logger.AppLogger, exportCache Cache, db types.Storage, opt Expo
 	if flatten {
 		cacheKey += "F"
 	}
-	if v, ok := exportCache.Get(cacheKey); ok {
-		return v, nil
+	if exportCache != nil {
+		if v, ok := exportCache.Get(cacheKey); ok {
+			return v, nil
+		}
 	}
 
 	defer func() {
+		if exportCache == nil {
+			return
+		}
 		if err != nil {
 			return
 		}

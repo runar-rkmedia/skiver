@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// swagger:model User
 type User struct {
 	Entity   `json:"entity"`
 	UserName string `json:"username"`

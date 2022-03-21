@@ -28,6 +28,7 @@
 </h5>
 {#if step === 0}
   <label>
+    <!-- svelte-ignore a11y-autofocus -->
     <input autofocus type="text" name="text" bind:value={contextKey} />
     <Button color="primary" on:click={next}>Next</Button>
   </label>

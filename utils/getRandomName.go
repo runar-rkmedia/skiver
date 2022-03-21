@@ -23,6 +23,12 @@ func GetRandomName() (string, error) {
 	return GenerateRandomPin() + "-" + strings.Join(result, "-"), nil
 }
 
+func HashName(b []byte) string {
+	var result []string
+	words := mnemonicode.EncodeWordList(result, b)
+	return strings.Join(words, "-")
+}
+
 func GenerateRandomPin() string {
 	s := ""
 	max := new(big.Int)

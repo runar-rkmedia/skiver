@@ -5,7 +5,7 @@
   import Icon from './Icon.svelte'
 
   export let show = false
-  export let key: string
+  export let key: string = ''
   export let forceShow = false
   onMount(() => {
     if (forceShow) {

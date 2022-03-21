@@ -176,6 +176,15 @@ definitions:
         x-go-name: Type
     type: object
     x-go-package: github.com/r3labs/diff/v2
+  ChangePasswordInput:
+    properties:
+      password:
+        maxLength: 2000
+        minLength: 3
+        type: string
+    required:
+    - password
+    type: object
   Changelog:
     description: Changelog stores a list of changed items
     items:
@@ -200,6 +209,14 @@ definitions:
     required:
     - project_id
     - tag
+    type: object
+  CreateTokenInput:
+    properties:
+      duration:
+        description: Duration in hours of which the token should be valid
+        type: integer
+    required:
+    - duration
     type: object
   CreatorSource:
     type: string
@@ -762,13 +779,6 @@ definitions:
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
-  LogoutResponse:
-    properties:
-      ok:
-        type: boolean
-    required:
-    - ok
-    type: object
   MissingTranslation:
     properties:
       category:
@@ -845,6 +855,13 @@ definitions:
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
+  OkResponse:
+    properties:
+      ok:
+        type: boolean
+    required:
+    - ok
+    type: object
   Organization:
     properties:
       created_at:
@@ -1046,6 +1063,46 @@ definitions:
         x-go-name: SnapshotID
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
+  ReleaseInfo:
+    properties:
+      assets_url:
+        type: string
+        x-go-name: AssetsURL
+      body:
+        type: string
+        x-go-name: Body
+      created_at:
+        type: string
+        x-go-name: CreatedAt
+      draft:
+        type: boolean
+        x-go-name: Draft
+      html_url:
+        type: string
+        x-go-name: HTMLURL
+      name:
+        type: string
+        x-go-name: Name
+      prerelease:
+        type: boolean
+        x-go-name: Prerelease
+      published_at:
+        type: string
+        x-go-name: PublishedAt
+      tag_name:
+        type: string
+        x-go-name: TagName
+      target_commitish:
+        type: string
+        x-go-name: TargetCommitish
+      upload_url:
+        type: string
+        x-go-name: UploadURL
+      url:
+        type: string
+        x-go-name: URL
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
   ReportMissingInput:
     additionalProperties:
       type: string
@@ -1069,6 +1126,8 @@ definitions:
         description: Short githash for current commit
         type: string
         x-go-name: GitHash
+      latest_release:
+        $ref: '#/definitions/ReleaseInfo'
       server_started_at:
         description: When the server was started
         format: date-time
@@ -1080,6 +1139,8 @@ definitions:
         x-go-name: Version
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
+  SimpleUser:
+    type: string
   Translation:
     properties:
       aliases:
@@ -1327,6 +1388,88 @@ definitions:
     required:
     - id
     type: object
+  User:
+    properties:
+      active:
+        description: If not active, the account cannot be used until any issues are
+          resolved.
+        type: boolean
+        x-go-name: Active
+      can_create_locales:
+        type: boolean
+        x-go-name: CanCreateLocales
+      can_create_organization:
+        type: boolean
+        x-go-name: CanCreateOrganization
+      can_create_projects:
+        type: boolean
+        x-go-name: CanCreateProjects
+      can_create_translations:
+        type: boolean
+        x-go-name: CanCreateTranslations
+      can_create_users:
+        type: boolean
+        x-go-name: CanCreateUsers
+      can_manage_snapshots:
+        type: boolean
+        x-go-name: CanManageSnapshots
+      can_update_locales:
+        type: boolean
+        x-go-name: CanUpdateLocales
+      can_update_organization:
+        type: boolean
+        x-go-name: CanUpdateOrganization
+      can_update_projects:
+        type: boolean
+        x-go-name: CanUpdateProjects
+      can_update_translations:
+        type: boolean
+        x-go-name: CanUpdateTranslations
+      can_update_users:
+        type: boolean
+        x-go-name: CanUpdateUsers
+      created_at:
+        description: Time of which the entity was created in the database
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      created_by:
+        description: User id refering to the user who created the item
+        type: string
+        x-go-name: CreatedBy
+      deleted:
+        description: |-
+          If set, the item is considered deleted. The item will normally not get deleted from the database,
+          but it may if cleanup is required.
+        format: date-time
+        type: string
+        x-go-name: Deleted
+      id:
+        description: Unique identifier of the entity
+        type: string
+        x-go-name: ID
+      temporary_password:
+        description: If set, the user must change the password before the account
+          can be used
+        type: boolean
+        x-go-name: TemporaryPassword
+      updated_at:
+        description: Time of which the entity was updated, if any
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+      updated_by:
+        description: User id refering to who created the item
+        type: string
+        x-go-name: UpdatedBy
+      username:
+        type: string
+        x-go-name: UserName
+    required:
+    - created_at
+    - id
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
   itemStats:
     properties:
       hash:
@@ -1613,7 +1756,7 @@ paths:
       operationId: logout
       responses:
         "200":
-          $ref: '#/responses/logoutResponse'
+          $ref: '#/responses/okResponse'
         "403":
           $ref: '#/responses/apiError'
         "500":
@@ -1861,6 +2004,67 @@ paths:
       summary: Update a new translation-value for a locale
       tags:
       - translationValue
+  /user/:
+    get:
+      operationId: listSimpleUsers
+      responses:
+        "200":
+          $ref: '#/responses/SimpleUsersResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Returns a simple representation of each user within the organization
+      tags:
+      - user
+  /user/password:
+    post:
+      operationId: changePassword
+      parameters:
+      - in: body
+        name: changePassword
+        required: true
+        schema:
+          $ref: '#/definitions/ChangePasswordInput'
+      responses:
+        "200":
+          $ref: '#/responses/okResponse'
+        "400":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Change the current users password
+      tags:
+      - user
+  /user/token:
+    post:
+      operationId: createToken
+      parameters:
+      - in: body
+        name: CreateToken
+        required: true
+        schema:
+          $ref: '#/definitions/CreateTokenInput'
+      responses:
+        "200":
+          $ref: '#/responses/okResponse'
+        "400":
+          $ref: '#/responses/apiError'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Create a token
+      tags:
+      - user
+  /users/:
+    get:
+      description: Requires the `can_update_users`-privilege
+      operationId: listUsers
+      responses:
+        "200":
+          $ref: '#/responses/UsersResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: List of users within organizaion
+      tags:
+      - user
 produces:
 - application/json
 - text/vnd.yaml
@@ -1914,6 +2118,12 @@ responses:
       items:
         $ref: '#/definitions/Project'
       type: array
+  SimpleUsersResponse:
+    description: ""
+    schema:
+      additionalProperties:
+        $ref: '#/definitions/SimpleUser'
+      type: object
   SnapshotResponse:
     description: ""
     schema:
@@ -1948,6 +2158,12 @@ responses:
       items:
         $ref: '#/definitions/Translation'
       type: array
+  UsersResponse:
+    description: ""
+    schema:
+      additionalProperties:
+        $ref: '#/definitions/User'
+      type: object
   apiError:
     description: ""
     schema:
@@ -1961,10 +2177,10 @@ responses:
     schema:
       $ref: '#/definitions/LoginResponse'
       type: object
-  logoutResponse:
+  okResponse:
     description: ""
     schema:
-      $ref: '#/definitions/LogoutResponse'
+      $ref: '#/definitions/OkResponse'
       type: object
   serverInfo:
     description: Server info

@@ -60,7 +60,6 @@
 </script>
 
 <form>
-  <!-- svelte-ignore a11y-autofocus -->
   {#if withContext}
     <label
       >Context
@@ -70,6 +69,7 @@
         bind:value={$state.createTranslationValue.context_key} />
     </label>
   {/if}
+  <!-- svelte-ignore a11y-autofocus -->
   <textarea
     autofocus
     rows={5}
