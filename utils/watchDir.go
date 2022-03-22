@@ -19,6 +19,9 @@ func NewDirWatcher(path string) (*Batcher, error) {
 	w := Batcher{Watcher: watcher, interval: time.Millisecond * 100, done: make(chan struct{}), Events: make(chan []fsnotify.Event)}
 
 	watchDir := func(path string, fi os.FileInfo, err error) error {
+		if fi == nil {
+			return nil
+		}
 		if !fi.Mode().IsDir() {
 			return nil
 		}

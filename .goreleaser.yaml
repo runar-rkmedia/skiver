@@ -13,6 +13,8 @@ builds:
   - main: ./main.go
     id: skiver-api
     binary: skiver-api
+    env:
+    - CGO_ENABLED=0
     goos:
       - linux
       - windows
