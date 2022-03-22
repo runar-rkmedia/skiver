@@ -59,6 +59,9 @@ type Session struct {
 	Issued       time.Time
 	Expires      time.Time
 }
+type UserSessionOptions struct {
+	TTL time.Duration
+}
 
 type Organization struct {
 	ID        string     `json:"id"`

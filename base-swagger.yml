@@ -42,6 +42,20 @@ definitions:
       tag:
         type: string
         maxLength: 36
+  TokenResponse:
+    type: object
+    properties:
+      token:
+        type: string
+      description:
+        type: string
+        description: Description of user-generated-token, or for login-tokens, this will be the last User-Agent used
+      issued:
+        type: string
+        format: date-time
+      expires:
+        type: string
+        format: date-time
   DiffSnapshotInput:
     type: object
     required:
@@ -88,12 +102,21 @@ definitions:
         type: string
         minLength: 3
         maxLength: 2000
+      new_password:
+        type: string
+        minLength: 3
+        maxLength: 2000
   CreateTokenInput:
     type: object
     required:
-      - duration
+      - ttl_hours
+      - description
     properties:
-      duration:
+      description:
+        type: string
+        minLength: 3
+        maxLength: 200
+      ttl_hours:
         type: integer
         description: Duration in hours of which the token should be valid
   UpdateProjectInput:
@@ -669,7 +692,7 @@ paths:
         - user
       responses:
         "200":
-          $ref: '#/responses/okResponse'
+          $ref: '#/responses/TokenResponse'
         "400":
           $ref: '#/responses/apiError'
         "500":
@@ -981,6 +1004,10 @@ responses:
           example: token=b6f7502c-2d39-4ddb-9890-84cb10d9bd13; Max-Age=3600; HttpOnly
     schema:
       $ref: '#/definitions/LoginResponse'
+      type: object
+  TokenResponse:
+    schema:
+      $ref: '#/definitions/TokenResponse'
       type: object
   LocalesResponse:
     schema:

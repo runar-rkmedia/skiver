@@ -19,16 +19,26 @@ import (
 // swagger:model CreateTokenInput
 type CreateTokenInput struct {
 
+	// description
+	// Required: true
+	// Max Length: 200
+	// Min Length: 3
+	Description *string `json:"description"`
+
 	// Duration in hours of which the token should be valid
 	// Required: true
-	Duration *int64 `json:"duration"`
+	TTLHours *int64 `json:"ttl_hours"`
 }
 
 // Validate validates this create token input
 func (m *CreateTokenInput) Validate(formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.validateDuration(formats); err != nil {
+	if err := m.validateDescription(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTTLHours(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -38,9 +48,26 @@ func (m *CreateTokenInput) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *CreateTokenInput) validateDuration(formats strfmt.Registry) error {
+func (m *CreateTokenInput) validateDescription(formats strfmt.Registry) error {
 
-	if err := validate.Required("duration", "body", m.Duration); err != nil {
+	if err := validate.Required("description", "body", m.Description); err != nil {
+		return err
+	}
+
+	if err := validate.MinLength("description", "body", *m.Description, 3); err != nil {
+		return err
+	}
+
+	if err := validate.MaxLength("description", "body", *m.Description, 200); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *CreateTokenInput) validateTTLHours(formats strfmt.Registry) error {
+
+	if err := validate.Required("ttl_hours", "body", m.TTLHours); err != nil {
 		return err
 	}
 

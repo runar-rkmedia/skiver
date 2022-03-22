@@ -310,7 +310,6 @@ func getInstanceHash() string {
 
 	s := strings.Split(w, "-")
 	j := strings.Join(s[:2], "-")
-	fmt.Println("instance", n, j, w)
 	return j
 }
 func gethostNameHash() string {
@@ -321,7 +320,6 @@ func gethostNameHash() string {
 	w := utils.HashName([]byte(h))
 	s := strings.Split(w, "-")
 	j := strings.Join(s[:2], "-")
-	fmt.Println("host", h, j)
 	return j
 }
 
@@ -544,7 +542,7 @@ func main() {
 	if !ok {
 		ctx.L.Warn().Str("type", fmt.Sprintf("%T", ctx.DB)).Msg("DB does not implement the localUser.Persistor-interface")
 	}
-	userSessions, err := localuser.NewUserSessionInMemory(localuser.UserSessionOptions{TTL: config.Authentication.SessionLifeTime}, uuid.NewString, p)
+	userSessions, err := localuser.NewUserSessionInMemory(types.UserSessionOptions{TTL: config.Authentication.SessionLifeTime}, uuid.NewString, p)
 	if err != nil {
 		ctx.L.Fatal().Err(err).Msg("Failed to set up userSessions")
 	}
@@ -650,7 +648,16 @@ func main() {
 	router.GET("/api/export/:params", c("GetExport", handlers.GetExport(exportCache)))
 	router.GET("/api/export/", c("GetExportx", handlers.GetExport(exportCache)))
 	router.GET("/api/user/", c("GetSimpleUsers", handlers.ListUsers(&db, true)))
-	router.GET("/api/users/", c("GetUsers", handlers.ListUsers(&db, false)))
+	router.GET("/api/users/", c("GetUsers", handlers.ListUsers(&db, false), routeOptions{
+		sessionRole: func(s types.Session, r *http.Request) error {
+			if !s.User.CanUpdateUsers {
+				return fmt.Errorf("You are not authorized to manage users")
+			}
+			return nil
+		},
+	}))
+	router.POST("/api/user/password", c("ChangePassword", handlers.ChangePassword(&db, &pw)))
+	router.POST("/api/user/token", c("CreateToken", handlers.CreateToken(userSessions)))
 	router.POST("/api/project/snapshotdiff/", c("DiffSnapshot", handlers.GetDiff(exportCache)))
 	router.DELETE("/api/translation/:id/", c("DeleteTranslation", handlers.DeleteTranslation(),
 		routeOptions{sessionRole: func(s types.Session, r *http.Request) error {

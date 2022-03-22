@@ -99,6 +99,7 @@ declare namespace ApiDef {
         type?: string;
     }
     export interface ChangePasswordInput {
+        new_password?: string;
         password: string;
     }
     /**
@@ -111,10 +112,11 @@ declare namespace ApiDef {
         tag: string; // ^[a-zA-Z0-9-_.]{3,36}$
     }
     export interface CreateTokenInput {
+        description: string;
         /**
          * Duration in hours of which the token should be valid
          */
-        duration: number;
+        ttl_hours: number;
     }
     export type CreatorSource = string;
     export interface DeleteInput {
@@ -669,6 +671,14 @@ declare namespace ApiDef {
          * Short githash for current commit
          */
         git_hash?: string;
+        /**
+         * Hash of the current host. Should be semi-stable
+         */
+        host_hash?: string;
+        /**
+         * Server-instance. This will change on every restart.
+         */
+        instance?: string;
         latest_release?: ReleaseInfo;
         /**
          * When the server was started
@@ -683,6 +693,15 @@ declare namespace ApiDef {
     export interface SnapshotSelector {
         project_id: string;
         tag?: string;
+    }
+    export interface TokenResponse {
+        /**
+         * Description of user-generated-token, or for login-tokens, this will be the last User-Agent used
+         */
+        description?: string;
+        expires?: string; // date-time
+        issued?: string; // date-time
+        token?: string;
     }
     export interface Translation {
         aliases?: string[];
@@ -1215,6 +1234,7 @@ declare namespace ApiResponses {
     }
     export type SnapshotResponse = ApiDef.ProjectSnapshot;
     export type SnapshotsResponse = ApiDef.ProjectSnapshot[];
+    export type TokenResponse = ApiDef.TokenResponse;
     export type TranslationResponse = ApiDef.Translation;
     export type TranslationValueResponse = ApiDef.TranslationValue;
     export type TranslationValuesResponse = ApiDef.TranslationValue[];

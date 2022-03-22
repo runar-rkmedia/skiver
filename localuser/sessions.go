@@ -14,11 +14,7 @@ type UserSessionInMemory struct {
 	c         *cache.Cache
 	t         func() string
 	persistor Persistor
-	UserSessionOptions
-}
-
-type UserSessionOptions struct {
-	TTL time.Duration
+	types.UserSessionOptions
 }
 
 type Persistor interface {
@@ -28,7 +24,7 @@ type Persistor interface {
 	EvictSession(key string) error
 }
 
-func NewUserSessionInMemory(options UserSessionOptions, tokenCreator func() string, persistor Persistor) (UserSessionInMemory, error) {
+func NewUserSessionInMemory(options types.UserSessionOptions, tokenCreator func() string, persistor Persistor) (UserSessionInMemory, error) {
 	// We dont want the expiry-check to happen at the same time on the hour, so we add some seconds
 	u := UserSessionInMemory{t: tokenCreator, UserSessionOptions: options}
 	if persistor != nil {
@@ -66,24 +62,34 @@ func NewUserSessionInMemory(options UserSessionOptions, tokenCreator func() stri
 	return u, nil
 }
 
-func (us UserSessionInMemory) NewSession(user types.User, organization types.Organization, userAgent string) (s types.Session) {
+func (us UserSessionInMemory) NewSession(user types.User, organization types.Organization, userAgent string, opts ...types.UserSessionOptions) (s types.Session) {
+	var options types.UserSessionOptions
+	if len(opts) > 0 {
+		options = opts[0]
+	}
 	token := us.t()
 	now := time.Now()
+	var ttl time.Duration
+	if options.TTL > 0 {
+		ttl = options.TTL
+	} else {
+		ttl = us.UserSessionOptions.TTL
+	}
 	s = types.Session{
 		Token:        token,
 		User:         user,
 		Organization: organization,
 		UserAgent:    userAgent,
 		Issued:       now,
-		Expires:      now.Add(us.UserSessionOptions.TTL),
+		Expires:      now.Add(ttl),
 	}
 
-	us.c.Set(token, s, us.UserSessionOptions.TTL)
+	us.c.Set(token, s, ttl)
 	if us.persistor != nil {
 		s, err := us.persistor.CreateSession(token, s)
 		if err != nil {
 			l := logger.GetLogger("UserSessionInMemory.NewSession")
-			l.Error().Err(err).Msg("failed to evict prior sessions")
+			l.Error().Err(err).Msg("failed to create session")
 		}
 		return s
 	}

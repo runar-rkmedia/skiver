@@ -32,6 +32,12 @@ type ServerInfo struct {
 	// Short githash for current commit
 	GitHash string `json:"git_hash,omitempty"`
 
+	// Hash of the current host. Should be semi-stable
+	HostHash string `json:"host_hash,omitempty"`
+
+	// Server-instance. This will change on every restart.
+	Instance string `json:"instance,omitempty"`
+
 	// When the server was started
 	// Format: date-time
 	ServerStartedAt strfmt.DateTime `json:"server_started_at,omitempty"`

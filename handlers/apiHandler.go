@@ -29,7 +29,7 @@ type Cache interface {
 	SetDefault(k string, x interface{})
 }
 type SessionManager interface {
-	NewSession(user types.User, organization types.Organization, userAgent string) (s types.Session)
+	NewSession(user types.User, organization types.Organization, userAgent string, opts ...types.UserSessionOptions) (s types.Session)
 	GetSession(token string) (s types.Session, err error)
 	SessionsForUser(userId string) (s []types.Session)
 	ClearAllSessionsForUser(userId string) error
