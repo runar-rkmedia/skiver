@@ -13,8 +13,8 @@ builds:
   - main: ./main.go
     id: skiver-api
     binary: skiver-api
-    env:
-    - CGO_ENABLED=0
+    # env:
+    # - CGO_ENABLED=0
     goos:
       - linux
       - windows
@@ -34,23 +34,6 @@ archives:
       windows: Windows
       386: i386
       amd64: x86_64
-dockers:
-  - id: skiver-api
-    goos: linux
-    goarch: amd64
-    ids:
-      - skiver-api
-    skip_push: "false"
-    image_templates:
-      - "runardocker/skiver-api:latest"
-      - "runardocker/skiver-api:{{ .Tag }}"
-      - "runardocker/skiver-api:v{{ .Major }}"
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
 checksum:
   name_template: 'checksums.txt'
 snapshot:

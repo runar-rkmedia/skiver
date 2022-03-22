@@ -1,7 +1,7 @@
 repo=github.com/runar-rkmedia/skiver
 version := $(shell git describe --tags)
 gitHash := $(shell git rev-parse --short HEAD)
-buildDate := $(shell TZ=UTC date +"%Y-%m-%dT%H:%M:%S")
+buildDate := $(shell TZ=UTC date +"%Y-%m-%dT%H:%M:%SZ")
 ldflags=-X 'main.version=$(version)' -X 'main.date=$(buildDate)' -X 'main.commit=$(gitHash)' -X 'main.IsDevStr=0'
 watch:
 	cd frontend && yarn watch &
@@ -32,6 +32,23 @@ generate:
 	${MAKE} swagger-clean
 	go1.18beta2 generate ./...
 	swagger validate swagger.yml
+container: build-web
+	docker build . \
+		-t runardocker/skiver-api:latest \
+		-t runardocker/skiver-api:$(version) \
+    --label "org.opencontainers.image.title=skiver-api" \
+    --label "org.opencontainers.image.revision=$(gitHash)" \
+    --label "org.opencontainers.image.created=$(buildDate)" \
+    --label "org.opencontainers.image.version=$(version)" \
+    --build-arg "ldflags=$(ldflags)"
+container-publish: container
+	docker push runardocker/skiver-api:latest  runardocker/skiver-api:$(version)
+
+publish: container-publish release
+
+release:
+	goreleaser release
+
 build:
 	${MAKE} clean
 	${MAKE} build-web

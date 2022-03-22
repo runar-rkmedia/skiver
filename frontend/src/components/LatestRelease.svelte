@@ -20,11 +20,12 @@ ${latest.body}
 
 {#if isOldVersion && latest}
   <div class="old" title={latestText}>
-    {v} <span class="new">({latest.tag_name} is available!)</span>
+    {v}
+    <a href={latest.html_url} class="new">({latest.tag_name} is available!)</a>
   </div>
 {:else if latest}
-  <div class:latest={!!latest} title={latestText}>
-    {v}
+  <div class:latest={!!latest} title={'Up to date'}>
+    <a href={latest.html_url}>{v}</a>
   </div>
 {:else}
   <div>
