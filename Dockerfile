@@ -1,4 +1,4 @@
-FROM gcr.io/distroless/base
+FROM scratch
 
 WORKDIR /app
 
@@ -6,4 +6,5 @@ WORKDIR /app
 COPY  ./skiver-api   ./skiver
 # This is the _real_ path if building manually
 # COPY  ./dist/skiver-api_linux_amd64/skiver-api ./skiver
-CMD [ "/app/skiver" ]
+# COPY ./dist/skiver-linux-amd64 ./skiver
+ENTRYPOINT [ "/app/skiver" ]
