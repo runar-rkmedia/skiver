@@ -19,6 +19,11 @@ import (
 // swagger:model ChangePasswordInput
 type ChangePasswordInput struct {
 
+	// new password
+	// Max Length: 2000
+	// Min Length: 3
+	NewPassword string `json:"new_password,omitempty"`
+
 	// password
 	// Required: true
 	// Max Length: 2000
@@ -30,6 +35,10 @@ type ChangePasswordInput struct {
 func (m *ChangePasswordInput) Validate(formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.validateNewPassword(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validatePassword(formats); err != nil {
 		res = append(res, err)
 	}
@@ -37,6 +46,22 @@ func (m *ChangePasswordInput) Validate(formats strfmt.Registry) error {
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *ChangePasswordInput) validateNewPassword(formats strfmt.Registry) error {
+	if swag.IsZero(m.NewPassword) { // not required
+		return nil
+	}
+
+	if err := validate.MinLength("new_password", "body", m.NewPassword, 3); err != nil {
+		return err
+	}
+
+	if err := validate.MaxLength("new_password", "body", m.NewPassword, 2000); err != nil {
+		return err
+	}
+
 	return nil
 }
 

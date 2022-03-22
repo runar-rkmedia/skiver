@@ -178,6 +178,10 @@ definitions:
     x-go-package: github.com/r3labs/diff/v2
   ChangePasswordInput:
     properties:
+      new_password:
+        maxLength: 2000
+        minLength: 3
+        type: string
       password:
         maxLength: 2000
         minLength: 3
@@ -212,11 +216,16 @@ definitions:
     type: object
   CreateTokenInput:
     properties:
-      duration:
+      description:
+        maxLength: 200
+        minLength: 3
+        type: string
+      ttl_hours:
         description: Duration in hours of which the token should be valid
         type: integer
     required:
-    - duration
+    - ttl_hours
+    - description
     type: object
   CreatorSource:
     type: string
@@ -1126,6 +1135,14 @@ definitions:
         description: Short githash for current commit
         type: string
         x-go-name: GitHash
+      host_hash:
+        description: Hash of the current host. Should be semi-stable
+        type: string
+        x-go-name: HostHash
+      instance:
+        description: Server-instance. This will change on every restart.
+        type: string
+        x-go-name: Instance
       latest_release:
         $ref: '#/definitions/ReleaseInfo'
       server_started_at:
@@ -1141,6 +1158,21 @@ definitions:
     x-go-package: github.com/runar-rkmedia/skiver/types
   SimpleUser:
     type: string
+  TokenResponse:
+    properties:
+      description:
+        description: Description of user-generated-token, or for login-tokens, this
+          will be the last User-Agent used
+        type: string
+      expires:
+        format: date-time
+        type: string
+      issued:
+        format: date-time
+        type: string
+      token:
+        type: string
+    type: object
   Translation:
     properties:
       aliases:
@@ -2045,7 +2077,7 @@ paths:
           $ref: '#/definitions/CreateTokenInput'
       responses:
         "200":
-          $ref: '#/responses/okResponse'
+          $ref: '#/responses/TokenResponse'
         "400":
           $ref: '#/responses/apiError'
         "500":
@@ -2136,6 +2168,11 @@ responses:
         $ref: '#/definitions/ProjectSnapshot'
         type: object
       type: array
+  TokenResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/TokenResponse'
+      type: object
   TranslationResponse:
     description: ""
     schema:

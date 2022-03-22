@@ -75,6 +75,8 @@ export const api = {
     ApiDef.UpdateTranslationValueInput
   >('translationValue'),
   locale: CrudFactory<ApiDef.LocaleInput, 'locale'>('locale'),
+  changePassword: (body: ApiDef.ChangePasswordInput) => fetchApi<ApiDef.OkResponse>('user/password', () => { }, { method: 'POST', body }),
+  generateApiToken: (body: ApiDef.CreateTokenInput) => fetchApi<ApiDef.TokenResponse>('user/token', () => { }, { method: 'POST', body }),
   logout: () => fetchApi<ApiDef.OkResponse>('logout', () => {
     return db.update(({ login, ...s }) => {
       login.ok = false

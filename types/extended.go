@@ -216,7 +216,6 @@ func CreateCategoryTreeNode(extendedCategories map[string]ExtendedCategory) Cate
 			// FIXME: make recursive, don't overwrite previous values.
 			if length == 0 {
 				node = CategoryTreeNode{ExtendedCategory: cat, Categories: make(map[string]CategoryTreeNode)}
-				fmt.Println("root", node.Translations)
 				continue
 			}
 			if length == 1 {

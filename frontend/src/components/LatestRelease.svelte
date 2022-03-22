@@ -14,7 +14,6 @@ ${latest.tag_name}
 
 ${latest.body}
 `
-  console.log('hello', latest)
 </script>
 
 {@debug latest}
