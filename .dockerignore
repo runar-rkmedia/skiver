@@ -1,0 +1,11 @@
+**/node_modules
+**/cache
+*.bbolt
+dist/
+.git
+**/*.log
+frontend/.yarn/
+frontend/src/
+frontend/status/
+cover.out
+**/*ignoreme*
