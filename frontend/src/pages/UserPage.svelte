@@ -98,6 +98,7 @@
             on:focus={onPwFocus}
             type="password"
             name="currentpassword"
+            autocomplete="current-password"
             bind:value={currentPassword} />
         </label>
         <label>
@@ -106,6 +107,7 @@
             on:focus={onPwFocus}
             type="password"
             name="password"
+            autocomplete="new-password"
             bind:value={newPassword} />
         </label>
         <label>
@@ -113,6 +115,7 @@
           <input
             on:focus={onPwFocus}
             type="password"
+            autocomplete="new-password"
             name="confirmpassword"
             bind:value={confirmPassword} />
         </label>
