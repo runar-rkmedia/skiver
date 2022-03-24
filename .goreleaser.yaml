@@ -19,9 +19,9 @@ builds:
       - linux
       - windows
       - darwin
-  - main: ./cmd/main.go
+  - main: ./cli/main.go
     id: skiver-cli
-    binary: skiver-cli
+    binary: skiver
     goos:
       - linux
       - windows

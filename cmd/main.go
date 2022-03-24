@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -23,7 +24,11 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
+	kongyaml "github.com/alecthomas/kong-yaml"
 	"github.com/dustin/go-humanize"
+	"github.com/ghodss/yaml"
+	"github.com/joho/godotenv"
+	"github.com/pelletier/go-toml"
 	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/skiver/handlers"
 	"github.com/runar-rkmedia/skiver/importexport"
@@ -41,57 +46,215 @@ func required(v, s string) {
 	os.Exit(1)
 }
 
-var CLI struct {
-	Endpoint *url.URL `help:"Endpoint for skiver" `
-	Project  string   `help:"Project-id/ShortName" required:""`
-	Token    string   `help:"Token used for authenticaion"`
-	Locale   string   `help:"Locale to use"`
+var (
+	// These are added at build...
+	version   string
+	date      string
+	buildDate time.Time
+	builtBy   string
+	commit    string
+)
+
+func init() {
+	if date != "" {
+		t, err := time.Parse("2006-01-02T15:04:05Z", date)
+		if err != nil {
+			panic(fmt.Errorf("Failed to parse build-date: %w", err))
+		}
+		buildDate = t
+	}
+}
+
+type URLY struct {
+	url.URL
+}
+type secret string
+
+func (u URLY) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + u.String() + `"`), nil
+}
+func (u URLY) MarshalTOML() ([]byte, error) {
+	return []byte(`"` + u.String() + `"`), nil
+}
+func (u secret) MarshalJSON() ([]byte, error) {
+	return []byte(`""`), nil
+}
+func (u secret) MarshalTOML() ([]byte, error) {
+	return []byte(`""`), nil
+}
+func getFile(f string) (*os.File, bool) {
+	if f == "" {
+		return nil, false
+	}
+	file, err := os.Open(CLI.Unused.Source)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, false
+		}
+		l.Fatal().Err(err).Msg("Failed to open file")
+	}
+	return file, true
+}
+
+func commandExists(cmd string) bool {
+	_, err := exec.LookPath(cmd)
+	l.Debug().Str("cmd", cmd).Bool("found", err == nil).Msg("Checking for existance of command")
+	return err == nil
+}
+
+func runPrettier(filepath string, contents io.Reader) ([]byte, error) {
+	if commandExists(CLI.PrettierDSlimPath) {
+		l.Debug().Msg("prettier_d_slim is available")
+		if contents == nil {
+			f, err := os.Open(filepath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read the file-contents prior to runnning command")
+			}
+			defer f.Close()
+			contents = f
+		}
+		return runCmd(CLI.PrettierPath+" -w --ignore-path NOEXIST --stdin --stdin-filepath", filepath, contents)
+	}
+	if commandExists(CLI.PrettierPath) {
+		l.Debug().Msg("prettier is available. Consider using prettier_d_slim if you want improved speed")
+		return runCmd(CLI.PrettierPath+" -w --ignore-path NOEXIST", filepath, contents)
+	}
+	return nil, nil
+}
+func runCmd(command string, fPath string, stdin io.Reader) ([]byte, error) {
+	a := strings.Split(command, " ")
+	cmd := a[0]
+	args := []string{}
+	if len(a) > 1 {
+		args = a[1:]
+	}
+	args = append(args, fPath)
+	c := exec.Command(cmd, args...)
+	// bufin := strings.NewReader(s)
+	// c.Stdin = bufin
+	if stdin != nil {
+		c.Stdin = stdin
+	}
+	if l.HasDebug() {
+		l.Debug().
+			Str("path", fPath).
+			Str("cmd", cmd).
+			Interface("args", args).
+			Msg("Running command on replacement")
+	}
+	out, err := c.CombinedOutput()
+	if err != nil {
+		return out, fmt.Errorf("Failed to run onReplaceCmd %s %s %v: %w", c.Path, string(out), c.Args, err)
+	}
+	return out, nil
+}
+
+type cli struct {
+	Endpoint          URLY     `help:"Endpoint for skiver" env:"SKIVER_ENDPOINT" json:"endpoint"`
+	Project           string   `help:"Project-id/ShortName" env:"SKIVER_PROJECT" json:"project"`
+	Token             secret   `help:"Token used for authentication" env:"SKIVER_TOKEN" json:"token"`
+	Locale            string   `help:"Locale to use" env:"SKIVER_LOCALE" json:"locale"`
+	Version           struct{} `help:"Print version information" cmd:"" json:"-" toml:"-"`
+	WithPrettier      bool     `help:"Where available, will attempt to run prettier, or prettier_d if available"`
+	PrettierPath      string   `help:"Path-override for prettier" default:"prettier"`
+	PrettierDSlimPath string   `help:"Path-override for prettier_d_slim, which should be faster than regular prettier" default:"prettier_d_slim"`
 
 	Import struct {
-		Source *os.File `help:"Source-file for import" arg:""`
-	} `help:"Import from file" cmd:""`
-
+		Source string `help:"Source-file for import" arg:"" env:"SKIVER_IMPORT_SOURCE" json:"source"`
+	} `help:"Import from file" cmd:"" json:"import"`
 	Generate struct {
-		Path   string   `help:"Ouput file to write to" type:"path"`
-		TsKeys struct{} `help:"Generate a typescript key file for typesafe referance of translation-keys with TsDoc filled information from project" cmd:""`
-	} `help:"Generate files from project etc." cmd:""`
+		Path   string `help:"Ouput file to write to" type:"path" env:"SKIVER_GENERATE_PATH" json:"path"`
+		Format string `help:"Generate files from export. Common formats are: i18n,typescript." json:"format" required:"true"`
+	} `help:"Generate files from project etc." cmd:"" json:"generate"`
 	Unused struct {
-		Source *os.File `help:"Source-file for import"`
-		Dir    string   `help:"Directory for source-code" type:"existingdir" arg:"" required:""`
-	} `help:"Find unused translation-keys" cmd:""`
+		Source string `help:"Source-file to check-against. If ommitted, the upstream project is used as source" json:"source"`
+		Dir    string `help:"Directory for source-code" type:"existingdir" arg:"" required:"" json:"dir"`
+	} `help:"Find unused translation-keys" cmd:"" json:"unused"`
 
 	Inject struct {
-		IgnoreFilter []string `help:"Ignore-filter for files"`
-		DryRun       bool     `help:"Enable dry-run"`
-		OnReplace    string   `help:"Command to run on file after replacement, like prettier"`
-		Dir          string   `help:"Directory for source-code" type:"existingdir" arg:""`
-	} `help:"Inject helper-comments into source-files" cmd:""`
+		IgnoreFilter []string `help:"Ignore-filter for files" json:"ignore_filter"`
+		DryRun       bool     `help:"Enable dry-run" json:"dry_run"`
+		OnReplace    string   `help:"Command to run on file after replacement, like prettier" json:"on_replace"`
+		Dir          string   `help:"Directory for source-code" type:"existingdir" arg:"" json:"dir"`
+	} `help:"Inject helper-comments into source-files" cmd:"" json:"inject"`
 	Config struct {
-		Show struct{} `help:"Print effective config" cmd:""`
+		Format string   `enum:"json,yaml,toml" default:"toml" json:"format"`
+		Paths  struct{} `help:"Print paths used" cmd:"" json:"-"`
+		Show   struct {
+		} `help:"Print effective config" cmd:"" json:"-"`
 	} `help:"Configuration" cmd:"" json:"-"`
-	LogFormat string `help:"Human or json" default:"human"`
-	Verbose   int    `help:"More verbose logging" type:"counter" short:"v"`
-	Quiet     int    `help:"Quiet" type:"counter" short:"s"`
+	LogFormat string `help:"Format to log as" default:"human" enum:"json,human" json:"log_format"`
+	LogLevel  string `help:"Level for logging." default:"info" enum:"trace,debug,info,warn,error,panic" json:"log_level"`
+	Verbose   int64  `help:"More verbose logging. Overrides log-level." type:"counter" short:"v" json:"-"`
+	Quiet     int64  `help:"Quiet. Overrides log-level" type:"counter" short:"s" json:"-"`
+}
+
+var (
+	CLI                  = cli{}
+	l   logger.AppLogger = logger.GetLogger("")
+)
+
+func marshal(o any, format string) []byte {
+	switch format {
+	case "json":
+		j, err := json.MarshalIndent(o, "", "  ")
+		if err != nil {
+			l.Fatal().Err(err).Msg("failed to marshal (json)")
+		}
+		return j
+	case "toml":
+		b := bytes.Buffer{}
+		enc := toml.NewEncoder(&b)
+		enc.CompactComments(true)
+		enc.ArraysWithOneElementPerLine(true)
+		enc.SetTagComment("help")
+		enc.SetTagName("json")
+		err := enc.Encode(o)
+		if err != nil {
+			l.Fatal().Err(err).Msg("failed to marshal (toml)")
+		}
+		return b.Bytes()
+	}
+	j, err := yaml.Marshal(o)
+	if err != nil {
+		l.Fatal().Err(err).Msg("failed to marshal (yaml)")
+	}
+	return j
 }
 
 func main() {
-
-	var paths []string
+	godotenv.Load()
+	var jsonPaths []string
+	var yamlPaths []string
+	var tomlPaths []string
 	if p, err := os.Getwd(); err == nil {
-		paths = append(paths, path.Join(p, "skiver-cli.json"))
+		jsonPaths = append(jsonPaths, path.Join(p, "skiver-cli.json"))
+		yamlPaths = append(yamlPaths, path.Join(p, "skiver-cli.yaml"))
+		tomlPaths = append(tomlPaths, path.Join(p, "skiver-cli.toml"))
 	}
 	if p, err := os.UserConfigDir(); err == nil {
-		paths = append(paths, path.Join(p, "skiver-cli", "config.json"))
+		jsonPaths = append(jsonPaths, path.Join(p, "skiver-cli", "config.json"))
+		yamlPaths = append(yamlPaths, path.Join(p, "skiver-cli", "config.yaml"))
+		tomlPaths = append(tomlPaths, path.Join(p, "skiver-cli", "config.toml"))
 	}
 	if p, err := os.UserHomeDir(); err == nil {
-		paths = append(paths, path.Join(p, "skiver-cli.json"))
+		jsonPaths = append(jsonPaths, path.Join(p, "skiver-cli.json"))
+		yamlPaths = append(yamlPaths, path.Join(p, "skiver-cli.yaml"))
+		tomlPaths = append(tomlPaths, path.Join(p, "skiver-cli.toml"))
 	}
 	ctx := kong.Parse(&CLI,
 		kong.Name("Skiver CLI"),
 		kong.Description("Interactions with skiver, a developer-focused translation-service"),
-		kong.Configuration(kong.JSON, paths...),
+		kong.Configuration(kong.JSON, jsonPaths...),
+		kong.Configuration(kongyaml.Loader, yamlPaths...),
+		kong.Configuration(TomlLoader, tomlPaths...),
 	)
+
 	level := "info"
+	if CLI.LogLevel != "" {
+		level = CLI.LogLevel
+	}
+	fmt.Println("level", level)
 	switch CLI.Quiet {
 	case 1:
 		level = "warn"
@@ -110,28 +273,84 @@ func main() {
 	case 3:
 		level = "trace"
 	}
-	l := logger.InitLogger(logger.LogConfig{
+	l = logger.InitLogger(logger.LogConfig{
 		Format: CLI.LogFormat,
 		Level:  level,
 	})
-	api := NewAPI(l, CLI.Endpoint.String())
-	api.SetToken(CLI.Token)
+	var api Api
+	api = NewAPI(l, CLI.Endpoint.String())
+	api.SetToken(string(CLI.Token))
 	switch ctx.Command() {
+	case "version":
+		b := struct {
+			Version   string
+			Revision  string
+			BuildDate *time.Time
+		}{
+			Version:   version,
+			Revision:  commit,
+			BuildDate: &buildDate,
+		}
+
+		bb, _ := toml.Marshal(b)
+		fmt.Println(string(bb))
+		os.Exit(0)
+	case "config paths":
+
+		exists := func(f string) bool {
+			_, err := os.Stat(f)
+			if err == nil {
+				return true
+			}
+			if errors.Is(err, os.ErrNotExist) {
+				return false
+			}
+			return true
+		}
+		var existing []string
+		var nonExisting []string
+		var allPaths []string
+		allPaths = append(allPaths, jsonPaths...)
+		allPaths = append(allPaths, yamlPaths...)
+		allPaths = append(allPaths, tomlPaths...)
+		for _, v := range allPaths {
+			if exists(v) {
+				existing = append(existing, v)
+			} else {
+				nonExisting = append(nonExisting, v)
+			}
+		}
+		j := struct {
+			AllPaths         []string `help:"List of paths the cli will check for configuration"`
+			ExistingPaths    []string `help:"List of paths the cli found configurations in"`
+			NonExistingPaths []string `help:"List of paths the cli did not find any configurations in"`
+		}{
+			AllPaths:         allPaths,
+			ExistingPaths:    existing,
+			NonExistingPaths: nonExisting,
+		}
+
+		fmt.Println(string(marshal(j, CLI.Config.Format)))
+		os.Exit(0)
 	case "config show":
-		bebo, _ := json.MarshalIndent(CLI, "", "  ")
-		fmt.Println(string(bebo))
+		fmt.Println(string(marshal(CLI, CLI.Config.Format)))
 		os.Exit(0)
 
 	case "import <source>":
 		l.Debug().Msg("importing")
-		err := api.Import(CLI.Project, "i18n", CLI.Locale, CLI.Import.Source)
+		source, exists := getFile(CLI.Import.Source)
+		if !exists {
+			l.Fatal().Msg("File not found")
+		}
+		err := api.Import(CLI.Project, "i18n", CLI.Locale, source)
 		if err != nil {
 			l.Fatal().Err(err).Msg("Failed to import")
 		}
 		l.Info().Msg("Successful import")
-	case "generate ts-keys":
+	case "generate":
+
 		var w io.Writer
-		format := "typescript"
+		format := CLI.Generate.Format
 		locale := CLI.Locale
 		if locale == "" {
 			l.Fatal().Msg("Locale is required")
@@ -142,9 +361,9 @@ func main() {
 			outfile, err := os.OpenFile(CLI.Generate.Path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
 			if err != nil {
 				log.Fatal(err)
-
 				return
 			}
+			defer outfile.Close()
 			w = outfile
 			ll = ll.Str("path", CLI.Generate.Path)
 		}
@@ -160,11 +379,19 @@ func main() {
 		if err != nil {
 			l.Fatal().Err(err).Msg("Failed export")
 		}
+		l.Debug().Msg("Export completed")
+		if CLI.WithPrettier && CLI.Generate.Path != "" {
+			out, err := runPrettier(CLI.Generate.Path, nil)
+			if err != nil {
+				l.Error().Err(err).Str("out", string(out)).Msg("Failed to run prettier on output")
+			}
+		}
 		l.Info().Msg("Successful export")
 	case "unused <dir>":
 		// TODO: also check if translations are used within other translations.
 		// For instance, a translation may only be used by refereance.
-		translationKeys, regex := buildTranslationMapWithRegex(l, CLI.Unused.Source, api, CLI.Project, CLI.Locale)
+		source, _ := getFile(CLI.Unused.Source)
+		translationKeys, regex := buildTranslationMapWithRegex(l, source, api, CLI.Project, CLI.Locale)
 		found := map[string]bool{}
 		foundCh := make(chan string)
 		quitCh := make(chan struct{})
@@ -527,25 +754,8 @@ func (in Injecter) VisitFile(fPath string, info fs.FileInfo) (bool, error) {
 		}
 	}
 	if in.OnReplaceCmd != "" {
-		a := strings.Split(in.OnReplaceCmd, " ")
-		cmd := a[0]
-		args := []string{}
-		if len(a) > 1 {
-			args = a[1:]
-		}
-		args = append(args, fPath)
-		c := exec.Command(cmd, args...)
-		bufin := strings.NewReader(s)
-		c.Stdin = bufin
-		if l.HasDebug() {
-			l.Debug().
-				Str("path", fPath).
-				Str("cmd", cmd).
-				Interface("args", args).
-				Msg("Running command on replacement")
-		}
-		if out, err := c.CombinedOutput(); err != nil {
-			return true, fmt.Errorf("Failed to run onReplaceCmd %s %s %v: %w", c.Path, string(out), c.Args, err)
+		if _, err := runCmd(in.OnReplaceCmd, fPath, strings.NewReader(s)); err != nil {
+			return true, err
 		}
 	}
 	return true, nil
@@ -903,4 +1113,48 @@ func (a Api) Export(projectName string, format string, locale string, writer io.
 	}
 	return nil
 
+}
+
+// This is simply copied from https://github.com/alecthomas/kong-yaml/blob/master/yaml.go
+// with the simple change to use toml instead
+
+func TomlLoader(r io.Reader) (kong.Resolver, error) {
+	decoder := toml.NewDecoder(r)
+	config := map[interface{}]interface{}{}
+	err := decoder.Decode(&config)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("TOML config decode error: %w", err)
+	}
+	return kong.ResolverFunc(func(context *kong.Context, parent *kong.Path, flag *kong.Flag) (interface{}, error) {
+		// Build a string path up to this flag.
+		path := []string{}
+		for n := parent.Node(); n != nil && n.Type != kong.ApplicationNode; n = n.Parent {
+			path = append([]string{n.Name}, path...)
+		}
+		path = append(path, flag.Name)
+		path = strings.Split(strings.Join(path, "-"), "-")
+		return find(config, path), nil
+	}), nil
+}
+
+func find(config map[interface{}]interface{}, path []string) interface{} {
+	if len(path) == 0 {
+		return convertToStringMap(config)
+	}
+	for i := 0; i < len(path); i++ {
+		prefix := strings.Join(path[:i+1], "-")
+		if child, ok := config[prefix].(map[interface{}]interface{}); ok {
+			return find(child, path[i+1:])
+		}
+	}
+	return config[strings.Join(path, "-")]
+}
+
+func convertToStringMap(in map[interface{}]interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(in))
+	for k, v := range in {
+		out[k.(string)] = v
+	}
+
+	return out
 }
