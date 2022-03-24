@@ -159,6 +159,41 @@ func Test_Export(t *testing.T) {
 				},
 			},
 		},
+		{
+			// There was a bug where root-categories generated keys like `.Foo` (leading dot)
+			name: "Should handle root-category correctly",
+			options: ExportI18NOptions{
+				LocaleKey:    "Iso639_3",
+				LocaleFilter: []string{},
+			},
+			project: types.ExtendedProject{
+				Locales: LocaleListToDict(types.DefaultLocales),
+				Project: types.Project{
+					Title:       "Project Foo",
+					Description: "Foo is Bar for Baz",
+				},
+				Categories: map[string]types.ExtendedCategory{
+					"cat-a": {
+						Category: types.Category{
+							Title: "Root",
+							Key:   "",
+						},
+						Translations: map[string]types.ExtendedTranslation{
+							"t-a": {
+								Translation: types.Translation{
+									Key:   "404Page",
+									Title: "The missing page",
+								},
+								Values: map[string]types.TranslationValue{"en-GB": {
+									LocaleID: "en-GB",
+									Value:    "This page is missing",
+								}},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
