@@ -201,3 +201,4 @@ skiver
 
 dist/
 *cache*
+skiver-cli.*

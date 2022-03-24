@@ -8,15 +8,18 @@ COPY . .
 # go1.18beta2 build -ldflags="${ldflags}" -o dist/skiver${SUFFIX} main.go
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="${ldflags}" -o skiver-api .
 
-FROM scratch
+FROM alpine as alpine
 
 WORKDIR /app
 
-# Go-releaser uses this path
-# COPY  ./skiver-api   ./skiver-api
-# This is the _real_ path if building manually
-# COPY  ./dist/skiver-api_linux_amd64/skiver-api ./skiver
-# COPY ./dist/skiver-linux-amd64 ./skiver
+COPY --from=builder /app/skiver-api .
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+ENTRYPOINT [ "/app/skiver-api" ]
+
+FROM scratch as scratch
+
+WORKDIR /app
+
 COPY --from=builder /app/skiver-api .
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 ENTRYPOINT [ "/app/skiver-api" ]
