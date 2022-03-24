@@ -96,7 +96,7 @@ var injectCmd = &cobra.Command{
 		}
 		filter := []string{"ts", "tsx"}
 
-		in := NewInjector(l, CLI.Inject.Dir, CLI.Inject.DryRun, CLI.Inject.OnReplace, CLI.Inject.IgnoreFilter, filter, regex, replacementFunc)
+		in := NewInjector(l, CLI.Inject.Dir, CLI.Inject.DryRun, CLI.Inject.OnReplace, CLI.IgnoreFilter, filter, regex, replacementFunc)
 		err := in.Inject()
 		if err != nil {
 			l.Fatal().Err(err).Msg("Failed to inject")
@@ -108,7 +108,7 @@ var injectCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(injectCmd)
 	s := reflect.TypeOf(CLI.Inject)
-	for _, v := range []string{"DryRun", "Dir", "IgnoreFilter", "OnReplace"} {
+	for _, v := range []string{"DryRun", "Dir", "OnReplace"} {
 		mustSetVar(s, v, injectCmd, "inject.")
 	}
 }

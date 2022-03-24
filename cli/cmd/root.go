@@ -53,13 +53,14 @@ func (u secret) MarshalTOML() ([]byte, error) {
 }
 
 type config struct {
-	URI               string `help:"Endpoint for skiver" env:"SKIVER_URI" short:"u" json:"uri"`
-	Project           string `help:"Project-id/ShortName" short:"p" env:"SKIVER_PROJECT" json:"project"`
-	Token             secret `help:"Token used for authentication" short:"t" env:"SKIVER_TOKEN" json:"token"`
-	Locale            string `help:"Locale to use" env:"SKIVER_LOCALE" short:"l" json:"locale"`
-	WithPrettier      bool   `help:"Where available, will attempt to run prettier, or prettier_d if available" json:"with_prettier"`
-	PrettierPath      string `help:"Path-override for prettier" default:"prettier" json:"prettier_path"`
-	PrettierDSlimPath string `help:"Path-override for prettier_d_slim, which should be faster than regular prettier" default:"prettier_d_slim" json:"prettier_d_slim_path"`
+	URI               string   `help:"Endpoint for skiver" env:"SKIVER_URI" short:"u" json:"uri"`
+	Project           string   `help:"Project-id/ShortName" short:"p" env:"SKIVER_PROJECT" json:"project"`
+	Token             secret   `help:"Token used for authentication" short:"t" env:"SKIVER_TOKEN" json:"token"`
+	Locale            string   `help:"Locale to use" env:"SKIVER_LOCALE" short:"l" json:"locale"`
+	WithPrettier      bool     `help:"Where available, will attempt to run prettier, or prettier_d if available" json:"with_prettier"`
+	PrettierPath      string   `help:"Path-override for prettier" default:"prettier" json:"prettier_path"`
+	PrettierDSlimPath string   `help:"Path-override for prettier_d_slim, which should be faster than regular prettier" default:"prettier_d_slim" json:"prettier_d_slim_path"`
+	IgnoreFilter      []string `help:"Ignore-filter for files" json:"ignore_filter"`
 
 	Import struct {
 		Source string `help:"Source-file for import" arg:"" env:"SKIVER_IMPORT_SOURCE" json:"source"`
@@ -74,16 +75,12 @@ type config struct {
 	} `help:"Find unused translation-keys" cmd:"" json:"unused"`
 
 	Inject struct {
-		IgnoreFilter []string `help:"Ignore-filter for files" json:"ignore_filter"`
-		DryRun       bool     `help:"Enable dry-run" json:"dry_run"`
-		OnReplace    string   `help:"Command to run on file after replacement, like prettier" json:"on_replace"`
-		Dir          string   `help:"Directory for source-code" type:"existingdir" arg:"" json:"dir"`
+		DryRun    bool   `help:"Enable dry-run" json:"dry_run"`
+		OnReplace string `help:"Command to run on file after replacement, like prettier" json:"on_replace"`
+		Dir       string `help:"Directory for source-code" type:"existingdir" arg:"" json:"dir"`
 	} `help:"Inject helper-comments into source-files" cmd:"" json:"inject"`
 	Config struct {
-		Format string   `enum:"json,yaml,toml" default:"toml" json:"format"`
-		Paths  struct{} `help:"Print paths used" cmd:"" json:"-"`
-		Show   struct {
-		} `help:"Print effective config" cmd:"" json:"-"`
+		Format string `enum:"json,yaml,toml" default:"toml" json:"format"`
 	} `help:"Configuration" cmd:"" json:"config"`
 	LogFormat string `help:"Format to log as" default:"human" enum:"json,human" json:"log_format"`
 	LogLevel  string `help:"Level for logging." default:"info" enum:"trace,debug,info,warn,error,panic" json:"log_level"`
@@ -159,7 +156,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/skiver/skiver-cli.yaml)")
 
 	s := reflect.TypeOf(CLI)
-	for _, v := range []string{"Project", "WithPrettier", "PrettierPath", "PrettierDSlimPath", "LogFormat", "LogLevel", "URI", "Locale", "Token"} {
+	for _, v := range []string{"Project", "WithPrettier", "PrettierPath", "PrettierDSlimPath", "LogFormat", "LogLevel", "URI", "Locale", "Token", "IgnoreFilter"} {
 		mustSetVar(s, v, rootCmd, "")
 	}
 
@@ -217,7 +214,7 @@ func setVar(t reflect.Type, name string, cmd *cobra.Command, subkey string) erro
 			fieldNames = append(fieldNames, f.Name)
 
 		}
-		return fmt.Errorf("field '%s' not found within struct. Available names: %v", name, fieldNames)
+		return fmt.Errorf("[%s] field '%s' not found within struct. Available names: %v", cmd.Name(), name, fieldNames)
 	}
 
 	cfgName := field.Tag.Get("cfg")
