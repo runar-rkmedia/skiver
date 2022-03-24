@@ -46,7 +46,11 @@
     {{- end}}
         {{- end}}
         {{- if not $root.AsValue -}}
+          {{- if $root.Category.Key -}}
           '{{$root.Category.Key}}.{{$translation.Key}}',
+          {{- else -}}
+          '{{$translation.Key}}',
+          {{- end }}
       {{ end -}}
     {{- end }}
 

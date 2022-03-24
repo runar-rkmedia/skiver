@@ -51,7 +51,12 @@ func PrepareTemplates() *template.Template {
 	t := template.New(filepath.Base(templatePath))
 	templateFuncs := make(template.FuncMap)
 
-	jsKeyQuoteRegex := regexp.MustCompile(`(^0|\s)`)
+	/* Must be quoted if any of these apply:
+	- Starts with '0'
+	- Contains whitespace
+	- Starts with a number and contains a non-number
+	*/
+	jsKeyQuoteRegex := regexp.MustCompile(`(^0|\s|^\d+[^\d])`)
 
 	for k, v := range sprig.TxtFuncMap() {
 		// Prehaps we should whitelist instead...
