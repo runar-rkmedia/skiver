@@ -78,9 +78,16 @@ func UpdateTranslation() AppHandler {
 		}
 
 		t := types.Translation{
-			Key:         existing.Key,
-			Title:       *j.Title,
-			Description: *j.Description,
+			Key: existing.Key,
+		}
+		if j.Description != nil {
+			t.Description = *j.Description
+		}
+		if j.Title != nil {
+			t.Title = *j.Title
+		}
+		if j.Key != "" {
+			t.Key = j.Key
 		}
 		if j.Variables != nil {
 			if v, ok := j.Variables.(map[string]interface{}); ok {

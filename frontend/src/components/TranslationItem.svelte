@@ -36,6 +36,7 @@
   let edit = false
   let showDelete = false
   let editTitle = ''
+  let editKey = ''
   let editDescription = ''
   let editVariables = ''
   let editError = ''
@@ -48,6 +49,7 @@
     edit = !edit
     if (!editTitle) {
       editTitle = translation.title || ''
+      editKey = translation.key || ''
       editDescription = translation.description || ''
       editVariables =
         JSON.stringify(translation.variables, null, 2) || '{\n  \n}'
@@ -55,9 +57,15 @@
   }
 
   function submitEdit() {
-    let payload: Partial<ApiDef.TranslationInput> = {
-      title: editTitle,
-      description: editDescription,
+    let payload: ApiDef.UpdateTranslationInput = {
+      id: translation.id,
+      ...(!!editTitle &&
+        editTitle !== translation.title && { title: editTitle }),
+      ...(!!editKey && editKey !== translation.key && { key: editKey }),
+      ...(!!editDescription &&
+        editDescription !== translation.description && {
+          description: editDescription,
+        }),
     }
     if (editVariables && editVariables.replace(/\s/g, '') !== '{}')
       try {
@@ -68,7 +76,7 @@
       }
     editError = ''
 
-    api.translation.update(translation.id, payload as any).then(([_, err]) => {
+    api.translation.update(translation.id, payload).then(([_, err]) => {
       if (err) {
         return
       }
@@ -111,7 +119,13 @@
   {/if}
   {#if edit}
     <form>
+      <code>{JSON.stringify(translation, null, 2)}</code>
       <ApiResponseError key="translation" />
+      {#if editError}
+        <Alert kind="error">
+          {editError}
+        </Alert>
+      {/if}
       <label
         >Title<input name="title" bind:value={editTitle} type="text" /></label>
       <label
@@ -120,13 +134,10 @@
           rows={3}
           bind:value={editDescription}
           type="text" /></label>
-      {#if editError}
-        <Alert kind="error">
-          {editError}
-        </Alert>
-      {/if}
-      <label
-        >Variables<textarea
+      <label>Key<input name="key" bind:value={editKey} type="text" /></label>
+      <label>
+        Variables
+        <textarea
           name="variables"
           rows={8}
           bind:value={editVariables}

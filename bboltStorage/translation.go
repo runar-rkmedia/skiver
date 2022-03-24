@@ -105,9 +105,9 @@ func (bb *BBolter) SoftDeleteTranslation(id string, byUser string, deleteTime *t
 }
 
 // TODO: complete implementation
-func (b *BBolter) UpdateTranslation(id string, paylaod types.Translation) (types.Translation, error) {
+func (b *BBolter) UpdateTranslation(id string, payload types.Translation) (types.Translation, error) {
 	if id == "" {
-		return paylaod, ErrMissingIdArg
+		return payload, ErrMissingIdArg
 	}
 	existing, err := b.GetTranslation(id)
 	if err != nil {
@@ -127,24 +127,24 @@ func (b *BBolter) UpdateTranslation(id string, paylaod types.Translation) (types
 		}
 		needsUpdate := false
 		// TODO: ensure key-uniqueness
-		if paylaod.Key != c.Key {
-			c.Key = paylaod.Key
+		if payload.Key != c.Key {
+			c.Key = payload.Key
 			needsUpdate = true
 		}
-		if paylaod.Title != "" && paylaod.Title != c.Title {
-			c.Title = paylaod.Title
+		if payload.Title != "" && payload.Title != c.Title {
+			c.Title = payload.Title
 			needsUpdate = true
 		}
-		if paylaod.Description != "" && paylaod.Description != c.Description {
-			c.Description = paylaod.Description
+		if payload.Description != "" && payload.Description != c.Description {
+			c.Description = payload.Description
 			needsUpdate = true
 		}
-		if len(paylaod.Variables) > 0 {
-			c.Variables = paylaod.Variables
+		if len(payload.Variables) > 0 {
+			c.Variables = payload.Variables
 			needsUpdate = true
 		}
-		if paylaod.Deleted != nil {
-			c.Deleted = paylaod.Deleted
+		if payload.Deleted != nil {
+			c.Deleted = payload.Deleted
 			needsUpdate = true
 		}
 

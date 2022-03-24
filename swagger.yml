@@ -1390,6 +1390,11 @@ definitions:
         maxLength: 36
         minLength: 3
         type: string
+      key:
+        maxLength: 400
+        minLength: 1
+        pattern: ^[^\s]*$
+        type: string
       title:
         maxLength: 300
         minLength: 0
