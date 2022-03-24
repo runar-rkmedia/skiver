@@ -90,7 +90,7 @@ func getExport(l logger.AppLogger, exportCache Cache, db types.Storage, opt Expo
 		return
 	}
 	if ps == nil {
-		err = ErrApiNotFound("Project")
+		err = ErrApiNotFound("Project", projects[0])
 		return
 	}
 	var ep types.ExtendedProject
