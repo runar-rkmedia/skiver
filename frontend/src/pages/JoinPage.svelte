@@ -51,15 +51,23 @@
     <form>
       <label>
         Username
-        <input name="username" bind:value={username} />
+        <input name="username" bind:value={username} autocomplete="username" />
       </label>
       <label>
         Password
-        <input name="password" bind:value={password} type="password" />
+        <input
+          name="password"
+          bind:value={password}
+          type="password"
+          autocomplete="new-password" />
       </label>
       <label>
         Confirm Password
-        <input name="password-2" bind:value={password2} type="password" />
+        <input
+          name="password-2"
+          bind:value={password2}
+          type="password"
+          autocomplete="new-password" />
       </label>
       <Button
         color="primary"
