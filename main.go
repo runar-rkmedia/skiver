@@ -648,6 +648,8 @@ func main() {
 	router.GET("/api/export/:params", c("GetExport", handlers.GetExport(exportCache)))
 	router.GET("/api/export/", c("GetExportx", handlers.GetExport(exportCache)))
 	router.GET("/api/user/", c("GetSimpleUsers", handlers.ListUsers(&db, true)))
+	router.GET("/api/missing/", c("GetMissing", handlers.GetMissing(&db)))
+	router.POST("/api/missing/:locale/:project", c("ReportMissing", handlers.PostMissing(&db)))
 	router.GET("/api/users/", c("GetUsers", handlers.ListUsers(&db, false), routeOptions{
 		sessionRole: func(s types.Session, r *http.Request) error {
 			if !s.User.CanUpdateUsers {
@@ -715,6 +717,7 @@ func main() {
 	handler.Handle("/api/users/", router)
 	handler.Handle("/api/user/", router)
 	handler.Handle("/api/wordcloud/", router)
+	handler.Handle("/api/missing/", router)
 	useCert := false
 	if cfg.CertFile != "" {
 		_, err := os.Stat(cfg.CertFile)

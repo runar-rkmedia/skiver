@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/runar-rkmedia/skiver/requestContext"
 	"github.com/runar-rkmedia/skiver/types"
 )
@@ -62,8 +63,8 @@ var (
 	ErrApiInternalErrorMissingSession = NewApiError("Missing session", http.StatusBadGateway, string(CodeInternalServerError))
 )
 
-func ErrApiNotFound(key string) error {
-	return NewApiError("Not found: "+key, http.StatusNotFound, "NotFound:"+key)
+func ErrApiNotFound(key string, input string) error {
+	return NewApiError(fmt.Sprintf("%s not found for '%s'", key, input), http.StatusNotFound, "NotFound:"+key)
 }
 func ErrApiNotAuthorized(key, verb string) error {
 	return NewApiError(fmt.Sprintf("You are not authorized to %s: on %s", verb, key), http.StatusNotFound, "Auth:"+key+"+"+verb)
@@ -83,7 +84,10 @@ func ErrApiDatabase(key string, err error) error {
 	return &e
 }
 
-// Returns a valid session or nil
+func GetParams(r *http.Request) httprouter.Params {
+	return httprouter.ParamsFromContext(r.Context())
+}
+
 func GetRequestSession(r *http.Request) (session types.Session, err error) {
 	err = ErrApiInternalErrorMissingSession
 	si := r.Context().Value(ContextKeySession)

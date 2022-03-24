@@ -74,7 +74,7 @@ func UpdateTranslation() AppHandler {
 			rc.WriteErr(err, requestContext.CodeErrTranslation)
 		}
 		if existing == nil || existing.OrganizationID != session.User.OrganizationID {
-			return nil, ErrApiNotFound("Translation")
+			return nil, ErrApiNotFound("Translation", tid)
 		}
 
 		t := types.Translation{
