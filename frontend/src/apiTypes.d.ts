@@ -823,6 +823,7 @@ declare namespace ApiDef {
     export interface UpdateTranslationInput {
         description?: string;
         id: string;
+        key?: string; // ^[^\s]*$
         title?: string;
         variables?: {
             [name: string]: any;

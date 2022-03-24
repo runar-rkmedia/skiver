@@ -30,6 +30,12 @@ type UpdateTranslationInput struct {
 	// Min Length: 3
 	ID *string `json:"id"`
 
+	// key
+	// Max Length: 400
+	// Min Length: 1
+	// Pattern: ^[^\s]*$
+	Key string `json:"key,omitempty"`
+
 	// title
 	// Max Length: 300
 	// Min Length: 0
@@ -48,6 +54,10 @@ func (m *UpdateTranslationInput) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateID(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateKey(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -88,6 +98,26 @@ func (m *UpdateTranslationInput) validateID(formats strfmt.Registry) error {
 	}
 
 	if err := validate.MaxLength("id", "body", *m.ID, 36); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *UpdateTranslationInput) validateKey(formats strfmt.Registry) error {
+	if swag.IsZero(m.Key) { // not required
+		return nil
+	}
+
+	if err := validate.MinLength("key", "body", m.Key, 1); err != nil {
+		return err
+	}
+
+	if err := validate.MaxLength("key", "body", m.Key, 400); err != nil {
+		return err
+	}
+
+	if err := validate.Pattern("key", "body", m.Key, `^[^\s]*$`); err != nil {
 		return err
 	}
 
