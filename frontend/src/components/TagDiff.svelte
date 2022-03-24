@@ -140,7 +140,7 @@
         {#if areEqual}
           <img
             title={`SHA ${response.a?.tag || response.b?.tag || ''}: ${
-              response.a?.tag || response.b?.hash
+              response.a?.hash || response.b?.hash
             }`}
             alt="Identicon for tag"
             src={'data:image/png;base64,' +
