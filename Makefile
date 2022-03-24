@@ -55,7 +55,10 @@ container: build-web
     --label "org.opencontainers.image.version=$(version)" \
     --build-arg "ldflags=$(ldflags)"
 container-publish: container
-	docker push runardocker/skiver-api:latest  runardocker/skiver-api:alpine runardocker/skiver-api:$(version) runardocker/skiver-api:$(version)-alpine
+	docker push runardocker/skiver-api:latest 
+	docker push runardocker/skiver-api:alpine
+	docker push runardocker/skiver-api:$(version) 
+	docker push runardocker/skiver-api:$(version)-alpine
 
 publish: container-publish release
 
