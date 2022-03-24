@@ -63,7 +63,7 @@ var unusedCmd = &cobra.Command{
 		}()
 		filter := []string{"ts", "tsx"}
 
-		in := NewInjector(l, CLI.Unused.Dir, true, "", CLI.Inject.IgnoreFilter, filter, regex, replacementFunc)
+		in := NewInjector(l, CLI.Unused.Dir, true, "", CLI.IgnoreFilter, filter, regex, replacementFunc)
 		err := in.Inject()
 		if err != nil {
 			l.Fatal().Err(err).Msg("Failed to inject")
@@ -91,6 +91,9 @@ var unusedCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(unusedCmd)
 	s := reflect.TypeOf(CLI.Unused)
+	// viper has some trouble with nested keys it seems
+	// https://github.com/spf13/viper/issues/368
+	// In my case, registering primitives work, but not complex types, like []string
 	for _, v := range []string{"Source", "Dir"} {
 		mustSetVar(s, v, unusedCmd, "unused.")
 	}
