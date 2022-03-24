@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/runar-rkmedia/skiver/bboltStorage"
 	"github.com/runar-rkmedia/skiver/importexport"
 	"github.com/runar-rkmedia/skiver/localuser"
@@ -41,7 +40,6 @@ func EndpointsHandler(
 	ctx requestContext.Context,
 	userSessions SessionManager,
 	pw localuser.PwHasher,
-	serverInfo func() *types.ServerInfo,
 	swaggerYml []byte,
 ) http.HandlerFunc {
 
@@ -115,19 +113,6 @@ func EndpointsHandler(
 			rw.Header().Set("Content-Disposition", `attachment; filename="swagger-skiver.yaml"`)
 			rw.Write(swaggerYml)
 			return
-		case "serverInfo":
-			if isGet && len(paths) == 1 {
-				size, sizeErr := ctx.DB.Size()
-				info := serverInfo()
-				if sizeErr != nil {
-					ctx.L.Warn().Err(sizeErr).Msg("Failed to retrieve size of database")
-				} else {
-					info.DatabaseSize = size
-					info.DatabaseSizeStr = humanize.Bytes(uint64(size))
-				}
-				rc.WriteAuto(info, err, "serverInfo")
-				return
-			}
 		case "join":
 			if isPost || isGet {
 				joinId := getStringSliceIndex(paths, 1)

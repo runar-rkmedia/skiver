@@ -683,6 +683,12 @@ func main() {
 			return nil
 		}}))
 	router.GET("/api/translation/", c("GetTranslation", handlers.GetTranslations()))
+	router.GET("/api/serverInfo/", c("GetServerInfo", handlers.GetServerInfo(&db, func() *types.ServerInfo {
+		info.RLock()
+		defer info.RUnlock()
+		return &info.ServerInfo
+
+	})))
 	router.POST("/api/project/snapshot/", c("PostSnapshot", handlers.PostSnapshot(), routeOptions{sessionRole: func(s types.Session, _ *http.Request) error {
 		if !s.User.CanUpdateProjects {
 			return fmt.Errorf("You are not authorized to create snapshots")
@@ -691,13 +697,7 @@ func main() {
 	}}))
 
 	apiHandler := http.StripPrefix("/api/",
-		handlers.EndpointsHandler(
-			ctx, userSessions, pw, func() *types.ServerInfo {
-				info.RLock()
-				defer info.RUnlock()
-				return &info.ServerInfo
-			}, []byte(swaggerYml),
-		),
+		handlers.EndpointsHandler(ctx, userSessions, pw, []byte(swaggerYml)),
 	)
 	if config.Gzip {
 		apiHandler = gziphandler.GzipHandler(apiHandler)
@@ -718,6 +718,7 @@ func main() {
 	handler.Handle("/api/user/", router)
 	handler.Handle("/api/wordcloud/", router)
 	handler.Handle("/api/missing/", router)
+	handler.Handle("/api/serverInfo/", router)
 	useCert := false
 	if cfg.CertFile != "" {
 		_, err := os.Stat(cfg.CertFile)
