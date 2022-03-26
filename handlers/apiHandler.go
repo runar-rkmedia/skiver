@@ -544,35 +544,6 @@ func EndpointsHandler(
 					return
 				}
 			}
-		case "category":
-			if isGet {
-				categories, err := ctx.DB.GetCategories()
-				rc.WriteAuto(categories, err, requestContext.CodeErrCategory)
-				return
-			}
-			if isPost {
-				if !session.User.CanCreateTranslations {
-					rc.WriteError("You are not authorizatiod to create categories", requestContext.CodeErrAuthoriziation)
-					return
-				}
-				var j models.CategoryInput
-				if err := rc.ValidateBytes(body, &j); err != nil {
-					return
-				}
-
-				c := types.Category{
-					// TranslationInput: j,
-					ProjectID:   *j.ProjectID,
-					Key:         *j.Key,
-					Description: j.Description,
-					Title:       *j.Title,
-				}
-				c.CreatedBy = session.User.ID
-				c.OrganizationID = session.Organization.ID
-				category, err := ctx.DB.CreateCategory(c)
-				rc.WriteAuto(category, err, requestContext.CodeErrCategory)
-				return
-			}
 		case "translationValue":
 			if isGet {
 				tvs, err := ctx.DB.GetTranslationValues()
