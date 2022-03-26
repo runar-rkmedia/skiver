@@ -54,7 +54,6 @@
   let translationID: string = ''
 
   $: {
-    console.log('i am running')
     if (categoryKey && translationID) {
       document.body.classList.add('stop-scrolling')
     } else {
@@ -148,18 +147,20 @@
             noHeader={true}
             {categoryKey}
             projectKey={project.id}
-            translationKeyLike={translationID} >
+            translationKeyLike={translationID}>
             <h4 slot="categoryHeader" let:category let:translation>
-              <ScrollAnchor {category} on:scrollTo={() => {
-                translationID = ''
-                categoryKey = ''
-              }}>
-              <code>
-                {[category?.key, translation?.key].filter(Boolean).join('.')}
-              </code>
-                </ScrollAnchor>
+              <ScrollAnchor
+                {category}
+                on:scrollTo={() => {
+                  translationID = ''
+                  categoryKey = ''
+                }}>
+                <code>
+                  {[category?.key, translation?.key].filter(Boolean).join('.')}
+                </code>
+              </ScrollAnchor>
             </h4>
-            </Embed>
+          </Embed>
         </div>
       </embed-wrapper>
     {/if}
