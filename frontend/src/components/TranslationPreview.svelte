@@ -25,10 +25,8 @@
       if (typeof v === 'string' && /\d{4}-\d{2}-\d{2}/.test(v)) {
         const d = new Date(v)
         v = d
-        console.log('vvvv', { k, v })
       }
 
-      console.log('kk', k, v, typeof v, { k, v })
       previous[k] = v
 
       return previous
