@@ -650,6 +650,15 @@ func main() {
 	router.GET("/api/user/", c("GetSimpleUsers", handlers.ListUsers(&db, true)))
 	router.GET("/api/missing/", c("GetMissing", handlers.GetMissing(&db)))
 	router.POST("/api/missing/:locale/:project", c("ReportMissing", handlers.PostMissing(&db)))
+	router.GET("/api/category/", c("GetCategory", handlers.GetCategory(&db)))
+	router.POST("/api/category/", c("PostCategory", handlers.PostCategory(&db), routeOptions{
+		sessionRole: func(s types.Session, r *http.Request) error {
+			if !s.User.CanCreateTranslations {
+				return fmt.Errorf("You are not authorized to manage translations")
+			}
+			return nil
+		},
+	}))
 	router.GET("/api/users/", c("GetUsers", handlers.ListUsers(&db, false), routeOptions{
 		sessionRole: func(s types.Session, r *http.Request) error {
 			if !s.User.CanUpdateUsers {
@@ -719,6 +728,7 @@ func main() {
 	handler.Handle("/api/wordcloud/", router)
 	handler.Handle("/api/missing/", router)
 	handler.Handle("/api/serverInfo/", router)
+	handler.Handle("/api/category/", router)
 	useCert := false
 	if cfg.CertFile != "" {
 		_, err := os.Stat(cfg.CertFile)
