@@ -18,7 +18,9 @@
 {#if s && !s.loading && s.error}
   {#if s.error?.error}
     <Alert kind="error">
-      <h5>{s.error.error.code}</h5>
+      {#if s.error.error.code}
+        <h5>{s.error.error.code}</h5>
+      {/if}
       <p>{s.error.error.error}</p>
       {#if s.error.details}
         {JSON.stringify(s.error.details)}

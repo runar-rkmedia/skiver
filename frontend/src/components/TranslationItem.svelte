@@ -119,7 +119,6 @@
   {/if}
   {#if edit}
     <form>
-      <code>{JSON.stringify(translation, null, 2)}</code>
       <ApiResponseError key="translation" />
       {#if editError}
         <Alert kind="error">

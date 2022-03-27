@@ -67,9 +67,17 @@ export async function fetchApi<T extends {}>(
         if (response.status < 400 || runUpdaterOnErr) updater(JSON)
       }
       if (response.status >= 400) {
-        return [result, JSON as ApiResponses.ApiError] as const
+        return [null, JSON as ApiResponses.ApiError] as const
       }
       result.data = JSON
+    } else {
+
+      const err: ApiResponses.ApiError = {
+        error: { error: "Unexpected result from api: " + response.status }, details: {
+          statusCode: response.status,
+        }
+      }
+      return [null, err] as const
     }
   } catch (err) {
     console.error(`fetchApi error for ${subPath}: ${err.message}`, {

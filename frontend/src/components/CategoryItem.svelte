@@ -88,6 +88,15 @@
             </small>
           {/if}
         </span>
+        <Button
+          icon="edit"
+          on:click={() => {
+            visibleForm = 'editCategory'
+            selectedCategory = category.id
+          }}
+          disabled={!!visibleForm}>
+          Edit
+        </Button>
       </h3>
       <div class="description">
         {category.description || ''}

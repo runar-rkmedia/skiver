@@ -811,6 +811,13 @@ declare namespace ApiDef {
         translation_id: string;
         value?: string;
     }
+    export interface UpdateCategoryInput {
+        description?: string;
+        id?: string;
+        key?: string; // ^[^\s]*$
+        project_id?: string;
+        title?: string;
+    }
     export interface UpdateProjectInput {
         description?: string;
         id: string;

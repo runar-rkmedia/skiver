@@ -359,6 +359,30 @@ definitions:
       - key
       - project_id
       - title
+  UpdateCategoryInput:
+    properties:
+      id:
+        maxLength: 100
+        minLength: 1
+        type: string
+      key:
+        maxLength: 100
+        minLength: 1
+        pattern: ^[^\s]*$
+        type: string
+      project_id:
+        maxLength: 100
+        minLength: 1
+        type: string
+      title:
+        maxLength: 400
+        minLength: 3
+        type: string
+      description:
+        maxLength: 8000
+        minLength: 3
+        type: string
+    type: object
   LoginInput:
     properties:
       password:
