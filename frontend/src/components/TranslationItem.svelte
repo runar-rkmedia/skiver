@@ -6,6 +6,7 @@
   import Button from './Button.svelte'
   import ApiResponseError from './ApiResponseError.svelte'
   import ContextForm from './ContextForm.svelte'
+import Dialog from './Dialog.svelte';
   export let translation: ApiDef.Translation
   /** Map by locale-id */
   // export let translationValues: Record<string, ApiDef.TranslationValue>
@@ -118,6 +119,9 @@
     </form>
   {/if}
   {#if edit}
+  <Dialog on:clickClose={toggleEdit}>
+    <span slot="title">Edit Category</span>
+    <paper>
     <form>
       <ApiResponseError key="translation" />
       {#if editError}
@@ -161,7 +165,9 @@
         </div>
       </div>
     </form>
-  {:else}
+  </paper>
+      </Dialog>
+  {/if}
     <div class="desc">
       <h4>
         <slot name="categoryHeader" {categoryKey} {translation}>
@@ -177,7 +183,6 @@
         <EntityDetails entity={translation} />
       </div>
     </div>
-  {/if}
   <p>
     {translation.description || ''}
   </p>

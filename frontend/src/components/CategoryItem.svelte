@@ -191,9 +191,6 @@
       var(--color-grey-300) 60px
     );
   }
-  .deleted > :global(:not(form)) {
-    opacity: 0.7;
-  }
   .desc {
     position: sticky;
     position: -webkit-sticky;
