@@ -68,7 +68,7 @@ export const api = {
     create: apiCreateFactory<ApiDef.CreateSnapshotInput, 'project'>('project/snapshot', 'project'),
   },
   organization: CrudFactory<ApiDef.OrganizationInput, 'organization'>('organization'),
-  category: CrudFactory<ApiDef.CategoryInput, 'category'>('category'),
+  category: CrudFactory<ApiDef.CategoryInput, 'category', ApiDef.UpdateCategoryInput>('category'),
   translationValue: CrudFactory<
     ApiDef.TranslationValueInput,
     'translationValue',
@@ -566,7 +566,7 @@ function apiCreateFactory<Payload extends {}, K extends DBKeyValue>(
       ...s,
       responseStates: { ...s.responseStates, [storeKey]: { loading: true } },
     }))
-    const [res, err] = await fetchApi<DB[K]['s']>(
+    const r = await fetchApi<DB[K]['s']>(
       subPath,
       (e) => e.id && replaceField(storeKey, e, e.id, 'create'),
       {
@@ -575,6 +575,7 @@ function apiCreateFactory<Payload extends {}, K extends DBKeyValue>(
         ...options,
       }
     )
+    const [res, err] = r
     checkError(err)
     if (!err && res) {
       toast({ kind: 'info', title: 'Success', message: `${storeKey} created` })
@@ -587,9 +588,11 @@ function apiCreateFactory<Payload extends {}, K extends DBKeyValue>(
       },
     }))
 
-    return [res, err]
+    return r
   }
 }
+
+export type ApiTuple<T extends {}> = readonly [{ data: T }, null] | [null, ApiDef.APIError]
 
 function apiUpdateFactory<Payload extends {}, K extends DBKeyValue>(
   subPath: string,

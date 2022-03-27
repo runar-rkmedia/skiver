@@ -1354,6 +1354,30 @@ definitions:
     - translation_id
     - locale_id
     type: object
+  UpdateCategoryInput:
+    properties:
+      description:
+        maxLength: 8000
+        minLength: 3
+        type: string
+      id:
+        maxLength: 100
+        minLength: 1
+        type: string
+      key:
+        maxLength: 100
+        minLength: 1
+        pattern: ^[^\s]*$
+        type: string
+      project_id:
+        maxLength: 100
+        minLength: 1
+        type: string
+      title:
+        maxLength: 400
+        minLength: 3
+        type: string
+    type: object
   UpdateProjectInput:
     properties:
       description:

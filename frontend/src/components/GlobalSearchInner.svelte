@@ -3,8 +3,9 @@
   import Fuse from 'fuse.js'
   import Embed from 'pages/Embed.svelte'
   import { state } from 'state'
-  import { fade, blur, slide, scale, fly, draw } from 'svelte/transition'
+  import { scale } from 'svelte/transition'
   import Button from './Button.svelte'
+  import Dialog from './Dialog.svelte'
   import ScrollAnchor from './ScrollAnchor.svelte'
   export let project: ApiDef.Project
 
@@ -52,25 +53,8 @@
   }
   let categoryKey: string = ''
   let translationID: string = ''
-
-  $: {
-    if (categoryKey && translationID) {
-      document.body.classList.add('stop-scrolling')
-    } else {
-      document.body.classList.remove('stop-scrolling')
-    }
-  }
-  const handleKeydown = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      if (categoryKey || translationID) {
-        categoryKey = ''
-        translationID = ''
-      }
-    }
-  }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
 <div>
   {#if result && query}
     <div class="resultswrapper">
@@ -135,34 +119,30 @@
       {/if}
     </div>
     {#if translationID || categoryKey}
-      <embed-wrapper transition:fade={{ duration: 150 }}>
-        <div
-          class="simple-backdrop"
-          on:click={() => {
-            translationID = ''
-            categoryKey = ''
-          }} />
-        <div class="content" transition:scale={{ duration: 250 }}>
-          <Embed
-            noHeader={true}
-            {categoryKey}
-            projectKey={project.id}
-            translationKeyLike={translationID}>
-            <h4 slot="categoryHeader" let:category let:translation>
-              <ScrollAnchor
-                {category}
-                on:scrollTo={() => {
-                  translationID = ''
-                  categoryKey = ''
-                }}>
-                <code>
-                  {[category?.key, translation?.key].filter(Boolean).join('.')}
-                </code>
-              </ScrollAnchor>
-            </h4>
-          </Embed>
-        </div>
-      </embed-wrapper>
+      <Dialog
+        on:clickClose={() => {
+          translationID = ''
+          categoryKey = ''
+        }}>
+        <Embed
+          noHeader={true}
+          {categoryKey}
+          projectKey={project.id}
+          translationKeyLike={translationID}>
+          <h4 slot="categoryHeader" let:category let:translation>
+            <ScrollAnchor
+              {category}
+              on:scrollTo={() => {
+                translationID = ''
+                categoryKey = ''
+              }}>
+              <code>
+                {[category?.key, translation?.key].filter(Boolean).join('.')}
+              </code>
+            </ScrollAnchor>
+          </h4>
+        </Embed>
+      </Dialog>
     {/if}
     {#if !result.translationValues.length && !result.translations.length && !result.categories.length}
       No result. Try refining your search.
@@ -190,12 +170,6 @@
 </div>
 
 <style>
-  .simple-backdrop {
-    width: 100%;
-    height: 100%;
-    position: fixed;
-    opacity: 0.5;
-  }
   :global(.resultswrapper button) {
     padding: 0;
     text-align: inherit;
@@ -203,23 +177,6 @@
   h3 {
     display: flex;
     justify-content: space-between;
-  }
-  embed-wrapper {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    display: flex;
-    justify-content: center;
-    z-index: 2;
-    overflow-y: auto;
-  }
-  embed-wrapper .content {
-    overflow-y: auto;
-    width: 100%;
-    padding-block: var(--size-8);
-    padding-inline: var(--size-8);
   }
 
   .resultswrapper {

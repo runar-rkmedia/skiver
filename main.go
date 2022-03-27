@@ -659,6 +659,14 @@ func main() {
 			return nil
 		},
 	}))
+	router.PUT("/api/category/", c("UpdateCategory", handlers.UpdateCategory(&db), routeOptions{
+		sessionRole: func(s types.Session, r *http.Request) error {
+			if !s.User.CanCreateTranslations {
+				return fmt.Errorf("You are not authorized to manage translations")
+			}
+			return nil
+		},
+	}))
 	router.GET("/api/users/", c("GetUsers", handlers.ListUsers(&db, false), routeOptions{
 		sessionRole: func(s types.Session, r *http.Request) error {
 			if !s.User.CanUpdateUsers {

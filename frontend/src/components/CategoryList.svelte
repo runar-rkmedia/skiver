@@ -1,9 +1,12 @@
 <script lang="ts">
   import { db } from 'api'
+  import CategoryForm from 'forms/CategoryForm.svelte'
+  import CategoryItem from './CategoryItem.svelte'
   import sortOn from 'sort-on'
   import { state } from 'state'
+  import Button from './Button.svelte'
+  import Dialog from './Dialog.svelte'
 
-  import CategoryItem from './CategoryItem.svelte'
   export let locales: ApiDef.Locale[]
   export let selectedLocale: string
   export let projectID: string
@@ -19,6 +22,23 @@
     )
 </script>
 
+{#if visibleForm === 'editCategory'}
+  <Dialog on:clickClose={() => (visibleForm = null)}>
+    <span slot="title">Edit Category</span>
+    <paper>
+      <CategoryForm
+        {projectID}
+        categoryID={selectedCategory}
+        on:complete={() => (visibleForm = null)}>
+        <Button
+          slot="actions"
+          color="secondary"
+          icon="cancel"
+          on:click={() => (visibleForm = null)}>Cancel</Button>
+      </CategoryForm>
+    </paper>
+  </Dialog>
+{/if}
 {#if categories && categories?.length}
   {#each categories as category (category.id)}
     <CategoryItem
