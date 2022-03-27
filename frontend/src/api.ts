@@ -425,7 +425,7 @@ const mergeMap = <K extends DBKeyValue, V extends DB[K]>(key: K, value: V) => {
 }
 
 // Keys in db that are of type Record<string, T>
-type DBKeyValue = keyof Omit<DB, 'serverInfo' | 'responseStates' | 'login' | 'simpleUser'>
+export type DBKeyValue = keyof Omit<DB, 'serverInfo' | 'responseStates' | 'login' | 'simpleUser'>
 
 const replaceField = <K extends DBKeyValue, V extends DB[K]['s']>(
   key: K,
