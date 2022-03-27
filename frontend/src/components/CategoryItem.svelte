@@ -1,8 +1,9 @@
 <script lang="ts">
   import { db, api } from 'api'
-  import { state, toast } from 'state'
+  import { state, toast, showDialog } from 'state'
   import { fly } from 'svelte/transition'
   import Button from 'components/Button.svelte'
+  import Dialog from 'components/Dialog.svelte'
   import type { AnyFunc } from 'simplytyped'
   import Collapse from 'components/Collapse.svelte'
   import sortOn from 'sort-on'
@@ -115,30 +116,11 @@
           disabled={selectedCategory === category.id &&
             visibleForm === 'translation'}
           on:click={() => {
-            selectedCategory = category.id
-            visibleForm = 'translation'
+            showDialog({ kind: 'createTranslation', parent: category.id })
+            // selectedCategory = category.id
+            // visibleForm = 'translation'
           }}>Create translation</Button>
       </div>
-      {#if visibleForm === 'translation' && selectedCategory === category.id}
-        <paper>
-          <TranslationForm
-            categoryID={selectedCategory}
-            on:complete={(c) => {
-              visibleForm = null
-            }}>
-            <Button
-              slot="actions"
-              color="secondary"
-              icon={'cancel'}
-              on:click={() => {
-                selectedCategory = ''
-                visibleForm = null
-              }}>
-              Cancel
-            </Button>
-          </TranslationForm>
-        </paper>
-      {/if}
       <div class="translations" key="={category.id}">
         {#each sortOn(translations, ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn) as translation}
           <paper class="translation-item" class:deleted={!!translation.deleted}>

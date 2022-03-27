@@ -3,9 +3,10 @@
   import CategoryForm from 'forms/CategoryForm.svelte'
   import CategoryItem from './CategoryItem.svelte'
   import sortOn from 'sort-on'
-  import { state } from 'state'
+  import { showDialog, state } from 'state'
   import Button from './Button.svelte'
   import Dialog from './Dialog.svelte'
+  import TranslationForm from 'forms/TranslationForm.svelte'
 
   export let locales: ApiDef.Locale[]
   export let selectedLocale: string
@@ -37,6 +38,55 @@
           on:click={() => (visibleForm = null)}>Cancel</Button>
       </CategoryForm>
     </paper>
+  </Dialog>
+{/if}
+{#if $state.dialog}
+  <Dialog on:clickClose={() => (visibleForm = null)}>
+    {#if $state.dialog.kind === 'createTranslation' && $state.dialog.parent}
+      <Dialog
+        on:closeClick={() => {
+          showDialog(null)
+        }}>
+        <paper>
+          <TranslationForm
+            categoryID={selectedCategory}
+            on:complete={() => {
+              visibleForm = null
+            }}>
+            <Button
+              slot="actions"
+              color="secondary"
+              icon={'cancel'}
+              on:click={() => {
+                showDialog(null)
+              }}>
+              Cancel
+            </Button>
+          </TranslationForm>
+        </paper>
+      </Dialog>
+    {:else if $state.dialog.kind === 'createCategory'}
+      <Dialog on:clickClose={() => (visibleForm = null)}>
+        <span slot="title">Edit Category</span>
+        <paper>
+          <CategoryForm
+            {projectID}
+            categoryID={selectedCategory}
+            on:complete={() => (visibleForm = null)}>
+            <Button
+              slot="actions"
+              color="secondary"
+              icon="cancel"
+              on:click={() => (visibleForm = null)}>Cancel</Button>
+          </CategoryForm>
+        </paper>
+      </Dialog>
+    {:else}
+      <paper>
+        <p>Unhandled dialog-option</p>
+        <code>{JSON.stringify($state.dialog)}</code>
+      </paper>
+    {/if}
   </Dialog>
 {/if}
 {#if categories && categories?.length}

@@ -1,7 +1,11 @@
-import type { DBKeyValue } from 'api'
 import type { Optional, Required } from 'simplytyped'
 import createStore from './store'
 
+export type DialogProps = {
+  kind: 'createTranslation' | 'createCategory' | 'editCategory'
+  parent?: string
+  id?: string
+}
 export const state = createStore({
   initialValue: {
     showDeleted: false,
@@ -12,6 +16,7 @@ export const state = createStore({
     searchInTranslationValues: true,
     searchInTrasnaltions: true,
     searchInCategories: true,
+    dialog: null as DialogProps | null,
     categorySortOn: 'key' as keyof ApiDef.Category,
     categorySortAsc: true,
     seenHints: {} as Record<string, [version: number, readAt: Date]>,
@@ -34,6 +39,15 @@ export const state = createStore({
   },
 })
 
+export function showDialog(d: DialogProps | null) {
+  if (!d) { state.update(s => ({ ...s, dialog: null })) }
+  state.update(s => {
+    if (s.dialog) {
+      return s
+    }
+    return { ...s, dialog: d }
+  })
+}
 
 type Toast = {
   kind: 'error' | 'info' | 'warning'
