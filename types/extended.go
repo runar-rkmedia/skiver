@@ -193,11 +193,15 @@ func (p Project) Extend(db Storage, options ...ExtendOptions) (ep ExtendedProjec
 	return
 }
 
-// TODO: add test with "missing" root-node, and missing SubCategories but with existing subsubcategories
 func CreateCategoryTreeNode(extendedCategories map[string]ExtendedCategory) CategoryTreeNode {
+	// The structure should have a node for each element in the path, so even with
+	// just a single path like `foo.bar.baz`, we still create the root-node, the
+	// foo-node, the bar-node, and the baz-node
 	node := CategoryTreeNode{}
+	// A slice which is indexed by the length of the path
 	catForPathLength := [][]string{}
 	for key, ec := range extendedCategories {
+		fmt.Println("key", key, ec.Key, ec.Path())
 
 		length := len(ec.Path())
 		for len(catForPathLength) <= length {
@@ -206,51 +210,61 @@ func CreateCategoryTreeNode(extendedCategories map[string]ExtendedCategory) Cate
 		}
 		catForPathLength[length] = append(catForPathLength[length], key)
 	}
-
 	for _, mapKeys := range catForPathLength {
 		for _, mapKey := range mapKeys {
 			cat := extendedCategories[mapKey]
 			// path := append([]string{""}, cat.Path()...)
 			path := cat.Path()
-			length := len(path)
-			// FIXME: make recursive, don't overwrite previous values.
-			if length == 0 {
-				node = CategoryTreeNode{ExtendedCategory: cat, Categories: make(map[string]CategoryTreeNode)}
-				continue
-			}
-			if length == 1 {
-				if node.ID == "" {
-					node = CategoryTreeNode{ExtendedCategory: ExtendedCategory{}, Categories: make(map[string]CategoryTreeNode)}
-				}
-				node.Categories[path[0]] = CategoryTreeNode{ExtendedCategory: cat, Categories: make(map[string]CategoryTreeNode)}
-				continue
-			}
-			if length == 2 {
-				// if node.ID == "" {
-				// 	c := CategoryTreeNode{ExtendedCategory: ExtendedCategory{}, Categories: make(map[string]CategoryTreeNode)}
-				// 	node = CategoryTreeNode{ExtendedCategory: ExtendedCategory{}, Categories: map[string]CategoryTreeNode{path[0]: c}}
-				// }
-				node.Categories[path[0]].Categories[path[1]] = CategoryTreeNode{ExtendedCategory: cat, Categories: make(map[string]CategoryTreeNode)}
-				continue
-			}
-			if length == 3 {
-				node.Categories[path[0]].Categories[path[1]].Categories[path[2]] = CategoryTreeNode{ExtendedCategory: cat, Categories: make(map[string]CategoryTreeNode)}
-				continue
-			}
-			if length == 4 {
-				node.Categories[path[0]].Categories[path[1]].Categories[path[2]].Categories[path[3]] = CategoryTreeNode{ExtendedCategory: cat, Categories: make(map[string]CategoryTreeNode)}
-				continue
-			}
-			if length == 5 {
-				node.Categories[path[0]].Categories[path[1]].Categories[path[2]].Categories[path[3]].Categories[path[4]] = CategoryTreeNode{ExtendedCategory: cat, Categories: make(map[string]CategoryTreeNode)}
-				continue
-			}
-			panic(fmt.Sprintf("Out of bounds: %v", path))
-
+			node.add(path, cat)
 		}
-
 	}
 	return node
+}
+
+// Adds the ExtendedCategory to the node at the given path
+// Will create nodes as needed.
+// The path is expected to be the ExtendedCategory.Path()
+func (node *CategoryTreeNode) add(path []string, ec ExtendedCategory) error {
+	if node.Categories == nil {
+		node.Categories = map[string]CategoryTreeNode{}
+	}
+	switch len(path) {
+	case 0:
+		err := node.isEmpty()
+		if err != nil {
+			return err
+		}
+		node.ExtendedCategory = ec
+		return nil
+	case 1:
+		err := node.Categories[path[0]].isEmpty()
+		if err != nil {
+			return err
+		}
+		node.Categories[path[0]] = CategoryTreeNode{ExtendedCategory: ec}
+		return nil
+	}
+	rest := path[1:]
+	next := node.Categories[path[0]]
+	next.add(rest, ec)
+	node.Categories[path[0]] = next
+	return nil
+}
+
+func (node CategoryTreeNode) isEmpty() error {
+	if node.ExtendedCategory.ID != "" {
+		return fmt.Errorf("Node is not empty; it has ID-field")
+	}
+	if node.ExtendedCategory.Key != "" {
+		return fmt.Errorf("Node is not empty; it has Key-field")
+	}
+	if len(node.Categories) > 0 {
+		return fmt.Errorf("Node is not empty; it has categories")
+	}
+	if len(node.ExtendedCategory.Translations) > 0 {
+		return fmt.Errorf("Node is not empty; it has Translations")
+	}
+	return nil
 }
 
 type CategoryTreeNode struct {
