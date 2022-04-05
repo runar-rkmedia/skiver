@@ -1,7 +1,6 @@
 <script lang="ts">
   import { db } from 'api'
   import Button from 'components/Button.svelte'
-  import Collapse from 'components/Collapse.svelte'
   import EntityDetails from 'components/EntityDetails.svelte'
   import Spinner from 'components/Spinner.svelte'
   import TagDiff from 'components/TagDiff.svelte'
