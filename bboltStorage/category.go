@@ -39,9 +39,9 @@ func (bb *BBolter) FindCategories(max int, filter ...types.CategoryFilter) (map[
 }
 
 // TODO: complete implementation
-func (b *BBolter) UpdateCategory(id string, category types.Category) (types.Category, error) {
+func (b *BBolter) UpdateCategory(id string, payload types.Category) (types.Category, error) {
 	if id == "" {
-		return category, ErrMissingIdArg
+		return payload, ErrMissingIdArg
 	}
 	existing, err := b.GetCategory(id)
 	if err != nil {
@@ -61,16 +61,16 @@ func (b *BBolter) UpdateCategory(id string, category types.Category) (types.Cate
 		}
 		needsUpdate := false
 		// TODO: ensure key-uniqueness
-		if category.Key != c.Key {
-			c.Key = category.Key
+		if payload.Key != "" && payload.Key != c.Key {
+			c.Key = payload.Key
 			needsUpdate = true
 		}
-		if category.Title != c.Title {
-			c.Title = category.Title
+		if payload.Title != "" && payload.Title != c.Title {
+			c.Title = payload.Title
 			needsUpdate = true
 		}
-		if category.Description != c.Description {
-			c.Description = category.Description
+		if payload.Description != "" && payload.Description != c.Description {
+			c.Description = payload.Description
 			needsUpdate = true
 		}
 
