@@ -1,5 +1,6 @@
 <script lang="ts">
   import { api } from '../api'
+  import Alert from './Alert.svelte'
   import Collapse from './Collapse.svelte'
   import Icon from './Icon.svelte'
   import JsonDetail from './JsonDetail.svelte'
@@ -19,7 +20,7 @@
           b: { project_id: projectID, tag: tagB },
         })
         .then((r) => {
-          response = r[0].data
+          response = r[0]?.data
           err = r[1]
         })
     }
@@ -53,6 +54,11 @@
   }
 </script>
 
+{#if err}
+  <Alert kind="error">
+    <pre>{JSON.stringify(err)}</pre>
+  </Alert>
+{/if}
 {#if response}
   <Collapse let:show>
     <h5 slot="title">
