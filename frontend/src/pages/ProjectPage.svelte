@@ -81,10 +81,6 @@
     {:else}
       <h2>
         {project.title}
-        <a href={'#project/' + project.id + '/settings'}>
-          <Icon icon="settings" />
-          Settings
-        </a>
       </h2>
 
       {#if project.description}

@@ -62,7 +62,7 @@
   on:change={handleViewChange}
   class="item"
   id={'cat-' + (category.key || '_root_')}>
-  <div class="desc category-item-header">
+  <div class="desc category-item-header bg-dark">
     <div>
       <h3>
         <button
@@ -82,7 +82,7 @@
           {/if}
         {/each}
         <span title={category.key}>
-          {category.title || '(Root)'}
+          {category.title || (!categoryPath.length ? '(Root)' : '(No name)')}
           {#if category.translation_ids?.length}
             <small>
               ({category.translation_ids.length})
@@ -176,7 +176,7 @@
   .desc {
     position: sticky;
     position: -webkit-sticky;
-    top: 0px;
+    top: var(--size-12);
     max-height: 200px;
     z-index: 1;
     color: white;
@@ -203,17 +203,10 @@
   }
   .category-item-header {
     margin-inline: calc(var(--size-4) * -1);
-    background-color: #092335f0;
     padding-inline: var(--size-4);
     display: flex;
     justify-content: space-between;
     align-items: center;
-  }
-  @supports ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
-    .category-item-header {
-      /* background-color: unset; */
-      backdrop-filter: brightness(20%) saturate(180%) blur(2px);
-    }
   }
 
   .category-item-header small {
