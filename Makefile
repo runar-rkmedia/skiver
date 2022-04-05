@@ -54,13 +54,13 @@ container: build-web
     --label "org.opencontainers.image.created=$(buildDate)" \
     --label "org.opencontainers.image.version=$(version)" \
     --build-arg "ldflags=$(ldflags)"
-container-publish: container
+container-publish: 
 	docker push runardocker/skiver-api:latest 
 	docker push runardocker/skiver-api:alpine
 	docker push runardocker/skiver-api:$(version) 
 	docker push runardocker/skiver-api:$(version)-alpine
 
-publish: container-publish release
+publish: container container-publish release
 
 release:
 	goreleaser release
