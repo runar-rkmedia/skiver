@@ -116,7 +116,11 @@ function checkToasts() {
         if (!toast?.created) {
           return r
         }
-        if (new Date(toast.created).getTime() + toast.timeout < now) {
+        const created = toast.created instanceof Date ? toast.created : new Date(toast.created)
+        if (!created || isNaN(created.getTime())) {
+          return r
+        }
+        if (created.getTime() + toast.timeout < now) {
           return r
         }
         r[k] = toast
