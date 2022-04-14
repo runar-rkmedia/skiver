@@ -6,7 +6,7 @@
   import LocaleSearch from 'components/LocaleSearch.svelte'
   import { createEventDispatcher } from 'svelte'
   import { api, db } from '../api'
-  import { state, toast, toastApiErr } from '../state'
+  import { state, toastApiErr } from '../state'
   export let project: ApiDef.Project | null = null
   export let shortNameReadOnly = false
   const dispatch = createEventDispatcher()

@@ -26,7 +26,7 @@
 {#each result as loc}
   <button
     class="btn-reset"
-    on:click={() => dispatch('select', { item: loc.item })}>
+    on:click|preventDefault={() => dispatch('select', { item: loc.item })}>
     <div>
       <LocaleFlag locale={loc.item} />
       {loc.item.title}
