@@ -37,6 +37,7 @@ var (
 )
 
 func (l *Lexer) NewInput(input string) {
+
 	l.Input = input
 	l.position = 0
 	l.readPosition = 0
@@ -113,32 +114,32 @@ func (l *Lexer) FindAllTokens() []Token {
 	}
 }
 func (l *Lexer) peekToken(index int) *Token {
-	var tok Token
 	firstCh := l.peekCharAt(index)
 	switch firstCh {
 	case 0:
-		tok = newToken(TokenEOF, "", l.position, l.position)
+		tok := newToken(TokenEOF, "", l.position, l.position)
 		return &tok
 	}
 	// A bit naive, but our tokens are probably not too long
 	// TODO: the tokenMap could be a tree, which would reduce lookups, but its a small dataset.
 	maxReadAhead := 0
+outer:
 	for k, kind := range l.tokenMap {
 		if k[0] != firstCh {
-			continue
+			continue outer
 		}
 		for i := 1; i < len(k); i++ {
 			if i > maxReadAhead {
 				maxReadAhead = i
 			}
-			ch := l.peekChar()
+			ch := l.peekCharAt(index + i)
 			if ch != k[i] {
-				continue
+				continue outer
 			}
 		}
 		startPos := l.position
 		// TODO: readAhead, do stuf
-		tok = newToken(kind, k, startPos, startPos+len(k))
+		tok := newToken(kind, k, startPos, startPos+len(k))
 		return &tok
 	}
 	return nil
