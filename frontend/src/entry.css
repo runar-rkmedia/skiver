@@ -12,7 +12,9 @@
   --color-danger-300: var(--color-orange-300);
   --color-danger: var(--color-orange-500);
   --color-danger-700: var(--color-orange-700);
-  --color-dark-bg: var(#092335f0);
+  --color-dark-bg: #092335;
+  --gutter-start: var(--size-4);
+  --gutter-end: var(--size-6);
 }
 .color-error {
   color: var(--color-error-icon);
@@ -37,12 +39,6 @@
 }
 .bg-dark {
   background-color: var(--color-dark-bg);
-}
-@supports ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
-  .bg-dark {
-    background-color: unset;
-    backdrop-filter: brightness(20%) saturate(180%) blur(2px);
-  }
 }
 body {
   background-color: var(--color-black);

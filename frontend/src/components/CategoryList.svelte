@@ -84,7 +84,14 @@
     {:else}
       <paper>
         <p>Unhandled dialog-option</p>
-        <code>{JSON.stringify($state.dialog)}</code>
+        <pre>{JSON.stringify($state.dialog, null, 2)}</pre>
+        <p>Sorry for the inconvenience</p>
+
+        <Button
+          color="danger"
+          on:click={() => {
+            $state.dialog = null
+          }}>Clear dialog-state</Button>
       </paper>
     {/if}
   </Dialog>

@@ -245,8 +245,8 @@
 
   main {
     margin-block-start: var(--size-2);
-    padding-inline-start: var(--size-4);
-    padding-inline-end: var(--size-8);
+    padding-inline-start: var(--gutter-start);
+    padding-inline-end: var(--gutter-end);
   }
   img {
     height: 100px;

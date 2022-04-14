@@ -42,7 +42,7 @@
     --indent: 12px;
   }
   .wrapper {
-    z-index: 1;
+    z-index: 4;
     overflow-y: auto;
     overflow-x: hidden;
     height: 100vh;

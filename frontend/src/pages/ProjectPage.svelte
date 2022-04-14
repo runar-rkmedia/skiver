@@ -68,6 +68,9 @@
   ]
 </script>
 
+{#if project}
+  <GlobalSearch {project} />
+{/if}
 <div class="r-wrapper">
   <div class="wrapper" class:sidebarVisible={$state.sidebarVisible}>
     {#if !project}
@@ -124,7 +127,6 @@
           </Collapse>
         </paper>
       {/if}
-      <GlobalSearch {project} />
       <div>
         <h2>Categories</h2>
         <label>
@@ -196,7 +198,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 1;
+    z-index: 3;
     opacity: 0;
     background: #000000aa;
     display: none;

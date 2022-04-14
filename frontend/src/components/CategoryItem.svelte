@@ -65,12 +65,6 @@
   <div class="desc category-item-header bg-dark">
     <div>
       <h3>
-        <button
-          title="Overview-menu"
-          class="btn-reset menu"
-          on:click={() => ($state.sidebarVisible = !$state.sidebarVisible)}>
-          <Icon icon="menu" />
-        </button>
         {#each categoryPath as subPath, i}
           {#if i !== categoryPath.length - 1}
             <a
@@ -176,7 +170,7 @@
   .desc {
     position: sticky;
     position: -webkit-sticky;
-    top: var(--size-12);
+    top: calc(var(--size-12) - 1px);
     max-height: 200px;
     z-index: 1;
     color: white;
@@ -202,15 +196,19 @@
     margin-block-end: var(--size-6);
   }
   .category-item-header {
-    margin-inline: calc(var(--size-4) * -1);
+    margin-inline-start: calc(var(--gutter-start) * -1);
+    margin-inline-end: calc(var(--gutter-end) * -1);
     padding-inline: var(--size-4);
+    padding-inline-end: var(--size-6);
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
 
+  .category-item-header :global(button),
   .category-item-header small {
     opacity: 0.7;
+    font-size: small;
   }
   a {
     font-size: small;
@@ -219,15 +217,6 @@
   .sep {
     opacity: 0.5;
     padding-inline: var(--size-2);
-  }
-  .menu {
-    margin-inline-start: calc(var(--size-4) * -1);
-    font-size: 110%;
-    transition: transform, color 120ms var(--easing-standard);
-    color: var(--color-primary);
-  }
-  .menu:hover {
-    transform: scale(1.16);
   }
   .placeholder-entity {
     width: 230px;
