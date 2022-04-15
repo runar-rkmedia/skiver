@@ -94,6 +94,37 @@ func TestParser(t *testing.T) {
 			},
 			false,
 		},
+		{
+			// TODO: Add test-case that has `,` and `)` etc withing the arguments. This will confuse the current parser.
+			"With escapes",
+			`{{count}} $t(ExtraData.SizeType, { \"context\": \"{{sizeType}}\", \"count\": \"{{count}}\"}) datatrafikk inkludert.`,
+			Ast{
+				Nodes: []Node{
+					{
+						Token: lexer.Token{Start: 0, End: 9, Kind: lexer.TokenPrefix, Literal: "{{"},
+						Left: &Node{
+							Token: lexer.Token{Start: 2, End: 7, Kind: lexer.TokenLiteral, Literal: "count"},
+						},
+					},
+					{
+						Token: lexer.Token{Start: 9, End: 10, Kind: lexer.TokenLiteral, Literal: " "},
+					},
+					{
+						Token: lexer.Token{Start: 10, End: 92, Kind: lexer.TokenNestingPrefix, Literal: "$t("},
+						Left: &Node{
+							Token: lexer.Token{Start: 13, End: 31, Kind: lexer.TokenLiteral, Literal: "ExtraData.SizeType"},
+						},
+						Right: &Node{
+							Token: lexer.Token{Start: 32, End: 91, Kind: lexer.TokenArgument, Literal: ` { \"context\": \"{{sizeType}}\", \"count\": \"{{count}}\"}`},
+						},
+					},
+					{
+						Token: lexer.Token{Start: 92, End: 115, Kind: lexer.TokenLiteral, Literal: " datatrafikk inkludert."},
+					},
+				},
+			},
+			false,
+		},
 		// TODO: improve the parser with until the tests below give more meaningful result
 		// {
 		// 	"Multiple flat with semi-natural language",
@@ -157,7 +188,10 @@ func TestParser(t *testing.T) {
 				}
 				// y, _ := yaml.Marshal(l.l.Tokens)
 				// t.Log(string(y))
+
+				// uncomment
 				t.Error(err)
+				// t.Error("\n\n\nerr not printed")
 			}
 		})
 	}

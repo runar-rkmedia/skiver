@@ -1,9 +1,0 @@
-nodes:
-  life:
-    value:
-      loc-en: life
-      loc-no: livet
-  meaningOfLife:
-    value:
-      loc-en: The meaning of $t(life) is {{count}}
-      loc-no: Meningen med $t(life) er {{count}}

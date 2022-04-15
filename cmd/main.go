@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"io/fs"
@@ -36,15 +35,6 @@ import (
 	"github.com/runar-rkmedia/skiver/types"
 	"github.com/runar-rkmedia/skiver/utils"
 )
-
-func required(v, s string) {
-	if v != "" {
-		return
-	}
-	fmt.Println(s, "is required")
-	flag.Usage()
-	os.Exit(1)
-}
 
 var (
 	// These are added at build...

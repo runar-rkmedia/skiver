@@ -201,8 +201,6 @@ func CreateCategoryTreeNode(extendedCategories map[string]ExtendedCategory) Cate
 	// A slice which is indexed by the length of the path
 	catForPathLength := [][]string{}
 	for key, ec := range extendedCategories {
-		fmt.Println("key", key, ec.Key, ec.Path())
-
 		length := len(ec.Path())
 		for len(catForPathLength) <= length {
 

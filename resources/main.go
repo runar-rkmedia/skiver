@@ -72,7 +72,6 @@ func main() {
 	// 	l.Fatal().Err(err).Msg("Failed to marshal")
 
 	// }
-	// fmt.Println(string(b))
 
 }
 

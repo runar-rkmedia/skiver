@@ -1,7 +1,6 @@
 package importexport
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/MarvinJWendt/testza"
@@ -256,12 +255,17 @@ en:
 			"interpolation",
 			nil,
 			`
-en:
-	meaningOfLife: The meaning of $t(life) is {{count}}
-	life: life
-"no":
-	meaningOfLife: Meningen med $t(life) er {{count}}
-	life: livet
+{
+    "en": {
+        "meaningOfLife": "The meaning of $t(life) is {{count}}",
+        "life": "life"
+    },
+    "no": {
+        "meaningOfLife": "Meningen med $t(life) er {{count}}",
+        "dataTraffic": "{{count}} $t(ExtraData.SizeType, { \"context\": \"{{sizeType}}\", \"count\": \"{{count}}\"}) datatrafikk inkludert.",
+        "life": "livet"
+    }
+}
 `,
 			&Import{
 				Categories: map[string]types.ExtendedCategory{types.RootCategory: {
@@ -310,6 +314,33 @@ en:
 								},
 							},
 						},
+						"dataTraffic": {
+							Translation: types.Translation{
+								Entity: types.Entity{
+									CreatedBy:      "jim",
+									OrganizationID: "org-123",
+								},
+								Key:   "dataTraffic",
+								Title: "Data traffic",
+								Variables: map[string]interface{}{
+									"_refs:ExtraData.SizeType": ` { "context": "{{sizeType}}", "count": "{{count}}"}`,
+									"context":                  "???",
+									"count":                    42,
+									"sizeType":                 "???",
+								},
+							},
+							Values: map[string]types.TranslationValue{
+								"loc-no": {
+									Entity: types.Entity{
+										CreatedBy:      "jim",
+										OrganizationID: "org-123",
+									},
+									Value:    `{{count}} $t(ExtraData.SizeType, { "context": "{{sizeType}}", "count": "{{count}}"}) datatrafikk inkludert.`,
+									LocaleID: "loc-no",
+									Source:   "test-import",
+								},
+							},
+						},
 						"life": {
 							Translation: types.Translation{
 								Entity: types.Entity{
@@ -350,9 +381,6 @@ en:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if strings.Contains(tt.name, "inter") {
-				return
-			}
 			var j map[string]interface{}
 			err := internal.YamlUnmarshalAllowTabs(tt.fields, &j)
 			if err != nil {
@@ -371,7 +399,7 @@ en:
 			}
 			merged, err := node.MergeAsIfRootIsLocale(types.Test_locales)
 			testza.AssertNoError(t, err)
-			internal.MatchSnapshot(t, "merged.yaml", merged)
+			internal.MatchSnapshot(t, "merged.json", merged)
 
 			base := types.Project{}
 			base.ID = "proj-123"
@@ -379,6 +407,9 @@ en:
 			base.OrganizationID = "org-123"
 			// Should this function create all categories of previous levels?
 			got, warnings, err := ImportI18NTranslation(types.Test_locales, tt.localeHint, base, "test-import", j)
+			if len(warnings) > 0 {
+				t.Log("warnings", tt.name, warnings)
+			}
 			if !tt.wantErr {
 				testza.AssertNoError(t, err)
 			} else if got == nil {

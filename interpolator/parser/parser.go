@@ -95,6 +95,7 @@ func stringRangeWithInjectedChar(s string, start, mid, end int, injection string
 	after := s[mid:end]
 	return before + injection + after
 }
+
 func (p *Parser) parse() (ast Ast, err error) {
 	ast = Ast{[]Node{}}
 
@@ -148,7 +149,7 @@ func (p *Parser) parseInterpolation(node Node) (Node, error) {
 
 	node.Left = &Node{Token: p.peekToken}
 	if node.Left.Token.Kind != lexer.TokenLiteral {
-		nerr := NodeError{nil, node, "Expected first node to be a TokenLiteral"}
+		nerr := NodeError{nil, node, fmt.Sprintf("Expected first node to be a %s", p.printToken(lexer.TokenLiteral))}
 		return node, node.Left.parentErr(nerr, "expected TokenLiteral")
 	}
 	p.nextToken()
@@ -157,7 +158,7 @@ func (p *Parser) parseInterpolation(node Node) (Node, error) {
 		node.Right = &Node{Token: p.peekToken}
 		p.nextToken()
 		if p.peekToken.Kind != lexer.TokenLiteral {
-			nerr := NodeError{nil, node, "Expected option to be a TokenLiteral"}
+			nerr := NodeError{nil, node, fmt.Sprintf("Expected option to be a %s", p.printToken(lexer.TokenLiteral))}
 			return node, node.Left.parentErr(nerr, "expected TokenLiteral")
 		}
 		p.nextToken()
@@ -170,23 +171,52 @@ func (p *Parser) parseInterpolation(node Node) (Node, error) {
 	return node, nil
 }
 
+func (p *Parser) errTokenCannotFollow(node Node) NodeError {
+	return NodeError{nil, node, fmt.Sprintf("%s cannot follow %s", p.printToken(p.peekToken.Kind), p.printToken(p.curToken.Kind))}
+}
 func (p *Parser) parseNesting(node Node) (Node, error) {
 	node.Left = &Node{Token: p.peekToken}
 	if node.Left.Token.Kind != lexer.TokenLiteral {
-		nerr := NodeError{nil, node, "Expected first node to be a TokenLiteral"}
-		return node, node.Left.parentErr(nerr, "expected TokenLiteral")
+		nerr := NodeError{nil, node, fmt.Sprintf("Expected first node to be a %s", p.printToken(lexer.TokenLiteral))}
+		return node, node.Left.parentErr(nerr, fmt.Sprintf("expected %s", p.printToken(lexer.TokenLiteral)))
 	}
 	p.nextToken()
-	switch p.peekToken.Kind {
-	// TODO: we must change the tokemMap to a tokenSlice and allow identical identfiers, then we must check if there are identtical tokens
-	case lexer.TokenNestingSeperator, lexer.TokenFormatSeperator:
-		node.Right = &Node{Token: p.peekToken}
+	if p.peekToken.Kind == lexer.TokenNestingSeperator || p.peekToken.Kind == lexer.TokenFormatSeperator {
 		p.nextToken()
-		if p.peekToken.Kind != lexer.TokenLiteral {
-			nerr := NodeError{nil, node, "Expected option to be a TokenLiteral"}
-			return node, node.Left.parentErr(nerr, "expected TokenLiteral")
+		switch p.peekToken.Kind {
+		// TODO: we must change the tokemMap to a tokenSlice and allow identical identfiers, then we must check if there are identtical tokens
+		case lexer.TokenNestingSeperator, lexer.TokenFormatSeperator:
+			nerr := p.errTokenCannotFollow(node)
+			return node, node.Left.parentErr(nerr, fmt.Sprintf("expected %s", p.printToken(lexer.TokenLiteral)))
+		case lexer.TokenNestingSuffix:
+			nerr := p.errTokenCannotFollow(node)
+			return node, node.Left.parentErr(nerr, fmt.Sprintf("expected %s", p.printToken(lexer.TokenLiteral)))
+		default:
+			var args Node
+			args.Token.Kind = lexer.TokenArgument
+			args.Token.Start = p.peekToken.Start
+		tokenLoop:
+			for {
+
+				switch p.peekToken.Kind {
+				case lexer.TokenNestingSuffix:
+					// handled below
+					break tokenLoop
+				case lexer.TokenEOF:
+					nerr := NodeError{nil, args, fmt.Sprintf("Expected %s", p.printToken(lexer.TokenNestingSuffix))}
+					return node, node.Left.parentErr(nerr, fmt.Sprintf("Unexpected %s", p.printToken(lexer.TokenEOF)))
+				default:
+					// swallow all tokens into a single token
+					args.Token.Literal += p.peekToken.Literal
+					args.Token.End = p.peekToken.End
+					p.nextToken()
+				}
+				if args.Token.Literal != "" {
+					node.Right = &args
+				}
+			}
+
 		}
-		p.nextToken()
 	}
 	switch p.peekToken.Kind {
 	case lexer.TokenNestingSuffix:
@@ -194,4 +224,12 @@ func (p *Parser) parseNesting(node Node) (Node, error) {
 		p.nextToken()
 	}
 	return node, nil
+}
+
+func (p *Parser) printToken(token lexer.TokenKind) string {
+	literal := p.l.TokenMapLookup(token)
+	if literal == "" {
+		return fmt.Sprintf("'%s'", token)
+	}
+	return fmt.Sprintf("'%s' (%s)", token, p.l.TokenMapLookup(token))
 }

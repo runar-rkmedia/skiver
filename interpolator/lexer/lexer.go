@@ -37,7 +37,6 @@ var (
 )
 
 func (l *Lexer) NewInput(input string) {
-
 	l.Input = input
 	l.position = 0
 	l.readPosition = 0
@@ -76,10 +75,11 @@ type Token struct {
 type TokenKind string
 
 const (
-	TokenEOF     TokenKind = "EOF"
-	TokenPrefix  TokenKind = "TokenPrefixInterpolation"
-	TokenSuffix  TokenKind = "TokenSuffixInterpolation"
-	TokenLiteral TokenKind = "TokenLiteral"
+	TokenEOF      TokenKind = "EOF"
+	TokenPrefix   TokenKind = "TokenPrefixInterpolation"
+	TokenSuffix   TokenKind = "TokenSuffixInterpolation"
+	TokenLiteral  TokenKind = "TokenLiteral"
+	TokenArgument TokenKind = "TokenArgument" // Used by the parser
 	// Can follow TokenPrefix, or TokenNestingPrefix
 	TokenFormatSeperator  TokenKind = "(Format)/Nesting seperator" // These two Seperators are often, but not always the same token...
 	TokenNestingSeperator TokenKind = "Format/(Nesting) seperator"
@@ -144,4 +144,15 @@ outer:
 	}
 	return nil
 
+}
+
+// TokenMapLookup returns the literal currently assigned to a token
+// Mostly used for improved error-messages.
+func (l *Lexer) TokenMapLookup(token TokenKind) string {
+	for k, v := range l.tokenMap {
+		if v == token {
+			return k
+		}
+	}
+	return ""
 }

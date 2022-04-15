@@ -1,6 +1,7 @@
 package importexport
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
@@ -73,7 +74,8 @@ func importAsI18Nodes(input interface{}) (I18N, error) {
 }
 
 // non-Recursively traverses the node-tree to find all categories and fill any value in the import
-func importFromCategoryNode(base types.Project, source types.CreatorSource, key string, node I18NWithLocales) ([]types.ExtendedCategory, error) {
+func importFromCategoryNode(base types.Project, source types.CreatorSource, key string, node I18NWithLocales) ([]types.ExtendedCategory, error, []Warning) {
+	var warnings []Warning
 
 	cats := []types.ExtendedCategory{}
 	cat := types.ExtendedCategory{
@@ -92,7 +94,7 @@ func importFromCategoryNode(base types.Project, source types.CreatorSource, key 
 		} else {
 			t = types.ExtendedTranslation{}
 		}
-		translationFromNode(&t, key, base, source, node, cat.Key)
+		warnings = append(warnings, translationFromNode(&t, key, base, source, node, cat.Key)...)
 		if _, ok := cat.Translations[t.Key]; ok {
 			panic("I existx")
 		}
@@ -124,13 +126,16 @@ func importFromCategoryNode(base types.Project, source types.CreatorSource, key 
 				} else {
 					t = types.ExtendedTranslation{}
 				}
-				translationFromNode(&t, scKey, base, source, childNode, cat.Key)
+				warnings = append(warnings, translationFromNode(&t, scKey, base, source, childNode, cat.Key)...)
 				cat.Translations[translationKey] = t
 			} else {
 
-				sc, err := importFromCategoryNode(base, source, scKey, childNode)
+				sc, err, w := importFromCategoryNode(base, source, scKey, childNode)
+				if len(w) > 0 {
+					warnings = append(warnings, w...)
+				}
 				if err != nil {
-					return cats, fmt.Errorf("Error occured parsing subCategories for node %#v: %w", node, err)
+					return cats, fmt.Errorf("Error occured parsing subCategories for node %#v: %w", node, err), warnings
 				}
 				for _, v := range sc {
 					v.Key = cat.Key + "." + v.Key
@@ -144,10 +149,11 @@ func importFromCategoryNode(base types.Project, source types.CreatorSource, key 
 	}
 	cats = append(cats, cat)
 
-	return cats, nil
+	return cats, nil, warnings
 }
 
-func translationFromNode(t *types.ExtendedTranslation, key string, base types.Project, source types.CreatorSource, node I18NWithLocales, categoryKey string) {
+func translationFromNode(t *types.ExtendedTranslation, key string, base types.Project, source types.CreatorSource, node I18NWithLocales, categoryKey string) []Warning {
+	var warnings []Warning
 
 	tranlationKey, context := SplitTranslationAndContext(key, "_")
 	if t.Key == "" {
@@ -173,6 +179,9 @@ func translationFromNode(t *types.ExtendedTranslation, key string, base types.Pr
 		tv.CreatedBy = base.CreatedBy
 		tv.OrganizationID = base.OrganizationID
 		w, variables := InferVariables(value, categoryKey, t.Key)
+		if len(w) != 0 {
+			warnings = append(warnings, w...)
+		}
 		if context != "" {
 			if tv.Context == nil {
 				tv.Context = map[string]string{}
@@ -192,7 +201,7 @@ func translationFromNode(t *types.ExtendedTranslation, key string, base types.Pr
 					if ex == v {
 						continue
 					}
-					w = append(w, Warning{
+					warnings = append(warnings, Warning{
 						Message: "duplicate inferred values with different values detected",
 						Details: struct {
 							A, B interface{}
@@ -207,6 +216,7 @@ func translationFromNode(t *types.ExtendedTranslation, key string, base types.Pr
 		}
 
 	}
+	return warnings
 }
 
 var (
@@ -249,6 +259,36 @@ func InferVariables(translationValue, category, translation string) ([]Warning, 
 				warn.Details = parsed.Nodes
 				w = append(w, warn)
 				continue
+			}
+			if n.Right != nil {
+				// The Literal value here *might* be a json-value. In this case, we
+				// should treat each key-value-pair as variables.
+				jsonLike := strings.TrimSpace(n.Right.Token.Literal)
+				jsonLike = strings.ReplaceAll(jsonLike, `\"`, `"`)
+				var varJson map[string]interface{}
+				err := json.Unmarshal([]byte(jsonLike), &varJson)
+				if err != nil {
+					warn := newWarning("Attempted to interpret the token-arguments as json, but encountered an error", WarningKindTranslationVariables, WarningLevelMinor)
+					warn.Details = struct {
+						Error    error
+						ErrorStr string
+						Argument string
+					}{
+						Error:    err,
+						ErrorStr: err.Error(),
+						Argument: jsonLike,
+					}
+					w = append(w, warn)
+
+				} else {
+					for key := range varJson {
+						if _, ok := variables[key]; ok {
+							continue
+						}
+						variables[key] = getValueForVariableKey(key)
+					}
+
+				}
 			}
 			key := strings.TrimSpace(n.Left.Token.Literal)
 			if key == "" {
@@ -380,7 +420,10 @@ func ImportI18NTranslation(
 		isRoot := len(node.Nodes) == 0
 		// var cats []types.ExtendedCategory
 
-		cats, err := importFromCategoryNode(base, source, key_, node)
+		cats, err, impwarnings := importFromCategoryNode(base, source, key_, node)
+		if len(impwarnings) > 0 {
+			w = append(w, impwarnings...)
+		}
 		if err != nil {
 			return &imp, w, err
 		}
