@@ -73,3 +73,11 @@ build:
 	@GOOS=windows                 SUFFIX=".exe"         ${MAKE} build-api
 
 	ls -lah dist
+
+list-internal:
+	@rg 'skiver/internal' --files-with-matches --glob '**/*.go' --glob '!**/*_test*' || echo "All ok for internal"
+list-fmtP:
+	@rg 'fmt\.P' --files-with-matches --glob '**/*.go' --glob '!**/*_test*' --glob '!cli/*' --glob '!internal/*' --glob '!cmd/*' || echo "All ok for fmt.P*"
+list-invalid: list-fmtP list-internal
+
+
