@@ -2,6 +2,10 @@
 
 An easy to-deploy, single binary management for translations. Focuses on tight integrations.
 
+## CLI
+
+If you are looking for the [accompanying CLI, it has been moved to its own repository.](https://github.com/runar-rkmedia/skiver-cli)
+
 ## Current feature-set
 
 ### Exports
@@ -74,13 +78,12 @@ With these types generated, the developer can see examples of the real translati
 - [ ] Sharing of translations between projects.
 
 
-## Things that are a mess, and need refactoring
+### Contributing / notes about the project
 
-- Missing translations. They work, but they are terrible. It comes mostly from not trusting the user-input, 
-while still attempting to resolve this untrusted information.
+We welcome and encourage contributions. If you have a feature that you wish to incorporate, please add an issue first to discuss it.
 
 
-## Swagger and code-generation
+#### Swagger and code-generation
 
 We use swagger, with [go-swagger](https://goswagger.io/) for both generating
 parts of the Swagger 2.0-document, and for providing Go-Models for server-use
@@ -96,7 +99,7 @@ The generated user-input-models are output into `./models`.
 
 Extra types are generated from the go-structs itself, and lives in the `./types`-package.
 
-### Committing generated files
+#### Committing generated files
 
 Although some people prefer not to commit generated files, the generated swagger files with
 models etc. should in this project be committed like any other file.
@@ -104,6 +107,20 @@ models etc. should in this project be committed like any other file.
 This makes it a lot easier to reason about changes, and we are then not at the mercy of 
 code-generation. We still can at any point drop out of using code-generation for parts of, 
 or the whole schema.
+
+#### Tools used
+
+There is a makefile available which makes it a bit easier to do development.
+
+Simply running `make` without arguments should start the development server in watch-mode, and reload as needed.
+
+It has a few general require utilites:
+
+- [ripgrep](https://github.com/BurntSushi/ripgrep) Fast searching through files
+- [fd](https://github.com/sharkdp/fd) Fast finding of files with gitignore-support, among other nice things.
+- [entr](https://github.com/eradman/entr) Simple file-watcher
+
+These are general tools that I highly recommend as part of a development-environment, not just for running this project.
 
 
 

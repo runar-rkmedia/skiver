@@ -1,29 +1,21 @@
 # This is an example .goreleaser.yml file with some sensible defaults.
 # Make sure to check the documentation at https://goreleaser.com
 project_name: skiver
-# before:
-#   hooks:
-#     - make clean
-#     # You may remove this if you don't use go modules.
-#     - go mod tidy
-#     # you may remove this if you don't need go generate
-#     # - go generate ./...
-#     - make build-web
+before:
+  hooks:
+    - make clean
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+    # you may remove this if you don't need go generate
+    # - go generate ./...
+    - make build-web
 builds:
-  # - main: ./main.go
-  #   id: skiver-api
-  #   binary: 'skiver_api_{{.Target}}'
-  #   # env:
-  #   # - CGO_ENABLED=0
-  #   no_unique_dist_dir: true
-  #   goos:
-  #     - linux
-  #     - windows
-  #     - darwin
-  - main: ./cli/main.go
-    id: skiver-cli
-    # no_unique_dist_dir: true
-    # binary: 'skiver_{{.Target}}'
+  - main: ./main.go
+    id: skiver-api
+    binary: 'skiver_api_{{.Target}}'
+    # env:
+    # - CGO_ENABLED=0
+    no_unique_dist_dir: true
     goos:
       - linux
       - windows
@@ -35,10 +27,6 @@ archives:
       windows: Windows
       386: i386
       amd64: x86_64
-scoop:
-  bucket:
-    owner: runar-rkmedia
-    name: scoops
 checksum:
   name_template: 'checksums.txt'
 snapshot:

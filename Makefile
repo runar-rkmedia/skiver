@@ -3,7 +3,6 @@ version := $(shell git describe --tags)
 gitHash := $(shell git rev-parse --short HEAD)
 buildDate := $(shell TZ=UTC date +"%Y-%m-%dT%H:%M:%SZ")
 ldflags=-X 'main.version=$(version)' -X 'main.date=$(buildDate)' -X 'main.commit=$(gitHash)' -X 'main.IsDevStr=0'
-clildflags=-X 'github.com/runar-rkmedia/skiver/cli/cmd.version=$(version)' -X 'github.com/runar-rkmedia/skiver/cli/cmd.date=$(buildDate)' -X 'github.com/runar-rkmedia/skiver/cli/cmd.commit=$(gitHash)' -X 'github.com/runar-rkmedia/skiver/cli/cmd.IsDevStr=0'
 watch:
 	cd frontend && yarn watch &
 	fd -e go -e tmpl  | entr -r  sh -c "echo restarting...; go run main.go"
@@ -12,8 +11,6 @@ gen:
 	go generate ./...
 build-api:
 	go build -ldflags="${ldflags}" -o dist/skiver${SUFFIX} main.go
-build-cli:
-	go build -ldflags="${clildflags}" -o dist/skiver-cli${SUFFIX} cli/main.go
 clean:
 	rm -rf dist
 	rm -rf frontend/dist
@@ -77,7 +74,7 @@ build:
 list-internal:
 	@rg 'skiver/internal' --files-with-matches --glob '**/*.go' --glob '!**/*_test*' || echo "All ok for internal"
 list-fmtP:
-	@rg 'fmt\.P' --files-with-matches --glob '**/*.go' --glob '!**/*_test*' --glob '!cli/*' --glob '!internal/*' --glob '!cmd/*' || echo "All ok for fmt.P*"
+	@rg 'fmt\.P' --files-with-matches --glob '**/*.go' --glob '!**/*_test*' --glob '!internal/*' --glob '!cmd/*' || echo "All ok for fmt.P*"
 list-invalid: list-fmtP list-internal
 
 
