@@ -41,6 +41,7 @@ import (
 	cfg "github.com/runar-rkmedia/skiver/config"
 	"github.com/runar-rkmedia/skiver/frontend"
 	"github.com/runar-rkmedia/skiver/handlers"
+	"github.com/runar-rkmedia/skiver/importexport"
 	"github.com/runar-rkmedia/skiver/localuser"
 	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/requestContext"
@@ -380,18 +381,29 @@ func main() {
 		func(state types.State, wantedMigrationPoint int) error {
 			if state.MigrationPoint == 0 {
 
-				projects, err := db.GetProjects()
+				orgs, err := db.GetOrganizations()
 				if err != nil {
 					return err
 				}
-				for _, p := range projects {
-					ep, err := p.Extend(&db)
+				for _, org := range orgs {
+
+					o, err := importexport.CreateInterpolationMapForOrganization(&db, org.ID)
 					if err != nil {
 						return err
 					}
-					for _, ec := range ep.Categories {
-						for _, et := range ec.Translations {
-							handlers.UpdateTranslationFromInferrence(&db, et, []handlers.AdditionalValue{})
+					projects, err := db.GetProjects()
+					if err != nil {
+						return err
+					}
+					for _, p := range projects {
+						ep, err := p.Extend(&db)
+						if err != nil {
+							return err
+						}
+						for _, ec := range ep.Categories {
+							for _, et := range ec.Translations {
+								handlers.UpdateTranslationFromInferrence(&db, et, []handlers.AdditionalValue{}, o.ByProject(p.ID))
+							}
 						}
 					}
 				}

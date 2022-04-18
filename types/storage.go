@@ -33,6 +33,7 @@ type Storage interface {
 	UpdateProject(id string, project Project) (Project, error)
 	GetProjects() (map[string]Project, error)
 	GetProjectByIDOrShortName(shortNameOrId string) (*Project, error)
+	FindProjects(max int, filter ...Project) (map[string]Project, error)
 
 	GetTranslation(ID string) (*Translation, error)
 	SoftDeleteTranslation(id string, byUser string, deleteDate *time.Time) (Translation, error)
@@ -46,6 +47,7 @@ type Storage interface {
 	CreateCategory(category Category) (Category, error)
 	GetCategories() (map[string]Category, error)
 	UpdateCategory(id string, category Category) (Category, error)
+	FindCategories(max int, filter ...CategoryFilter) (map[string]Category, error)
 
 	GetTranslationValue(ID string) (*TranslationValue, error)
 	CreateTranslationValue(translationValue TranslationValue) (TranslationValue, error)

@@ -178,7 +178,7 @@ func translationFromNode(t *types.ExtendedTranslation, key string, base types.Pr
 
 		tv.CreatedBy = base.CreatedBy
 		tv.OrganizationID = base.OrganizationID
-		w, variables, refs := InferVariables(value, categoryKey, t.Key)
+		w, variables, refs := InferVariables(value, categoryKey, t.Key, []map[string]interface{}{interpolator.DefaultInterpolationExamples})
 		if len(w) != 0 {
 			warnings = append(warnings, w...)
 		}
@@ -241,13 +241,110 @@ var (
 	inferVariablesRegex = regexp.MustCompile(`{{\s*([^\s,}]*)[^}]*}}`)
 )
 
-func InferVariablesFromMultiple(translationValues []string, category, translation string) ([]Warning, map[string]interface{}, []string) {
+type orgInterpolatorMap struct {
+	mapsByProject map[string]map[string]interface{}
+	orgMap        map[string]interface{}
+}
+
+func (o orgInterpolatorMap) ForOrganization() []map[string]interface{} {
+	var m []map[string]interface{}
+	if len(o.orgMap) > 0 {
+		m = append(m, o.orgMap)
+	}
+	m = append(m, interpolator.DefaultInterpolationExamples)
+	return m
+
+}
+func (o orgInterpolatorMap) ByProject(id string) []map[string]interface{} {
+	var m []map[string]interface{}
+	// If there are zero or one projects, we don't want to use the projectMap,
+	// since it would be equal to the orgMap.
+	if len(o.mapsByProject) >= 2 {
+		projectMap := o.mapsByProject[id]
+		if len(projectMap) > 0 {
+			m = append(m, projectMap)
+		}
+	}
+	if len(o.orgMap) > 0 {
+		m = append(m, o.orgMap)
+	}
+
+	m = append(m, interpolator.DefaultInterpolationExamples)
+	return m
+}
+
+// Creates an prioritized interpolationmap from an organization
+func CreateInterpolationMapForOrganization(db types.Storage, orgID string) (orgInterpolatorMap, error) {
+	if orgID == "" {
+		return orgInterpolatorMap{}, fmt.Errorf("Missing orgID")
+	}
+	o := orgInterpolatorMap{
+		orgMap:        map[string]interface{}{},
+		mapsByProject: map[string]map[string]interface{}{},
+	}
+	projectFilter := types.Project{}
+	projectFilter.OrganizationID = orgID
+
+	projects, err := db.FindProjects(0, projectFilter)
+	if err != nil {
+		return o, err
+	}
+	hasMultipleProjects := len(projects) >= 0
+
+	catFilter := types.CategoryFilter{}
+	catFilter.OrganizationID = orgID
+	var categories map[string]types.Category
+	if hasMultipleProjects {
+		cs, err := db.FindCategories(0, catFilter)
+		if err != nil {
+			return o, err
+		}
+		categories = cs
+
+	}
+	whichProject := func(t types.Translation) string {
+		c, ok := categories[t.CategoryID]
+		if !ok {
+			return ""
+		}
+		return c.ProjectID
+	}
+
+	filter := types.Translation{}
+	filter.OrganizationID = orgID
+	pt, err := db.GetTranslationsFilter(0, filter)
+	if err != nil {
+		return o, err
+	}
+	for _, t := range pt {
+		if t.Variables == nil {
+			continue
+		}
+		pid := whichProject(t)
+		for k, v := range t.Variables {
+			if v == "" || v == "???" {
+				continue
+			}
+			o.orgMap[k] = v
+			if pid != "" {
+				if _, ok := o.mapsByProject[pid]; ok {
+					o.mapsByProject[pid][k] = v
+				} else {
+					o.mapsByProject[pid] = map[string]interface{}{k: v}
+				}
+			}
+		}
+	}
+	return o, nil
+}
+
+func InferVariablesFromMultiple(translationValues []string, category, translation string, interpolationMaps []map[string]interface{}) ([]Warning, map[string]interface{}, []string) {
 	w := []Warning{}
 	variables := make(map[string]interface{})
 	refs := []string{}
 
 	for _, v := range translationValues {
-		wx, vx, rx := InferVariables(v, category, translation)
+		wx, vx, rx := InferVariables(v, category, translation, interpolationMaps)
 		w = append(w, wx...)
 	loop_rx:
 		for _, r := range rx {
@@ -271,7 +368,7 @@ func InferVariablesFromMultiple(translationValues []string, category, translatio
 	return w, variables, refs
 
 }
-func InferVariables(translationValue, category, translation string) ([]Warning, map[string]interface{}, []string) {
+func InferVariables(translationValue, category, translation string, interpolationMaps []map[string]interface{}) ([]Warning, map[string]interface{}, []string) {
 	w := []Warning{}
 	variables := make(map[string]interface{})
 	refs := []string{}
@@ -283,7 +380,7 @@ func InferVariables(translationValue, category, translation string) ([]Warning, 
 			if len(v) < 2 {
 				continue
 			}
-			variables[v[1]] = getValueForVariableKey(v[1])
+			variables[v[1]] = getValueForVariableKey(v[1], interpolationMaps)
 
 		}
 	}
@@ -334,7 +431,7 @@ func InferVariables(translationValue, category, translation string) ([]Warning, 
 						if _, ok := variables[key]; ok {
 							continue
 						}
-						variables[key] = getValueForVariableKey(key)
+						variables[key] = getValueForVariableKey(key, interpolationMaps)
 					}
 
 				}
@@ -391,7 +488,7 @@ func InferVariables(translationValue, category, translation string) ([]Warning, 
 				continue
 
 			}
-			variables[key] = getValueForVariableKey(key)
+			variables[key] = getValueForVariableKey(key, interpolationMaps)
 		}
 	}
 	sort.Strings(refs)
@@ -550,14 +647,16 @@ func ImportI18NTranslation(
 	}
 	return &imp, w, nil
 }
-func getValueForVariableKey(key string) interface{} {
+func getValueForVariableKey(key string, interpolationMaps []map[string]interface{}) interface{} {
 	key = strings.ToLower(key)
-	if val, ok := interpolator.DefaultInterpolationExamples[key]; ok {
-		return val
-	}
-	for k, v := range interpolator.DefaultInterpolationExamples {
-		if strings.HasSuffix(key, k) {
-			return v
+	for _, m := range interpolationMaps {
+		if val, ok := m[key]; ok {
+			return val
+		}
+		for k, v := range m {
+			if strings.HasSuffix(key, k) {
+				return v
+			}
 		}
 	}
 	return "???"

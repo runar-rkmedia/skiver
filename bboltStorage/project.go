@@ -166,34 +166,44 @@ func (bb *BBolter) GetProjectByShortName(shortName string) (*types.Project, erro
 }
 
 func (bb *BBolter) GetProjectFilter(filter ...types.Project) (*types.Project, error) {
-	var u *types.Project
-	err := bb.Iterate(BucketProject, func(key, b []byte) bool {
-		var uu types.Project
-		err := bb.Unmarshal(b, &uu)
-		if err != nil {
-			bb.l.Error().Err(err).Msg("failed to unmarshal user")
-			return false
-		}
+	return FindOne(bb, BucketProject, func(t types.Project) bool {
 		for _, f := range filter {
-			if f.ID != "" && f.ID != uu.ID {
-				continue
+			if f.OrganizationID == "" {
+				bb.l.Warn().Msg("Received a user-filter without organization-id")
 			}
-			if f.ShortName != "" && f.ShortName != uu.ShortName {
-				continue
+			if projectFilter(f, t) {
+				return true
 			}
-			if f.Description != "" && f.Description != uu.Description {
-				continue
-			}
-			u = &uu
-			return true
 		}
 		return false
 	})
-	if err != nil {
-		if err == ErrNotFound {
-			return nil, nil
+}
+func (bb *BBolter) FindProjects(max int, filter ...types.Project) (map[string]types.Project, error) {
+	return Find(bb, BucketProject, max, func(uu types.Project) bool {
+		if len(filter) == 0 {
+			return true
 		}
-		return nil, err
+		for _, f := range filter {
+			if projectFilter(f, uu) {
+				return true
+			}
+		}
+		return false
+	})
+}
+
+func projectFilter(f, uu types.Project) bool {
+	if f.OrganizationID != "" && f.OrganizationID != uu.OrganizationID {
+		return false
 	}
-	return u, err
+	if f.ID != "" && f.ID != uu.ID {
+		return false
+	}
+	if f.ShortName != "" && f.ShortName != uu.ShortName {
+		return false
+	}
+	if f.ID != "" && f.ID != uu.ID {
+		return false
+	}
+	return true
 }

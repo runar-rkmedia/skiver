@@ -39,3 +39,10 @@ type LocaleSetting struct {
 	// TODO: implement organization-settings
 	AutoTranslation bool `json:"auto_translation"`
 }
+
+func (e Project) Namespace() string {
+	return e.Kind()
+}
+func (e Project) Kind() string {
+	return string(PubTypeProject)
+}

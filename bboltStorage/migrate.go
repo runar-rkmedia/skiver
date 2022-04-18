@@ -33,6 +33,7 @@ func (bb *BBolter) Migrate(hooks ...func(state types.State, wantedMigrationPoint
 	}
 	for {
 		l := bb.l.With().
+			Str("sub-label", "migration").
 			Interface("state", state).
 			Int("wanted-migration-point", wantedMigrationPoint).
 			Logger()
@@ -93,7 +94,7 @@ func (bb *BBolter) Migrate(hooks ...func(state types.State, wantedMigrationPoint
 		}
 
 		for i, hook := range hooks {
-			l.Debug().Int("hook_no", i).Int("total", len(hooks)).Msg("Running hook")
+			l.Debug().Int("hook-no", i).Int("total-hooks", len(hooks)).Msg("Running migration-hook")
 			err := hook(*state, wantedMigrationPoint)
 			if err != nil {
 				return *state, err

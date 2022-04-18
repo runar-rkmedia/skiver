@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 // # See https://en.wikipedia.org/wiki/Language_code for more information
 // TODO: consider supporting other standards here, like Windows(?), which seem to have their own thing.
 type Locale struct {
@@ -64,6 +66,24 @@ func (e Locale) Namespace() string {
 }
 func (e Locale) Kind() string {
 	return string(PubTypeLocale)
+}
+func (e Translation) GetProject(db Storage) (Project, error) {
+	if e.CategoryID == "" {
+		return Project{}, fmt.Errorf("Translation unexpectedly does not have a CategoryID")
+	}
+	c, err := db.GetCategory(e.CategoryID)
+	if err != nil {
+		return Project{}, err
+	}
+	p, err := db.GetProject(c.ProjectID)
+	if err != nil {
+		return Project{}, err
+	}
+	if p == nil {
+		return Project{}, fmt.Errorf("Project unexpectedly not found")
+	}
+
+	return *p, nil
 }
 
 type CreatorSource string

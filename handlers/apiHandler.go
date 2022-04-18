@@ -574,6 +574,12 @@ func EndpointsHandler(
 					rc.WriteErr(err, requestContext.CodeErrTranslation)
 					return
 				}
+				p, err := t.GetProject(ctx.DB)
+				if err != nil {
+					ctx.L.Error().Err(err).Msg("Project was not found for translation")
+					rc.WriteErr(err, requestContext.CodeErrTranslation)
+					return
+				}
 				if t == nil {
 					rc.WriteErr(ErrApiNotFound("Translation", tv.TranslationID), "")
 				}
@@ -588,11 +594,16 @@ func EndpointsHandler(
 					rc.WriteErr(ErrApiDatabase("translation", err), "translation")
 					return
 				}
+				o, err := importexport.CreateInterpolationMapForOrganization(ctx.DB, session.Organization.ID)
+				if err != nil {
+					ctx.L.Error().Err(err).Msg("Failed during CreateInterpolationMapForOrganization")
+				}
 				_, err = UpdateTranslationFromInferrence(
 					ctx.DB,
 					et,
 					[]AdditionalValue{
 						{Value: tv.Value, LocaleID: tv.LocaleID}},
+					o.ByProject(p.ID),
 				)
 				if err != nil {
 					ctx.L.Error().Err(err).Msg("Failed in updateTranslationFromInferrence")
@@ -640,6 +651,12 @@ func EndpointsHandler(
 				if t == nil {
 					rc.WriteErr(ErrApiNotFound("Translation", exTV.TranslationID), "")
 				}
+				p, err := t.GetProject(ctx.DB)
+				if err != nil {
+					ctx.L.Error().Err(err).Msg("Project was not found for translation")
+					rc.WriteErr(err, requestContext.CodeErrTranslation)
+					return
+				}
 				et, err := t.Extend(ctx.DB)
 				if err != nil {
 					rc.WriteErr(err, requestContext.CodeErrTranslation)
@@ -650,10 +667,18 @@ func EndpointsHandler(
 					rc.WriteErr(ErrApiDatabase("translation", err), "translation")
 					return
 				}
+				o, err := importexport.CreateInterpolationMapForOrganization(ctx.DB, session.Organization.ID)
+				if err != nil {
+					ctx.L.Error().Err(err).Msg("Failed during CreateInterpolationMapForOrganization")
+				}
 				_, err = UpdateTranslationFromInferrence(
-					ctx.DB, et, []AdditionalValue{
+					ctx.DB,
+					et,
+					[]AdditionalValue{
 						{Value: tv.Value, LocaleID: exTV.LocaleID, Context: j.ContextKey},
-					})
+					},
+					o.ByProject(p.ID),
+				)
 				if err != nil {
 					ctx.L.Error().Err(err).Msg("Failed in updateTranslationFromInferrence")
 				}
@@ -718,7 +743,7 @@ type AdditionalValue struct {
 // The additionalValues are meant to be new values to consider for inferrence.
 // If the Translation already has a value for the same LocaleID/Context as an additionalValue,
 // the existing value will not be considered.
-func UpdateTranslationFromInferrence(db types.Storage, et types.ExtendedTranslation, additionalValues []AdditionalValue) (*types.Translation, error) {
+func UpdateTranslationFromInferrence(db types.Storage, et types.ExtendedTranslation, additionalValues []AdditionalValue, interpolationMaps []map[string]interface{}) (*types.Translation, error) {
 	var allValues []string
 
 	for _, v := range et.Values {
@@ -757,7 +782,7 @@ func UpdateTranslationFromInferrence(db types.Storage, et types.ExtendedTranslat
 		allValues = append(allValues, av.Value)
 	}
 	// Check if we can infer some more variables/refs, and if can, we may need to update the Translation.
-	_, variables, refs := importexport.InferVariablesFromMultiple(allValues, "???", et.ID)
+	_, variables, refs := importexport.InferVariablesFromMultiple(allValues, "???", et.ID, interpolationMaps)
 	if len(variables) == 0 && len(refs) == 0 {
 		return nil, nil
 	}
