@@ -376,6 +376,33 @@ func main() {
 	if err != nil {
 		l.Fatal().Err(err).Msg("Failed to initialize storage")
 	}
+	_, err = db.Migrate(
+		func(state types.State, wantedMigrationPoint int) error {
+			if state.MigrationPoint == 0 {
+
+				projects, err := db.GetProjects()
+				if err != nil {
+					return err
+				}
+				for _, p := range projects {
+					ep, err := p.Extend(&db)
+					if err != nil {
+						return err
+					}
+					for _, ec := range ep.Categories {
+						for _, et := range ec.Translations {
+							handlers.UpdateTranslationFromInferrence(&db, et, []handlers.AdditionalValue{})
+						}
+					}
+				}
+
+			}
+			return nil
+		},
+	)
+	if err != nil {
+		l.Fatal().Err(err).Msg("Failed during db-migration")
+	}
 	defer db.DB.Close()
 	if len(config.TranslatorServices) > 1 {
 		l.Fatal().Msg("currently, only a single translator-service can be used.")

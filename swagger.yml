@@ -495,6 +495,11 @@ definitions:
       parent_translation:
         type: string
         x-go-name: ParentTranslationID
+      references:
+        items:
+          type: string
+        type: array
+        x-go-name: References
       tags:
         items:
           type: string
@@ -1212,6 +1217,11 @@ definitions:
       parent_translation:
         type: string
         x-go-name: ParentTranslationID
+      references:
+        items:
+          type: string
+        type: array
+        x-go-name: References
       tags:
         items:
           type: string

@@ -222,6 +222,7 @@ type IDGenerator interface {
 var (
 	BucketSession          = []byte("sessions")
 	BucketUser             = []byte("users")
+	BucketSys              = []byte("sys")
 	BucketLocale           = []byte("locales")
 	BucketSnapshot         = []byte("snapshot")
 	BucketTranslation      = []byte("translations")
@@ -241,5 +242,6 @@ var (
 		BucketTranslationValue,
 		BucketCategory,
 		BucketMissing,
+		BucketSys,
 	}
 )

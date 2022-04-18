@@ -143,6 +143,10 @@ func (b *BBolter) UpdateTranslation(id string, payload types.Translation) (types
 			c.Variables = payload.Variables
 			needsUpdate = true
 		}
+		if len(payload.References) > 0 {
+			c.References = payload.References
+			needsUpdate = true
+		}
 		if payload.Deleted != nil {
 			c.Deleted = payload.Deleted
 			needsUpdate = true

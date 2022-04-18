@@ -7,6 +7,8 @@
   import ApiResponseError from './ApiResponseError.svelte'
   import ContextForm from './ContextForm.svelte'
 import Dialog from './Dialog.svelte';
+import { showDialog } from 'state';
+import TranslationRef from './TranslationRef.svelte'
   export let translation: ApiDef.Translation
   /** Map by locale-id */
   // export let translationValues: Record<string, ApiDef.TranslationValue>
@@ -256,6 +258,17 @@ import Dialog from './Dialog.svelte';
   {#if translation?.variables}
     <h6>Variables</h6>
     <code>{JSON.stringify(translation.variables, null, 2)}</code>
+  {/if}
+  {#if translation?.references}
+    <h6>References</h6>
+    <ul>
+
+  {#each translation.references as ref }
+  <li>
+    <TranslationRef ref={ref}/>
+  </li>
+{/each}
+    </ul>
   {/if}
 {:else}
   ... (no translation???)

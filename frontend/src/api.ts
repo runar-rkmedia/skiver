@@ -204,6 +204,69 @@ export const db = createStore<DB, null>({
   ),
 })
 
+export const findTranslationByKey = (key: string) => {
+  if (!key) {
+    return null
+  }
+  const store = get(db)
+  const hits: {
+    translation: ApiDef.Translation
+    category: ApiDef.Category
+    project: ApiDef.Project
+  }[] = []
+  for (const t of Object.values(store.translation)) {
+    if (!t.key) {
+      continue
+    }
+    if (t.key === key) {
+      const category = store.category[t.category || '']
+      const project = store.project[category?.project_id || '']
+      hits.push({
+        translation: t,
+        category,
+        project,
+      })
+      continue
+    }
+    if (!key.endsWith(t.key)) {
+      continue
+    }
+    if (!t.category) {
+      continue
+    }
+    const cat = store.category[t.category]
+    if (!cat) {
+      continue
+    }
+    const p = store.project[cat.project_id || '']
+    let tKey = [cat.key, t.key].filter(Boolean).join('.')
+    if (tKey === key) {
+      hits.push({
+        translation: t,
+        category: cat,
+        project: p,
+      })
+      continue
+    }
+    if (!p || !p.short_name) {
+      continue
+    }
+    tKey = [p.short_name, cat.key, t.key].filter(Boolean).join('.')
+    if (tKey === key) {
+      hits.push({
+        translation: t,
+        category: cat,
+        project: p,
+      })
+      continue
+    }
+  }
+  if (!hits.length) {
+    return null
+  }
+  return hits
+}
+
 export const projectCategoriesByKeyLength = derived(db, ($db) => {
   const sorted = Object.values($db.category)
     .reduce((r, c) => {

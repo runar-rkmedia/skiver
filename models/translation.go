@@ -51,6 +51,9 @@ type Translation struct {
 	// parent translation ID
 	ParentTranslationID string `json:"parent_translation,omitempty"`
 
+	// references
+	References []string `json:"references"`
+
 	// tag
 	Tag []string `json:"tags"`
 

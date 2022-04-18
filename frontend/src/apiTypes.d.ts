@@ -282,6 +282,7 @@ declare namespace ApiDef {
         id: string;
         key?: string;
         parent_translation?: string;
+        references?: string[];
         tags?: string[];
         title?: string;
         /**
@@ -726,6 +727,7 @@ declare namespace ApiDef {
         id: string;
         key?: string;
         parent_translation?: string;
+        references?: string[];
         tags?: string[];
         title?: string;
         /**

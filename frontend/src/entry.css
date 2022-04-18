@@ -12,7 +12,7 @@
   --color-danger-300: var(--color-orange-300);
   --color-danger: var(--color-orange-500);
   --color-danger-700: var(--color-orange-700);
-  --color-dark-bg: #092335;
+  --color-dark-bg: #092335e6;
   --gutter-start: var(--size-4);
   --gutter-end: var(--size-6);
 }
@@ -39,6 +39,14 @@
 }
 .bg-dark {
   background-color: var(--color-dark-bg);
+}
+  @media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    animation-delay: 0.01ms !important;
+  }
 }
 body {
   background-color: var(--color-black);

@@ -61,6 +61,7 @@
     justify-content: space-between;
     align-items: center;
     background-color: var(--color-primary-700);
+    box-shadow: var(--elevation-2);
     color: var(--color-grey-100);
   }
 </style>

@@ -66,6 +66,8 @@
   </p>
   {#if $db.login.ok && $db.login?.can_create_organization}
     <OrganizationPage />
+  {:else}
+    <ProjectsPage/>
   {/if}
 {:else}
   Not found

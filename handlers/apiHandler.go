@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -568,38 +569,36 @@ func EndpointsHandler(
 				tv.CreatedBy = session.User.ID
 				tv.OrganizationID = session.Organization.ID
 
-				_, variables := importexport.InferVariables(tv.Value, "???", tv.TranslationID)
-				if len(variables) > 0 {
-					t, err := ctx.DB.GetTranslation(tv.TranslationID)
-					if err != nil {
-						rc.WriteErr(err, requestContext.CodeErrTranslation)
-						return
-					}
-					needsUpdate := false
-					if t.Variables == nil {
-						t.Variables = variables
-						needsUpdate = true
-					} else {
-
-					outerV:
-						for k, v := range variables {
-							for tk := range t.Variables {
-								if k == tk {
-									continue outerV
-								}
-							}
-							t.Variables[k] = v
-							needsUpdate = true
-						}
-					}
-					if needsUpdate {
-						ctx.DB.UpdateTranslation(t.ID, *t)
-					}
+				t, err := ctx.DB.GetTranslation(tv.TranslationID)
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrTranslation)
+					return
+				}
+				if t == nil {
+					rc.WriteErr(ErrApiNotFound("Translation", tv.TranslationID), "")
+				}
+				et, err := t.Extend(ctx.DB)
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrTranslation)
+					return
 				}
 
 				translationValue, err := ctx.DB.CreateTranslationValue(tv)
+				if err != nil {
+					rc.WriteErr(ErrApiDatabase("translation", err), "translation")
+					return
+				}
+				_, err = UpdateTranslationFromInferrence(
+					ctx.DB,
+					et,
+					[]AdditionalValue{
+						{Value: tv.Value, LocaleID: tv.LocaleID}},
+				)
+				if err != nil {
+					ctx.L.Error().Err(err).Msg("Failed in updateTranslationFromInferrence")
+				}
 
-				rc.WriteAuto(translationValue, err, requestContext.CodeErrCreateTranslationValue)
+				rc.WriteOutput(translationValue, http.StatusOK)
 				return
 			}
 			if isPut {
@@ -629,8 +628,37 @@ func EndpointsHandler(
 				}
 				tv.Source = types.CreatorSourceUser
 				tv.UpdatedBy = session.User.ID
+				exTV, err := ctx.DB.GetTranslationValue(id)
+				if exTV == nil {
+					rc.WriteErr(ErrApiNotFound("TranslationValue", id), "")
+				}
+				t, err := ctx.DB.GetTranslation(exTV.TranslationID)
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrTranslation)
+					return
+				}
+				if t == nil {
+					rc.WriteErr(ErrApiNotFound("Translation", exTV.TranslationID), "")
+				}
+				et, err := t.Extend(ctx.DB)
+				if err != nil {
+					rc.WriteErr(err, requestContext.CodeErrTranslation)
+					return
+				}
 				translationValue, err := ctx.DB.UpdateTranslationValue(tv)
-				rc.WriteAuto(translationValue, err, requestContext.CodeErrUpdateTranslationValue)
+				if err != nil {
+					rc.WriteErr(ErrApiDatabase("translation", err), "translation")
+					return
+				}
+				_, err = UpdateTranslationFromInferrence(
+					ctx.DB, et, []AdditionalValue{
+						{Value: tv.Value, LocaleID: exTV.LocaleID, Context: j.ContextKey},
+					})
+				if err != nil {
+					ctx.L.Error().Err(err).Msg("Failed in updateTranslationFromInferrence")
+				}
+
+				rc.WriteOutput(translationValue, http.StatusOK)
 				return
 
 			}
@@ -678,6 +706,98 @@ func EndpointsHandler(
 		}
 		rc.WriteError(fmt.Sprintf("No route registered for: %s %s", r.Method, r.URL.Path), requestContext.CodeErrNoRoute)
 	}
+}
+
+type AdditionalValue struct {
+	Value    string
+	LocaleID string
+	Context  string
+}
+
+// updates a Translation based on updates to its values.
+// The additionalValues are meant to be new values to consider for inferrence.
+// If the Translation already has a value for the same LocaleID/Context as an additionalValue,
+// the existing value will not be considered.
+func UpdateTranslationFromInferrence(db types.Storage, et types.ExtendedTranslation, additionalValues []AdditionalValue) (*types.Translation, error) {
+	var allValues []string
+
+	for _, v := range et.Values {
+		found := false
+		for _, av := range additionalValues {
+			if av.Context != "" {
+				continue
+			}
+			if av.LocaleID != v.LocaleID {
+				continue
+			}
+			found = true
+		}
+		if !found {
+			allValues = append(allValues, v.Value)
+
+		}
+		for _, c := range v.Context {
+			foundContext := false
+			for _, av := range additionalValues {
+				if av.Context != c {
+					continue
+				}
+				if av.LocaleID != v.LocaleID {
+					continue
+				}
+				foundContext = true
+			}
+			if !foundContext {
+				allValues = append(allValues, c)
+			}
+		}
+	}
+
+	for _, av := range additionalValues {
+		allValues = append(allValues, av.Value)
+	}
+	// Check if we can infer some more variables/refs, and if can, we may need to update the Translation.
+	_, variables, refs := importexport.InferVariablesFromMultiple(allValues, "???", et.ID)
+	if len(variables) == 0 && len(refs) == 0 {
+		return nil, nil
+	}
+
+	needsUpdate := false
+	// If we have inferred new variables, we should update.
+	// We should not remove any variables, since we cannot know if there are more variables available.
+	if len(variables) > 0 {
+		if et.Variables == nil {
+			et.Variables = variables
+			needsUpdate = true
+		} else {
+
+		outerV:
+			for k, v := range variables {
+				for tk := range et.Variables {
+					if k == tk {
+						continue outerV
+					}
+				}
+				et.Variables[k] = v
+				needsUpdate = true
+			}
+		}
+	}
+	// If the refs are changed, we should also update. This includes if a ref is removed
+	if !needsUpdate {
+		sort.Strings(et.References)
+		sort.Strings(refs)
+
+		if strings.Join(et.References, ";") != strings.Join(refs, ";") {
+			et.References = refs
+			needsUpdate = true
+		}
+	}
+	if needsUpdate {
+		t, err := db.UpdateTranslation(et.ID, et.Translation)
+		return &t, err
+	}
+	return nil, nil
 }
 
 func getStringSliceIndex(slice []string, index int) string {

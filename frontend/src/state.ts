@@ -2,7 +2,8 @@ import type { Optional, Required } from 'simplytyped'
 import createStore from './store'
 
 export type DialogProps = {
-  kind: 'createTranslation' | 'createCategory' | 'editCategory'
+  title?: string
+  kind: 'createTranslation' | 'createCategory' | 'editCategory' | 'translation'
   parent?: string
   id?: string
 }

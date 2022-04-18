@@ -15,6 +15,9 @@ type Storage interface {
 	UserStorage
 	Size() (int64, error)
 
+	GetState() (*State, error)
+	SetState(newState State) (State, error)
+
 	GetOrganization(organizationID string) (*Organization, error)
 	GetOrganizations() (map[string]Organization, error)
 	CreateOrganization(organization Organization) (Organization, error)
@@ -60,6 +63,10 @@ type Storage interface {
 	FindSnapshots(max int, filter ...ProjectSnapshot) (map[string]ProjectSnapshot, error)
 	CreateSnapshot(snapshot ProjectSnapshot) (ProjectSnapshot, error)
 	FindOneSnapshot(filter ...ProjectSnapshot) (*ProjectSnapshot, error)
+}
+
+type State struct {
+	MigrationPoint int
 }
 
 type Entity struct {

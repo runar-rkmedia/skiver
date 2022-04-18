@@ -7,6 +7,8 @@
   import Button from './Button.svelte'
   import Dialog from './Dialog.svelte'
   import TranslationForm from 'forms/TranslationForm.svelte'
+  import Embed from 'pages/Embed.svelte'
+  import ScrollAnchor from './ScrollAnchor.svelte'
 
   export let locales: ApiDef.Locale[]
   export let selectedLocale: string
@@ -21,27 +23,31 @@
       Object.values($db.category).filter((c) => c.project_id === projectID),
       ($state.categorySortAsc ? '' : '-') + $state.categorySortOn
     )
+  function closeDialog() {
+    visibleForm = null
+    $state.dialog = null
+  }
 </script>
 
 {#if visibleForm === 'editCategory'}
-  <Dialog on:clickClose={() => (visibleForm = null)}>
+  <Dialog on:clickClose={closeDialog}>
     <span slot="title">Edit Category</span>
     <paper>
       <CategoryForm
         {projectID}
         categoryID={selectedCategory}
-        on:complete={() => (visibleForm = null)}>
+        on:complete={closeDialog}>
         <Button
           slot="actions"
           color="secondary"
           icon="cancel"
-          on:click={() => (visibleForm = null)}>Cancel</Button>
+          on:click={closeDialog}>Cancel</Button>
       </CategoryForm>
     </paper>
   </Dialog>
 {/if}
 {#if $state.dialog}
-  <Dialog on:clickClose={() => (visibleForm = null)}>
+  <Dialog on:clickClose={closeDialog}>
     {#if $state.dialog.kind === 'createTranslation' && $state.dialog.parent}
       <Dialog
         on:closeClick={() => {
@@ -50,9 +56,7 @@
         <paper>
           <TranslationForm
             categoryID={selectedCategory}
-            on:complete={() => {
-              visibleForm = null
-            }}>
+            on:complete={closeDialog}>
             <Button
               slot="actions"
               color="secondary"
@@ -66,19 +70,42 @@
         </paper>
       </Dialog>
     {:else if $state.dialog.kind === 'createCategory'}
-      <Dialog on:clickClose={() => (visibleForm = null)}>
+      <Dialog on:clickClose={closeDialog}>
         <span slot="title">Edit Category</span>
         <paper>
           <CategoryForm
             {projectID}
             categoryID={selectedCategory}
-            on:complete={() => (visibleForm = null)}>
+            on:complete={closeDialog}>
             <Button
               slot="actions"
               color="secondary"
               icon="cancel"
-              on:click={() => (visibleForm = null)}>Cancel</Button>
+              on:click={closeDialog}>Cancel</Button>
           </CategoryForm>
+        </paper>
+      </Dialog>
+    {:else if $state.dialog.kind === 'translation' && $state.dialog.id && $state.dialog.parent}
+      <Dialog on:clickClose={closeDialog}>
+        <span slot="title">{$state.dialog.title || ''}</span>
+        <paper>
+          <Embed
+            noHeader={true}
+            categoryKey={$state.dialog.parent}
+            projectKey={projectID}
+            translationKeyLike={$state.dialog.id}>
+            <h4 slot="categoryHeader" let:category let:translation>
+              <ScrollAnchor
+                {category}
+                on:scrollTo={() => {
+                  $state.dialog = null
+                }}>
+                <code>
+                  {[category?.key, translation?.key].filter(Boolean).join('.')}
+                </code>
+              </ScrollAnchor>
+            </h4>
+          </Embed>
         </paper>
       </Dialog>
     {:else}
@@ -86,12 +113,6 @@
         <p>Unhandled dialog-option</p>
         <pre>{JSON.stringify($state.dialog, null, 2)}</pre>
         <p>Sorry for the inconvenience</p>
-
-        <Button
-          color="danger"
-          on:click={() => {
-            $state.dialog = null
-          }}>Clear dialog-state</Button>
       </paper>
     {/if}
   </Dialog>

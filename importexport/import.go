@@ -178,7 +178,7 @@ func translationFromNode(t *types.ExtendedTranslation, key string, base types.Pr
 
 		tv.CreatedBy = base.CreatedBy
 		tv.OrganizationID = base.OrganizationID
-		w, variables := InferVariables(value, categoryKey, t.Key)
+		w, variables, refs := InferVariables(value, categoryKey, t.Key)
 		if len(w) != 0 {
 			warnings = append(warnings, w...)
 		}
@@ -214,6 +214,24 @@ func translationFromNode(t *types.ExtendedTranslation, key string, base types.Pr
 
 			}
 		}
+		if len(refs) > 0 {
+		ref_loop:
+			for _, newRef := range refs {
+				refFound := false
+				for _, ref := range t.References {
+					if newRef == ref {
+						refFound = true
+						continue ref_loop
+
+					}
+
+				}
+				if refFound {
+					continue ref_loop
+				}
+				t.References = append(t.References, newRef)
+			}
+		}
 
 	}
 	return warnings
@@ -223,9 +241,40 @@ var (
 	inferVariablesRegex = regexp.MustCompile(`{{\s*([^\s,}]*)[^}]*}}`)
 )
 
-func InferVariables(translationValue, category, translation string) ([]Warning, map[string]interface{}) {
+func InferVariablesFromMultiple(translationValues []string, category, translation string) ([]Warning, map[string]interface{}, []string) {
 	w := []Warning{}
 	variables := make(map[string]interface{})
+	refs := []string{}
+
+	for _, v := range translationValues {
+		wx, vx, rx := InferVariables(v, category, translation)
+		w = append(w, wx...)
+	loop_rx:
+		for _, r := range rx {
+			for _, er := range refs {
+				if er == r {
+					continue loop_rx
+				}
+			}
+		}
+		refs = append(refs, rx...)
+		for k, v := range vx {
+			if v != "" && v != "???" {
+				if _, ok := variables[k]; ok {
+					continue
+				}
+			}
+			variables[k] = v
+		}
+	}
+
+	return w, variables, refs
+
+}
+func InferVariables(translationValue, category, translation string) ([]Warning, map[string]interface{}, []string) {
+	w := []Warning{}
+	variables := make(map[string]interface{})
+	refs := []string{}
 
 	// The parser below is not yet quite up the the task, so we attempt to infer the easy, common ones with regex first:
 	matches := inferVariablesRegex.FindAllStringSubmatch(translationValue, -1)
@@ -294,7 +343,7 @@ func InferVariables(translationValue, category, translation string) ([]Warning, 
 			if key == "" {
 				warn := newWarning(
 					fmt.Sprintf(
-						"Attempted to interpred a translation-value and infer any references, but the value was empty. %s (%d.Left). This occured in category %s translation %s value %s at %d-%d",
+						"Attempted to interpret a translation-value and infer any references, but the value was empty. %s (%d.Left). This occured in category %s translation %s value %s at %d-%d",
 						n.Token.Kind, i, category, translation, translationValue, n.Left.Token.Start, n.Left.Token.End),
 					WarningKindTranslationVariables,
 					WarningLevelMinor,
@@ -304,14 +353,15 @@ func InferVariables(translationValue, category, translation string) ([]Warning, 
 				continue
 
 			}
-			if _, ok := variables["_refs:"+key]; !ok {
-				if n.Right != nil {
-					variables["_refs:"+key] = n.Right.Token.Literal
-				} else {
-					variables["_refs:"+key] = nil
-
+			refExists := false
+			for _, ref := range refs {
+				if ref == key {
+					refExists = true
 				}
 
+			}
+			if !refExists {
+				refs = append(refs, key)
 			}
 
 		case lexer.TokenPrefix:
@@ -344,7 +394,8 @@ func InferVariables(translationValue, category, translation string) ([]Warning, 
 			variables[key] = getValueForVariableKey(key)
 		}
 	}
-	return w, variables
+	sort.Strings(refs)
+	return w, variables, refs
 }
 
 // i18n-translations are either:

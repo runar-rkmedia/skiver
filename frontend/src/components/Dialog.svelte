@@ -48,8 +48,8 @@
     border-top-left-radius: 0;
   }
   .simple-backdrop {
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vw;
     position: fixed;
     opacity: 0.5;
   }

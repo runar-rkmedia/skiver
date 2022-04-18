@@ -28,6 +28,7 @@ type Translation struct {
 	Tag                 []string               `json:"tags,omitempty"`
 	Title               string                 `json:"title,omitempty"`
 	Variables           map[string]interface{} `json:"variables,omitempty"`
+	References          []string               `json:"references,omitempty"`
 	ValueIDs            []string               `json:"value_ids,omitempty"`
 }
 
