@@ -1,6 +1,7 @@
 package types
 
 import (
+	"reflect"
 	"time"
 )
 
@@ -93,4 +94,20 @@ type Entity struct {
 
 func (e Entity) IDString() string {
 	return e.ID
+}
+
+type KindReporter interface {
+	Kind() string
+}
+
+func GetType(v any) string {
+	if v == nil {
+		return "nil"
+	}
+	if k, ok := v.(KindReporter); ok {
+		return k.Kind()
+	}
+
+	val := reflect.ValueOf(v)
+	return val.Type().Name()
 }

@@ -616,6 +616,7 @@ func main() {
 		}
 		return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			startTime := time.Now()
+			debug := l.HasDebug()
 			defer func() {
 				expvar.Get("endpoint-" + name).(metric.Metric).Add(float64(time.Since(startTime).Milliseconds()))
 				expvar.Get("endpoint-count-" + name).(metric.Metric).Add(1)
@@ -631,7 +632,7 @@ func main() {
 			// This turned out a bit hacky, but it leaves a nicer pattern for route-handlers
 			// since they don't need to care about auth, logging, or writing
 			// TODO: change the details here
-			if l.HasDebug() {
+			if debug {
 				l.Debug().Str("Path", r.URL.Path).Str("method", r.Method).Str("handler", name).Interface("params", p).Msg("Incoming request")
 				defer func() {
 					h := rw.Header().Clone()
@@ -671,13 +672,17 @@ func main() {
 			}
 			output, err := h(rc, rw, r)
 			if err != nil {
+				rc.L.Warn().Err(err).Msg("User received an error")
 				rc.WriteErr(err, "")
 				return
 			}
 			if output != nil {
+				if debug {
+					rc.L.Debug().Str("output-type", types.GetType(output)).Msg("Returning type to user")
+				}
 				rc.WriteOutput(output, http.StatusOK)
 			} else {
-				if rc.L.HasDebug() {
+				if debug {
 					rc.L.Warn().Msg("No output produced. This may be a false warning as we are migrating to a new httpMux-pattern")
 				}
 			}
