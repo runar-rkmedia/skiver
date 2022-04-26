@@ -61,7 +61,7 @@ func GetDiff(exportCache Cache) AppHandler {
 
 		if hashA != hashB {
 
-			c, err := diff.Diff(a, b, diff.DisableStructValues())
+			c, err := diff.Diff(a, b, diff.DisableStructValues(), diff.AllowTypeMismatch(true))
 			if err != nil {
 				return nil, err
 			}
