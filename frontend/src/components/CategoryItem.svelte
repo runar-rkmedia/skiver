@@ -38,10 +38,8 @@
   export let category: ApiDef.Category
   export let locales: ApiDef.Locale[]
   export let projectKey: ApiDef.Locale[]
-  export let selectedLocale: string
   export let selectedTranslation: string
-  export let selectedCategory: string
-  export let visibleForm: string
+  let visibleForm: string
   let showDeleted = true
   // export let forceExpand = false
   $: translations = (category.translation_ids || [])
@@ -86,10 +84,13 @@
         <Button
           icon="edit"
           on:click={() => {
-            visibleForm = 'editCategory'
-            selectedCategory = category.id
+            showDialog({
+              kind: 'editCategory',
+              id: category.id,
+              title: `Edit ${category.title}`,
+            })
           }}
-          disabled={!!visibleForm}>
+          disabled={!!$state.dialog}>
           Edit
         </Button>
       </h3>
@@ -107,12 +108,9 @@
         <Button
           color="secondary"
           icon={'create'}
-          disabled={selectedCategory === category.id &&
-            visibleForm === 'translation'}
+          disabled={!!$state.dialog}
           on:click={() => {
             showDialog({ kind: 'createTranslation', parent: category.id })
-            // selectedCategory = category.id
-            // visibleForm = 'translation'
           }}>Create translation</Button>
       </div>
       <div class="translations" key="={category.id}">
@@ -123,7 +121,6 @@
               {projectKey}
               categoryKey={category.key}
               {locales}
-              bind:selectedLocale
               on:complete={() => {
                 visibleForm = null
               }}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { db } from 'api'
   import Button from 'components/Button.svelte'
+  import Dialogs from 'components/Dialogs.svelte'
   import EntityDetails from 'components/EntityDetails.svelte'
   import Spinner from 'components/Spinner.svelte'
   import TagDiff from 'components/TagDiff.svelte'
@@ -8,6 +9,7 @@
   import ProjectForm from 'forms/ProjectForm.svelte'
   import ProjectSnapshotForm from 'forms/ProjectSnapshotForm.svelte'
   import sortOn from 'sort-on'
+  import { showDialog, toast } from 'state'
   import { apiUrl } from 'util/appConstants'
   export let projectID: string
   let extendedDiff = false
@@ -16,9 +18,87 @@
     !!project &&
     sortOn(Object.entries(project.snapshots || {}), '-1.created_at')
   let showCreateSnapshotForm = false
+
+  function onDiffClick(e: CustomEvent<ApiDef.Change>) {
+    const diff = e.detail
+    if (!diff || !diff.path) {
+      return
+    }
+    const isCombo = typeof diff.to === 'object'
+    const catKeyA = diff.path.slice(1, -1).join('.')
+    const catKeyB = diff.path.slice(0, -1).join('.')
+    const translationKey = diff.path[diff.path.length - 1].split('_')[0]
+    console.log({
+      catKeyA,
+      catKeyB,
+      translationKey,
+      length: diff.path,
+      diff,
+      cats: $db.category,
+    })
+    const cat = Object.values($db.category).find((c) => {
+      if (c.project_id !== projectID) {
+        return false
+      }
+      if (!c.translation_ids) {
+        return false
+      }
+      if (isCombo && c.key === translationKey) {
+        return true
+      }
+      if (c.key === catKeyA) {
+        return true
+      }
+      if (c.key === catKeyB) {
+        return true
+      }
+      return false
+    })
+    if (!cat || !cat.translation_ids) {
+      toast({
+        kind: 'error',
+        message:
+          'Failed to find a category for this diff. See the project-view to find it. Sorry for the inconvenience.',
+        title: 'Category not found',
+      })
+      return
+    }
+    if (isCombo && cat.key === translationKey) {
+      // TODO: this should show a dialog with the category and all the keys.
+      // Tracked in [issue #10 - Add dialog for modifying keys within a category](https://github.com/runar-rkmedia/skiver/issues/10)
+      toast({
+        kind: 'warning',
+        message:
+          'Sorry, the view for this combination-item has not yet been implemented.',
+        title: 'Not implemented yet',
+      })
+
+      return
+    }
+    const translation = cat.translation_ids
+      .map((id) => $db.translation[id])
+      .find((t) => t && t.key === translationKey)
+    console.log(catKeyA, translationKey, cat, translation)
+    if (!translation) {
+      toast({
+        kind: 'error',
+        message:
+          'Failed to find a translation for this diff. See the project-view to find it. Sorry for the inconvenience.',
+        title: 'Translation not found',
+      })
+      return
+    }
+    showDialog({
+      kind: 'translation',
+      id: translation.id,
+      parent: cat.id,
+      title: `Edit ${translation.title}`,
+    })
+  }
 </script>
 
 {#if project}
+  <Dialogs {projectID} />
   <h2>Settings for project: {project.title}</h2>
   <paper>
     <ProjectForm {project} />
@@ -82,6 +162,7 @@
         <TagDiff
           tagA={tags[0][0]}
           tagB={''}
+          on:diffClick={onDiffClick}
           {projectID}
           format={extendedDiff ? 'raw' : 'i18n'} />
       {/if}
@@ -101,6 +182,7 @@
           <TagDiff
             tagA={tags[i + 1][0]}
             tagB={tag}
+            on:diffClick={onDiffClick}
             {projectID}
             format={extendedDiff ? 'raw' : 'i18n'} />
         {/if}

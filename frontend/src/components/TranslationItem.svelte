@@ -6,9 +6,8 @@
   import Button from './Button.svelte'
   import ApiResponseError from './ApiResponseError.svelte'
   import ContextForm from './ContextForm.svelte'
-import Dialog from './Dialog.svelte';
-import { showDialog } from 'state';
-import TranslationRef from './TranslationRef.svelte'
+  import Dialog from './Dialog.svelte'
+  import TranslationRef from './TranslationRef.svelte'
   export let translation: ApiDef.Translation
   /** Map by locale-id */
   // export let translationValues: Record<string, ApiDef.TranslationValue>
@@ -121,70 +120,74 @@ import TranslationRef from './TranslationRef.svelte'
     </form>
   {/if}
   {#if edit}
-  <Dialog on:clickClose={toggleEdit}>
-    <span slot="title">Edit Category</span>
-    <paper>
-    <form>
-      <ApiResponseError key="translation" />
-      {#if editError}
-        <Alert kind="error">
-          {editError}
-        </Alert>
-      {/if}
-      <label
-        >Title<input name="title" bind:value={editTitle} type="text" /></label>
-      <label
-        >Description<textarea
-          name="description"
-          rows={3}
-          bind:value={editDescription}
-          type="text" /></label>
-      <label>Key<input name="key" bind:value={editKey} type="text" /></label>
-      <label>
-        Variables
-        <textarea
-          name="variables"
-          rows={8}
-          bind:value={editVariables}
-          type="text" /></label>
-      <div class="buttonRow">
-        <Button color="primary" icon="submit" on:click={submitEdit}
-          >Submit</Button>
-        <Button color="secondary" icon="cancel" on:click={toggleEdit}
-          >Cancel</Button>
-        <div class="deleteButton">
-          {#if translation.deleted}
-            <Button
-              color="primary"
-              icon="delete"
-              on:click={() =>
-                api.translation.delete(translation.id, { undelete: true })}
-              >Undelete</Button>
-          {:else}
-            <Button color="danger" icon="delete" on:click={confirmDelete}
-              >Delete</Button>
+    <Dialog on:clickClose={toggleEdit}>
+      <span slot="title">Edit Category</span>
+      <paper>
+        <form>
+          <ApiResponseError key="translation" />
+          {#if editError}
+            <Alert kind="error">
+              {editError}
+            </Alert>
           {/if}
-        </div>
-      </div>
-    </form>
-  </paper>
-      </Dialog>
+          <label
+            >Title<input
+              name="title"
+              bind:value={editTitle}
+              type="text" /></label>
+          <label
+            >Description<textarea
+              name="description"
+              rows={3}
+              bind:value={editDescription}
+              type="text" /></label>
+          <label
+            >Key<input name="key" bind:value={editKey} type="text" /></label>
+          <label>
+            Variables
+            <textarea
+              name="variables"
+              rows={8}
+              bind:value={editVariables}
+              type="text" /></label>
+          <div class="buttonRow">
+            <Button color="primary" icon="submit" on:click={submitEdit}
+              >Submit</Button>
+            <Button color="secondary" icon="cancel" on:click={toggleEdit}
+              >Cancel</Button>
+            <div class="deleteButton">
+              {#if translation.deleted}
+                <Button
+                  color="primary"
+                  icon="delete"
+                  on:click={() =>
+                    api.translation.delete(translation.id, { undelete: true })}
+                  >Undelete</Button>
+              {:else}
+                <Button color="danger" icon="delete" on:click={confirmDelete}
+                  >Delete</Button>
+              {/if}
+            </div>
+          </div>
+        </form>
+      </paper>
+    </Dialog>
   {/if}
-    <div class="desc">
-      <h4>
-        <slot name="categoryHeader" {categoryKey} {translation}>
-          <code>
-            {`${categoryKey !== '' ? categoryKey + '.' : ''}${translation.key}`}
-          </code>
-          {translation.title}
-        </slot>
-        <Button icon="edit" on:click={toggleEdit}>Edit</Button>
-      </h4>
-      <div>
-        <small />
-        <EntityDetails entity={translation} />
-      </div>
+  <div class="desc">
+    <h4>
+      <slot name="categoryHeader" {categoryKey} {translation}>
+        <code>
+          {`${categoryKey !== '' ? categoryKey + '.' : ''}${translation.key}`}
+        </code>
+        {translation.title}
+      </slot>
+      <Button icon="edit" on:click={toggleEdit}>Edit</Button>
+    </h4>
+    <div>
+      <small />
+      <EntityDetails entity={translation} />
     </div>
+  </div>
   <p>
     {translation.description || ''}
   </p>
@@ -262,12 +265,11 @@ import TranslationRef from './TranslationRef.svelte'
   {#if translation?.references}
     <h6>References</h6>
     <ul>
-
-  {#each translation.references as ref }
-  <li>
-    <TranslationRef ref={ref}/>
-  </li>
-{/each}
+      {#each translation.references as ref}
+        <li>
+          <TranslationRef {ref} />
+        </li>
+      {/each}
     </ul>
   {/if}
 {:else}

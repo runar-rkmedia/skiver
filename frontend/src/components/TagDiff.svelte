@@ -4,12 +4,18 @@
   import Collapse from './Collapse.svelte'
   import Icon from './Icon.svelte'
   import JsonDetail from './JsonDetail.svelte'
+  import { createEventDispatcher } from 'svelte'
+
   export let tagA: string
   export let tagB: string
   export let format: 'i18n' | 'raw' = 'i18n'
   export let projectID: string
+
   let response: ApiDef.DiffResponse | undefined
   let err: ApiDef.APIError | null | undefined
+  const dispatch = createEventDispatcher()
+
+  const zeroWidthSpace = '\u200B'
 
   $: {
     if (projectID && (tagA || tagB) && format) {
@@ -46,10 +52,10 @@
         if (ap === bp) {
           continue
         }
-        return ' \u21b3 ' + a.slice(i).join('.\u200B')
+        return '↳ ' + a.slice(i).join('.' + zeroWidthSpace)
       }
     }
-    const s = (a || []).join('.\u200B')
+    const s = (a || []).join('.' + zeroWidthSpace)
     return s
   }
 </script>
@@ -124,8 +130,13 @@
                       <Icon icon="edit" />
                     </span>
                   {/if}
-                </td><td class="path"
-                  >{shortenPath(d.path, response.diff[i - 1]?.path)}</td>
+                </td><td class="path">
+                  <button
+                    class="btn-reset"
+                    on:click={() => dispatch('diffClick', d)}>
+                    {shortenPath(d.path, response.diff[i - 1]?.path)}
+                  </button>
+                </td>
                 <td class="content">
                   {#if d.type === 'delete'}
                     <span class="delete from">
@@ -195,12 +206,17 @@
   tr.delete:nth-of-type(odd) {
     background-color: var(--color-red-300);
   }
+  td > button:hover {
+    text-decoration: underline;
+    color: var(--color-primary-700);
+  }
   th.type {
     width: 20px;
   }
   th.path {
     width: 30%;
   }
+
   tr.diff {
     padding-inline: var(--size-2);
   }

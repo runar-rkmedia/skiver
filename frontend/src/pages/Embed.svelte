@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { api, db } from 'api'
+  import { db } from 'api'
   import Alert from 'components/Alert.svelte'
   import Button from 'components/Button.svelte'
   import Spinner from 'components/Spinner.svelte'

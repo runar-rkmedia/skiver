@@ -49,6 +49,9 @@ export function showDialog(d: DialogProps | null) {
     return { ...s, dialog: d }
   })
 }
+export function closeDialog() {
+  state.update(s => ({ ...s, dialog: null }))
+}
 
 type Toast = {
   kind: 'error' | 'info' | 'warning'
