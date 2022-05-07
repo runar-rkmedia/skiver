@@ -607,13 +607,14 @@ func main() {
 	}
 	// This is still being fleshed out...
 	// Should use middleware-pattern
-	c := func(name string, h handlers.AppHandler, opts ...routeOptions) httprouter.Handle {
+	pipeline := func(name string, h handlers.AppHandler, opts ...routeOptions) httprouter.Handle {
 		expvar.Publish("endpoint-"+name, metric.NewHistogram())
 		expvar.Publish("endpoint-count-"+name, metric.NewCounter())
 		var options routeOptions
 		if len(opts) > 0 {
 			options = opts[0]
 		}
+		l := logger.GetLogger(name)
 		return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			startTime := time.Now()
 			debug := l.HasDebug()
@@ -646,6 +647,7 @@ func main() {
 				}()
 			}
 			rc := ctx.NewReqContext(rw, r)
+			rc.L = l
 			_r, err := auth(rw, r)
 			if err != nil {
 				rc.WriteErr(err, "Internal server error")
@@ -689,13 +691,16 @@ func main() {
 		}
 	}
 	// We are migrating to using httprouter, but not all routes have been migrated
-	router.GET("/api/export/:params", c("GetExport", handlers.GetExport(exportCache)))
-	router.GET("/api/export/", c("GetExportx", handlers.GetExport(exportCache)))
-	router.GET("/api/user/", c("GetSimpleUsers", handlers.ListUsers(&db, true)))
-	router.GET("/api/missing/", c("GetMissing", handlers.GetMissing(&db)))
-	router.POST("/api/missing/:locale/:project", c("ReportMissing", handlers.PostMissing(&db)))
-	router.GET("/api/category/", c("GetCategory", handlers.GetCategory(&db)))
-	router.POST("/api/category/", c("PostCategory", handlers.PostCategory(&db), routeOptions{
+	// Therefore, this is at the moment a bit more verbose than strictly needed
+	router.GET("/api/organization/", pipeline("GetOrganization", handlers.GetOrganization(&db)))
+	router.POST("/api/organization/", pipeline("PostOrganization", handlers.PostOrganization(&db)))
+	router.GET("/api/export/:params", pipeline("GetExport", handlers.GetExport(exportCache)))
+	router.GET("/api/export/", pipeline("GetExportx", handlers.GetExport(exportCache)))
+	router.GET("/api/user/", pipeline("GetSimpleUsers", handlers.ListUsers(&db, true)))
+	router.GET("/api/missing/", pipeline("GetMissing", handlers.GetMissing(&db)))
+	router.POST("/api/missing/:locale/:project", pipeline("ReportMissing", handlers.PostMissing(&db)))
+	router.GET("/api/category/", pipeline("GetCategory", handlers.GetCategory(&db)))
+	router.POST("/api/category/", pipeline("PostCategory", handlers.PostCategory(&db), routeOptions{
 		sessionRole: func(s types.Session, r *http.Request) error {
 			if !s.User.CanCreateTranslations {
 				return fmt.Errorf("You are not authorized to manage translations")
@@ -703,7 +708,7 @@ func main() {
 			return nil
 		},
 	}))
-	router.PUT("/api/category/", c("UpdateCategory", handlers.UpdateCategory(&db), routeOptions{
+	router.PUT("/api/category/", pipeline("UpdateCategory", handlers.UpdateCategory(&db), routeOptions{
 		sessionRole: func(s types.Session, r *http.Request) error {
 			if !s.User.CanCreateTranslations {
 				return fmt.Errorf("You are not authorized to manage translations")
@@ -711,7 +716,7 @@ func main() {
 			return nil
 		},
 	}))
-	router.GET("/api/users/", c("GetUsers", handlers.ListUsers(&db, false), routeOptions{
+	router.GET("/api/users/", pipeline("GetUsers", handlers.ListUsers(&db, false), routeOptions{
 		sessionRole: func(s types.Session, r *http.Request) error {
 			if !s.User.CanUpdateUsers {
 				return fmt.Errorf("You are not authorized to manage users")
@@ -719,38 +724,38 @@ func main() {
 			return nil
 		},
 	}))
-	router.POST("/api/user/password", c("ChangePassword", handlers.ChangePassword(&db, &pw)))
-	router.POST("/api/user/token", c("CreateToken", handlers.CreateToken(userSessions)))
-	router.POST("/api/project/snapshotdiff/", c("DiffSnapshot", handlers.GetDiff(exportCache)))
-	router.DELETE("/api/translation/:id/", c("DeleteTranslation", handlers.DeleteTranslation(),
+	router.POST("/api/user/password", pipeline("ChangePassword", handlers.ChangePassword(&db, &pw, userSessions)))
+	router.POST("/api/user/token", pipeline("CreateToken", handlers.CreateToken(userSessions)))
+	router.POST("/api/project/snapshotdiff/", pipeline("DiffSnapshot", handlers.GetDiff(exportCache)))
+	router.DELETE("/api/translation/:id/", pipeline("DeleteTranslation", handlers.DeleteTranslation(),
 		routeOptions{sessionRole: func(s types.Session, r *http.Request) error {
 			if !s.User.CanUpdateTranslations {
 				return fmt.Errorf("You are not authorized to delete translations")
 			}
 			return nil
 		}}))
-	router.PUT("/api/translation/", c("UpdateTranslation", handlers.UpdateTranslation(),
+	router.PUT("/api/translation/", pipeline("UpdateTranslation", handlers.UpdateTranslation(),
 		routeOptions{sessionRole: func(s types.Session, r *http.Request) error {
 			if !s.User.CanUpdateTranslations {
 				return fmt.Errorf("You are not authorized to update translations")
 			}
 			return nil
 		}}))
-	router.POST("/api/translation/", c("CreateTranslation", handlers.CreateTranslation(),
+	router.POST("/api/translation/", pipeline("CreateTranslation", handlers.CreateTranslation(),
 		routeOptions{sessionRole: func(s types.Session, r *http.Request) error {
 			if !s.User.CanCreateTranslations {
 				return fmt.Errorf("You are not authorized to create translations")
 			}
 			return nil
 		}}))
-	router.GET("/api/translation/", c("GetTranslation", handlers.GetTranslations()))
-	router.GET("/api/serverInfo/", c("GetServerInfo", handlers.GetServerInfo(&db, func() *types.ServerInfo {
+	router.GET("/api/translation/", pipeline("GetTranslation", handlers.GetTranslations()))
+	router.GET("/api/serverInfo/", pipeline("GetServerInfo", handlers.GetServerInfo(&db, func() *types.ServerInfo {
 		info.RLock()
 		defer info.RUnlock()
 		return &info.ServerInfo
 
 	})))
-	router.POST("/api/project/snapshot/", c("PostSnapshot", handlers.PostSnapshot(), routeOptions{sessionRole: func(s types.Session, _ *http.Request) error {
+	router.POST("/api/project/snapshot/", pipeline("PostSnapshot", handlers.PostSnapshot(), routeOptions{sessionRole: func(s types.Session, _ *http.Request) error {
 		if !s.User.CanUpdateProjects {
 			return fmt.Errorf("You are not authorized to create snapshots")
 		}
@@ -772,6 +777,7 @@ func main() {
 	// 	)
 	)
 	handler.Handle("/api/project/snapshot/", router)
+	handler.Handle("/api/organization/", router)
 	handler.Handle("/api/project/snapshotdiff/", router)
 	handler.Handle("/api/export/", router)
 	handler.Handle("/api/translation/", router)

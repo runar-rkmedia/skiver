@@ -15,7 +15,6 @@ import (
 	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/requestContext"
 	"github.com/runar-rkmedia/skiver/types"
-	"github.com/runar-rkmedia/skiver/utils"
 )
 
 var (
@@ -424,43 +423,6 @@ func EndpointsHandler(
 
 			} else {
 				rc.WriteError("Only post is allowed here", requestContext.CodeErrMethodNotAllowed)
-				return
-			}
-		case "organization":
-			if isGet {
-				if session.User.CanCreateOrganization {
-					orgs, err := ctx.DB.GetOrganizations()
-					rc.WriteAuto(orgs, err, requestContext.CodeErrProject)
-					return
-
-				}
-				org, err := ctx.DB.GetOrganization(session.User.OrganizationID)
-				rc.WriteAuto(map[string]*types.Organization{org.ID: org}, err, requestContext.CodeErrProject)
-				return
-			}
-			if isPost {
-				if !session.User.CanCreateOrganization {
-					rc.WriteError("You are not authorizatiod to create organizations", requestContext.CodeErrAuthoriziation)
-					return
-				}
-				var j models.OrganizationInput
-				if err := rc.ValidateBytes(body, &j); err != nil {
-					return
-				}
-
-				l := types.Organization{
-					Title: *j.Title,
-					// Initially set to expire within 30 days.
-					JoinIDExpires: time.Now().Add(30 * 24 * time.Hour),
-				}
-				l.JoinID, err = utils.GetRandomName()
-				if err != nil {
-					rc.WriteErr(err, requestContext.CodeErrOrganization)
-					return
-				}
-				l.CreatedBy = session.User.ID
-				org, err := ctx.DB.CreateOrganization(l)
-				rc.WriteAuto(org, err, requestContext.CodeErrCreateProject)
 				return
 			}
 		case "project":
