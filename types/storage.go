@@ -11,17 +11,19 @@ type UserStorage interface {
 	FindUserByUserName(organizationID, userName string) (*User, error)
 	CreateUser(user User) (User, error)
 }
+type OrgStorage interface {
+	GetOrganization(organizationID string) (*Organization, error)
+	GetOrganizations() (map[string]Organization, error)
+	CreateOrganization(organization Organization) (Organization, error)
+}
 
 type Storage interface {
 	UserStorage
+	OrgStorage
 	Size() (int64, error)
 
 	GetState() (*State, error)
 	SetState(newState State) (State, error)
-
-	GetOrganization(organizationID string) (*Organization, error)
-	GetOrganizations() (map[string]Organization, error)
-	CreateOrganization(organization Organization) (Organization, error)
 
 	GetLocale(ID string) (Locale, error)
 	CreateLocale(locale Locale) (Locale, error)
@@ -60,7 +62,7 @@ type Storage interface {
 
 	ReportMissing(key MissingTranslation) (*MissingTranslation, error)
 	GetMissingKeysFilter(max int, filter ...MissingTranslation) (map[string]MissingTranslation, error)
-	UpdateUser(id string, payload User) (User, error)
+	UpdateUser(id string, payload UpdateUserPayload) (User, error)
 
 	GetSnapshot(snapshotId string) (*ProjectSnapshot, error)
 	FindSnapshots(max int, filter ...ProjectSnapshot) (map[string]ProjectSnapshot, error)

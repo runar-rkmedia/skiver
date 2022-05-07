@@ -79,15 +79,19 @@ func (bb *BBolter) FindOneUser(filter ...types.User) (*types.User, error) {
 	})
 }
 
-func (bb *BBolter) UpdateUser(id string, payload types.User) (types.User, error) {
+func (bb *BBolter) UpdateUser(id string, payload types.UpdateUserPayload) (types.User, error) {
 	return Update(bb, BucketUser, id, func(t types.User) (types.User, error) {
 		shouldUpdate := false
-		if payload.UserName != "" && payload.UserName != t.UserName {
-			t.UserName = payload.UserName
+		if payload.UserName != nil && *payload.UserName != t.UserName {
+			t.UserName = *payload.UserName
 			shouldUpdate = true
 		}
-		if payload.PW != nil && string(payload.PW) != string(t.PW) {
-			t.PW = payload.PW
+		if payload.PW != nil && string(*payload.PW) != string(t.PW) {
+			t.PW = *payload.PW
+			shouldUpdate = true
+		}
+		if payload.TemporaryPassword != nil && *payload.TemporaryPassword != t.TemporaryPassword {
+			t.TemporaryPassword = *payload.TemporaryPassword
 			shouldUpdate = true
 		}
 		if !shouldUpdate {

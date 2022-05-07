@@ -29,6 +29,26 @@ type User struct {
 	CanUpdateLocales      bool `json:"can_update_locales,omitempty"`
 }
 
+type UpdateUserPayload struct {
+	UserName          *string
+	PW                *[]byte
+	TemporaryPassword *bool
+	Entity
+}
+
+func (p *UpdateUserPayload) SetUserName(s string) *UpdateUserPayload {
+	p.UserName = &s
+	return p
+}
+func (p *UpdateUserPayload) SetTemporaryPassword(temp bool) *UpdateUserPayload {
+	p.TemporaryPassword = &temp
+	return p
+}
+func (p *UpdateUserPayload) SetUpdatedBy(userid string) *UpdateUserPayload {
+	p.UpdatedBy = userid
+	return p
+}
+
 type UserStore int
 
 const (

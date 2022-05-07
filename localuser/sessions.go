@@ -25,7 +25,6 @@ type Persistor interface {
 }
 
 func NewUserSessionInMemory(options types.UserSessionOptions, tokenCreator func() string, persistor Persistor) (UserSessionInMemory, error) {
-	// We dont want the expiry-check to happen at the same time on the hour, so we add some seconds
 	u := UserSessionInMemory{t: tokenCreator, UserSessionOptions: options}
 	if persistor != nil {
 		u.persistor = persistor
@@ -63,11 +62,34 @@ func NewUserSessionInMemory(options types.UserSessionOptions, tokenCreator func(
 }
 
 func (us UserSessionInMemory) NewSession(user types.User, organization types.Organization, userAgent string, opts ...types.UserSessionOptions) (s types.Session) {
+	token := us.t()
+	return us.newSession(token, user, organization, userAgent, opts...)
+}
+func (us UserSessionInMemory) ReplaceSession(token string, session types.Session) (s types.Session) {
+	return us.setSession(token, session)
+}
+func (us UserSessionInMemory) setSession(token string, session types.Session) types.Session {
+	ttl := session.Expires.Sub(time.Now())
+	if ttl <= 0 {
+		l := logger.GetLogger("UserSessionInMemory.setSession")
+		l.Warn().Time("expires", session.Expires).Msg("Session has expired")
+	}
+	us.c.Set(token, session, ttl)
+	if us.persistor != nil {
+		s, err := us.persistor.CreateSession(token, session)
+		if err != nil {
+			l := logger.GetLogger("UserSessionInMemory.setSession")
+			l.Error().Err(err).Msg("failed to create session")
+		}
+		return s
+	}
+	return session
+}
+func (us UserSessionInMemory) newSession(token string, user types.User, organization types.Organization, userAgent string, opts ...types.UserSessionOptions) (s types.Session) {
 	var options types.UserSessionOptions
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	token := us.t()
 	now := time.Now()
 	var ttl time.Duration
 	if options.TTL > 0 {
@@ -84,16 +106,7 @@ func (us UserSessionInMemory) NewSession(user types.User, organization types.Org
 		Expires:      now.Add(ttl),
 	}
 
-	us.c.Set(token, s, ttl)
-	if us.persistor != nil {
-		s, err := us.persistor.CreateSession(token, s)
-		if err != nil {
-			l := logger.GetLogger("UserSessionInMemory.NewSession")
-			l.Error().Err(err).Msg("failed to create session")
-		}
-		return s
-	}
-	return s
+	return us.setSession(token, s)
 }
 func (us UserSessionInMemory) TTL() time.Duration {
 	return us.UserSessionOptions.TTL
@@ -110,6 +123,14 @@ func (us UserSessionInMemory) ClearAllSessionsForUser(userId string) error {
 	s := us.SessionsForUser(userId)
 	for _, v := range s {
 		us.c.Delete(v.Token)
+	}
+	return nil
+}
+func (us UserSessionInMemory) UpdateAllSessionsForUser(userId string, user types.User) error {
+	s := us.SessionsForUser(userId)
+	for _, v := range s {
+		v.User = user
+		us.setSession(v.Token, v)
 	}
 	return nil
 }

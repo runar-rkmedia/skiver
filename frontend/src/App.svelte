@@ -9,7 +9,7 @@
   import Button from './components/Button.svelte'
   import Spinner from './components/Spinner.svelte'
   import PageContent from 'PageContent.svelte'
-  import { clearToast, state } from 'state'
+  import { clearToast, state, toast, toastApiErr } from 'state'
   import { appUrl } from 'util/appConstants'
   import router from 'util/router'
 
@@ -18,7 +18,9 @@
   import UserButton from 'components/UserButton.svelte'
   let username = $db.login.username
   let requiresLogin = false
-  let password: ''
+  let password = ''
+  let newPassword = ''
+  let confirmPassword = ''
   onMount(() => {
     const loadingEl = document.getElementById('loading')
     if (loadingEl) {
@@ -107,47 +109,134 @@
   {/if}
   <div />
 
-  {#if !$db.login.ok && requiresLogin}
+  {#if (!$db.login.ok && requiresLogin) || $db.login.temporary_password}
     <div class="login" transition:scale|local>
       <paper>
-        <h2>Login</h2>
-        {#if $db.responseStates.login.loading}
-          <Spinner />
-        {/if}
-        {#if $db.responseStates.login?.error?.error}
-          <Alert kind="error"
-            >{$db.responseStates.login.error.error.error}</Alert>
-        {/if}
-        <form
-          on:submit|preventDefault={() => {
-            if (!username || !password) {
-              return
-            }
+        {#if $db.login.temporary_password}
+          <h2>You must change your password</h2>
+          <form
+            on:submit|preventDefault={async () => {
+              if (
+                !newPassword ||
+                !password ||
+                newPassword !== confirmPassword
+              ) {
+                return
+              }
 
-            api.login.post({ username, password })
-          }}>
-          <label>
-            Username
-            <!-- svelte-ignore a11y-autofocus -->
-            <input
-              name="text"
-              bind:value={username}
-              autofocus={true}
-              autocapitalize="none" />
-          </label>
+              const [_res, err] = await api.changePassword({
+                password,
+                new_password: newPassword,
+              })
+              if (err != null) {
+                toastApiErr(err)
+                return
+              }
+              toast({
+                kind: 'info',
+                title: 'Success',
+                message: 'Your password was successfully changed',
+              })
+              password = ''
+              confirmPassword = ''
+              newPassword = ''
+              $db.login.temporary_password = false
+            }}>
+            <label>
+              Username
+              <input
+                name="text"
+                bind:value={username}
+                readonly
+                autocapitalize="none" />
+            </label>
 
-          <label>
-            Password
-            <input name="password" type="password" bind:value={password} />
-          </label>
-          <Button
-            preventDefault={false}
-            color="primary"
-            icon="signIn"
-            type="submit">
-            Login
-          </Button>
-        </form>
+            <label>
+              Current Password
+              <!-- svelte-ignore a11y-autofocus -->
+              <input
+                autocomplete="current-password"
+                name="current-password"
+                type="password"
+                placeholder="Password"
+                required
+                bind:value={password} />
+            </label>
+            <label>
+              New Password
+              <input
+                autocomplete="new-password"
+                type="password"
+                placeholder="New Password"
+                required
+                bind:value={newPassword} />
+            </label>
+            <label>
+              Confirm Password
+              <input
+                autocomplete="new-password"
+                type="password"
+                name="confirm_password"
+                placeholder="Confirm Password"
+                required
+                bind:value={confirmPassword} />
+            </label>
+            <Button
+              preventDefault={false}
+              color="primary"
+              disabled={!newPassword || newPassword !== confirmPassword}
+              icon="signIn"
+              type="submit">
+              Change password
+            </Button>
+          </form>
+        {:else}
+          <h2>Login</h2>
+          {#if $db.responseStates.login.loading}
+            <Spinner />
+          {/if}
+          {#if $db.responseStates.login?.error?.error}
+            <Alert kind="error"
+              >{$db.responseStates.login.error.error.error}</Alert>
+          {/if}
+          <form
+            on:submit|preventDefault={() => {
+              if (!username || !password) {
+                return
+              }
+
+              api.login.post({ username, password })
+              password = ''
+            }}>
+            <label>
+              Username
+              <!-- svelte-ignore a11y-autofocus -->
+              <input
+                name="text"
+                autocomplete="username"
+                bind:value={username}
+                autofocus={true}
+                autocapitalize="none" />
+            </label>
+
+            <label>
+              Password
+              <input
+                autocomplete="current-password"
+                name="password"
+                type="password"
+                bind:value={password} />
+            </label>
+            <Button
+              preventDefault={false}
+              color="primary"
+              disabled={!username || !password}
+              icon="signIn"
+              type="submit">
+              Login
+            </Button>
+          </form>
+        {/if}
       </paper>
     </div>
   {/if}

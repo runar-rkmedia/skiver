@@ -15,6 +15,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"expvar"
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -497,6 +498,7 @@ func main() {
 		handler.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 		handler.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 	}
+
 	// TODO: consider using a buffered channel.
 	handler.Handle("/ws/", handlers.NewWsHandler(logger.GetLoggerWithLevel("ws", "debug"), pubsub.Ch, handlers.WsOptions{}))
 	exportCache := cache.New(time.Hour, time.Hour)
@@ -579,11 +581,74 @@ func main() {
 	}()
 	p, ok := ctx.DB.(localuser.Persistor)
 	if !ok {
-		ctx.L.Warn().Str("type", fmt.Sprintf("%T", ctx.DB)).Msg("DB does not implement the localUser.Persistor-interface")
+		ctx.L.Fatal().Str("type", fmt.Sprintf("%T", ctx.DB)).Msg("DB does not implement the localUser.Persistor-interface")
 	}
 	userSessions, err := localuser.NewUserSessionInMemory(types.UserSessionOptions{TTL: config.Authentication.SessionLifeTime}, uuid.NewString, p)
 	if err != nil {
 		ctx.L.Fatal().Err(err).Msg("Failed to set up userSessions")
+	}
+	// Temporary implementation for changing a users password
+	{
+		var username string
+		var password string
+		flag.StringVar(&password, "password", "", "Reset password to this value")
+		flag.StringVar(&username, "user", "", "Reset password to this user")
+		flag.Parse()
+		if password != "" || username != "" {
+			if password == "" {
+				l.Fatal().Msg("Password must also be set")
+			}
+			if username == "" {
+				l.Fatal().Msg("User must also be set")
+			}
+			l.Warn().Str("username", username).Msg("Request from cli to change password for user")
+			u := types.User{}
+			u.UserName = username
+			adminUser, err := db.FindOneUser(types.User{UserName: "admin"})
+			if err != nil {
+				l.Fatal().Err(err).Msg("Failed to find admin-user")
+			}
+			if adminUser == nil {
+				l.Fatal().Err(err).Msg("Admin-user not found")
+			}
+			if err != nil {
+				l.Fatal().Err(err).Msg("Failed to find users")
+			}
+			users, err := db.FindUsers(-1, u)
+			if err != nil {
+				l.Fatal().Err(err).Msg("Failed to find users")
+			}
+			if len(users) == 0 {
+				l.Fatal().Msg("Did not find any users")
+			}
+			if len(users) > 1 {
+				l.Fatal().Interface("users", users).Msg("Found multiple users")
+			}
+			var user types.User
+			for _, v := range users {
+				user = v
+			}
+			l.Warn().Interface("user", user).Msg("Changing password for user")
+			hashed, err := pw.Hash(password)
+			if err != nil {
+				l.Fatal().Err(err).Msg("failed to hash password")
+			}
+			payload := types.UpdateUserPayload{PW: &hashed}
+			payload.UpdatedBy = adminUser.ID
+			t := true
+			payload.TemporaryPassword = &t
+			updated, err := db.UpdateUser(user.ID, payload)
+			if err != nil {
+				l.Fatal().Err(err).Msg("Failed to update user")
+			}
+			l.Info().Interface("user", updated).Msg("User was updated")
+			err = userSessions.ClearAllSessionsForUser(user.ID)
+			if err != nil {
+				l.Fatal().Err(err).Msg("Failed to clear sessions for user")
+			}
+			l.Info().Msg("All seassion for user was cleared")
+			os.Exit(0)
+		}
 	}
 
 	router := httprouter.New()
