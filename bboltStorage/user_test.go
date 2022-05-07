@@ -92,10 +92,14 @@ func TestUser(t *testing.T) {
 		testza.AssertEqual(t, err.Error(), "Username is taken")
 
 		// Update user
-		_, err = bb.UpdateUser(u.ID, types.User{UserName: "Mega Man"})
+
+		strPointer := func(s string) *string {
+			return &s
+		}
+		_, err = bb.UpdateUser(u.ID, types.UpdateUserPayload{UserName: strPointer("Mega Man")})
 		testza.AssertEqual(t, err.Error(), "UpdatedBy is not set")
 
-		u3, err := bb.UpdateUser(u.ID, types.User{UserName: "Mega Man", Entity: types.Entity{UpdatedBy: "Test"}})
+		u3, err := bb.UpdateUser(u.ID, types.UpdateUserPayload{UserName: strPointer("Mega Man"), Entity: types.Entity{UpdatedBy: "Test"}})
 		testza.AssertNoError(t, err, "should not err on updating user")
 		testza.AssertEqual(t, u3.UserName, "Mega Man")
 

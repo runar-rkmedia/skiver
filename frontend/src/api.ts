@@ -87,8 +87,9 @@ export const api = {
   }, { method: "POST" }),
 
   login: {
-    get: () =>
-      fetchApi<ApiDef.LoginResponse>(
+    get: async () => {
+
+      const [res, err] = await fetchApi<ApiDef.LoginResponse>(
         'login',
         (login) => {
           localStorage.setItem('login-response', JSON.stringify(login))
@@ -96,7 +97,17 @@ export const api = {
           return db.update((s) => ({ ...s, login }))
         },
         { method: 'GET' }
-      ),
+      )
+      if (err) {
+        if (err?.error) {
+          localStorage.removeItem('login-response')
+          windowPost.loginStatus(false)
+          return db.update((s) => ({ ...s, login: { ...s.login, ok: false } }))
+
+        }
+      }
+      return [res, err] as const
+    },
     post: async (args: ApiDef.LoginInput) => {
       db.update((s) => ({
         ...s,
@@ -662,7 +673,7 @@ function apiUpdateFactory<Payload extends {}, K extends DBKeyValue>(
   if (!subPath) {
     subPath = storeKey
   }
-  return (id: string, body: Payload, options?: ApiFetchOptions) => {
+  return async (id: string, body: Payload, options?: ApiFetchOptions) => {
     db.update((s) => ({
       ...s,
       responseStates: { ...s.responseStates, [storeKey]: { loading: true } }

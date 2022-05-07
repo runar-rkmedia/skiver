@@ -12,7 +12,7 @@ import (
 
 type UserStorage interface {
 	FindUsers(max int, filter ...types.User) (map[string]types.User, error)
-	UpdateUser(id string, payload types.User) (types.User, error)
+	UpdateUser(id string, payload types.UpdateUserPayload) (types.User, error)
 	GetUser(userId string) (*types.User, error)
 }
 
@@ -52,7 +52,7 @@ type PasswordKeeper interface {
 	Hash(pw string) ([]byte, error)
 }
 
-func ChangePassword(db UserStorage, pwKeeper PasswordKeeper) AppHandler {
+func ChangePassword(db UserStorage, pwKeeper PasswordKeeper, sessionReplace SessionReplacer) AppHandler {
 	return func(rc requestContext.ReqContext, rw http.ResponseWriter, r *http.Request) (interface{}, error) {
 		var j models.ChangePasswordInput
 		err := rc.ValidateBody(&j, false)
@@ -77,16 +77,19 @@ func ChangePassword(db UserStorage, pwKeeper PasswordKeeper) AppHandler {
 		if !ok {
 			return nil, NewApiError("Incorrect password", http.StatusBadRequest, "PwMismatch")
 		}
-		hashed, err := pwKeeper.Hash(*&j.NewPassword)
+		hashed, err := pwKeeper.Hash(j.NewPassword)
 		if err != nil {
 			return nil, NewApiErr(err, http.StatusBadGateway, "UpdatePW:PwHash")
 		}
-		payloa := types.User{PW: hashed}
-		payloa.UpdatedBy = session.User.ID
-		user, err := db.UpdateUser(session.User.ID, payloa)
+		payload := types.UpdateUserPayload{PW: &hashed}
+		payload.UpdatedBy = session.User.ID
+		f := false
+		payload.TemporaryPassword = &f
+		user, err := db.UpdateUser(session.User.ID, payload)
 		if err != nil {
 			return nil, err
 		}
+		sessionReplace.UpdateAllSessionsForUser(user.ID, user)
 		rc.L.Info().Str("userID", user.ID).Msg("User changed password")
 
 		return Ok, nil
@@ -96,6 +99,10 @@ func ChangePassword(db UserStorage, pwKeeper PasswordKeeper) AppHandler {
 
 type SessionCreator interface {
 	NewSession(user types.User, organization types.Organization, userAgent string, opts ...types.UserSessionOptions) (s types.Session)
+}
+
+type SessionReplacer interface {
+	UpdateAllSessionsForUser(userId string, user types.User) error
 }
 
 func CreateToken(sessionCreator SessionCreator) AppHandler {
