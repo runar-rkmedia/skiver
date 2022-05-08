@@ -26,8 +26,23 @@ export type DB = {
   translation: Record<string, ApiDef.Translation>
   login: ApiDef.LoginResponse
   serverInfo: ApiDef.ServerInfo
+  user: Record<string, ApiDef.User>
   simpleUser: Record<string, ApiDef.SimpleUser>
   responseStates: Omit<Record<keyof DB, { loading: boolean; error?: ApiDef.APIError }>, 'responseStates' | 'serverInfo'>
+}
+
+let didRunInital = false
+
+export const refreshAfterLogin = () => {
+  api.serverInfo()
+  api.locale.list()
+  api.project.list()
+  api.category.list()
+  api.translationValue.list()
+  api.translation.list()
+  api.missingTranslation.list()
+  api.simpleUser.list()
+  didRunInital = true
 }
 
 
@@ -62,6 +77,7 @@ export const api = {
         options
       ),
   },
+  user: CrudFactory<ApiDef.UserInput, 'user', ApiDef.UpdateUserInput>('user'),
   project: CrudFactory<ApiDef.ProjectInput, 'project', ApiDef.UpdateProjectInput>('project'),
   snapshotMeta: {
     create: apiCreateFactory<ApiDef.CreateSnapshotInput, 'project'>('project/snapshot', 'project'),
@@ -105,6 +121,11 @@ export const api = {
           return db.update((s) => ({ ...s, login: { ...s.login, ok: false } }))
 
         }
+      } else if (!didRunInital && res.data.ok) {
+
+        if (!didRunInital) {
+          refreshAfterLogin()
+        }
       }
       return [res, err] as const
     },
@@ -127,6 +148,9 @@ export const api = {
         },
         { method: 'POST', body: args }
       )
+      if (res?.data.ok) {
+        refreshAfterLogin()
+      }
       windowPost.loginStatus(!!res?.data?.ok)
       db.update((s) => ({
         ...s,

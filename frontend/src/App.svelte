@@ -2,7 +2,7 @@
 
 <script lang="ts">
   import 'tippy.js/dist/tippy.css' // Tooltips popover
-  import { api, db } from './api'
+  import { api, db, refreshAfterLogin } from './api'
   import { scale, fly } from 'svelte/transition'
   import Alert from './components/Alert.svelte'
   import Tabs from './components/Tabs.svelte'
@@ -43,7 +43,6 @@
 
   let showHeader = true
   let showFooter = true
-  let didRunInital = false
   $: {
     let routeArgs = $router.hash.replace('#', '').split('/')
     let mainRoute = routeArgs[0]
@@ -61,17 +60,6 @@
         break
       default:
         requiresLogin = true
-    }
-    if (!didRunInital && $db.login.ok) {
-      api.serverInfo()
-      api.locale.list()
-      api.project.list()
-      api.category.list()
-      api.translationValue.list()
-      api.translation.list()
-      api.missingTranslation.list()
-      api.simpleUser.list()
-      didRunInital = true
     }
   }
 
