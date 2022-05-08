@@ -8,6 +8,10 @@
       name="user-options"
       id="user-optinos"
       on:change={(e) => {
+        if (!e.currentTarget) {
+          console.warn('e.currentTarget was unexpecdedly null', e)
+          return null
+        }
         const selected = e.currentTarget.value
         switch (selected) {
           case 'logout':
@@ -17,6 +21,9 @@
           case 'settings':
             window.history.pushState({}, '', '/#user/')
             break
+          case 'orgSettings':
+            window.history.pushState({}, '', '/#org/')
+            break
         }
         e.currentTarget.value = ''
         e.currentTarget.blur()
@@ -24,6 +31,11 @@
       <option value="" disabled selected>
         Welcome, {$db.login.username}
       </option>
+      {#if $db.login.can_create_projects}
+        <option value="orgSettings">
+          Settings for {$db.login.organization?.title || 'organization'}
+        </option>
+      {/if}
       <option value="settings">Settings</option>
       <option value="logout">Logout</option>
     </select>

@@ -11,6 +11,7 @@
   import AboutPage from 'pages/AboutPage.svelte'
   import Embed from 'pages/Embed.svelte'
   import UserPage from 'pages/UserPage.svelte'
+  import OrgPage from 'pages/OrgPage.svelte'
   let mainRoute = ''
   let routeArgs = ''
   $: {
@@ -58,6 +59,11 @@
   <AboutPage />
 {:else if mainRoute === 'user'}
   <UserPage />
+{:else if mainRoute === 'org'}
+  <OrgPage
+    organization={routeArgs[1]
+      ? $db.organization[routeArgs[1]]
+      : $db.login.organization} />
 {:else if mainRoute === ''}
   <h2>Welcome to Skiver!</h2>
   <p>
@@ -67,7 +73,7 @@
   {#if $db.login.ok && $db.login?.can_create_organization}
     <OrganizationPage />
   {:else}
-    <ProjectsPage/>
+    <ProjectsPage />
   {/if}
 {:else}
   Not found
