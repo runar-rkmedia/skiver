@@ -148,6 +148,7 @@ async function run() {
     legalComments: 'external',
     minify: true,
     metafile: true,
+    entryNames: '[name]-[hash]',
     ...(isDev && {
       metafile: false,
       watch: {
@@ -191,7 +192,6 @@ async function run() {
     }),
   }).catch(
     (error) => {
-      console.log('errryryryryryr')
       handleError(error)
       if (isDev) {
         setTimeout(run, 1000)
@@ -206,12 +206,34 @@ async function run() {
 
   if (result.metafile) {
     const analysis = await analyzeMetafile(result.metafile, { verbose: true })
-    console.info(fs.writeFileSync("js-analysis.log", analysis))
+    fs.writeFileSync("js-analysis.log", analysis)
   }
 
-  fs.copyFile(srcDir + 'index.html', outDir + '/index.html', (err) => {
-    if (err) throw err
-  })
+  const pathIndexHtmlSrc = path.join(srcDir, "index.html")
+  const pathIndexHtmlOut = path.join(outDir, "index.html")
+  if (!isDev && result.metafile) {
+    const outFiles = Object.keys(result.metafile.outputs)
+    const entryJs = outFiles.find(f => f.endsWith(".js") && f.startsWith(path.join(outDir, "entry")))
+    const entryCss = outFiles.find(f => f.endsWith(".css") && f.startsWith(path.join(outDir, "entry")))
+    if (!entryJs) {
+      throw new Error("Could not find entry-[hash].js " + outFiles.join(", "))
+    }
+    if (!entryCss) {
+      fatal("Could not find entry-[hash].js " + outFiles.join(", "))
+    }
+    let indexHtml = fs.readFileSync(pathIndexHtmlSrc).toString()
+    indexHtml = indexHtml.replace(/entry\.js/g, path.basename(entryJs))
+    indexHtml = indexHtml.replace(/entry\.css/g, path.basename(entryCss))
+    fs.writeFileSync(pathIndexHtmlOut, indexHtml)
+
+  } else {
+
+    fs.copyFile(pathIndexHtmlSrc, pathIndexHtmlOut, (err) => {
+      if (err) {
+        fatal(err)
+      }
+    })
+  }
   const staticFiles = fs.readdirSync('./static')
   await Promise.all(
     staticFiles.map((f) => {
@@ -224,4 +246,18 @@ async function run() {
   )
 }
 
-run()
+function fatal(s) {
+  console.error("\n\n[BUILD FATAL ERROR]: " + s)
+  if (!isDev) {
+    process.exit(1)
+  }
+  throw err
+
+}
+
+try {
+  await run()
+} catch (err) {
+  fatal(err)
+}
+
