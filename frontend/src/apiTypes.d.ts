@@ -820,6 +820,11 @@ declare namespace ApiDef {
         project_id?: string;
         title?: string;
     }
+    export interface UpdateOrganizationInput {
+        id: string;
+        join_id?: string;
+        join_id_expires?: string; // date-time
+    }
     export interface UpdateProjectInput {
         description?: string;
         id: string;
@@ -1189,6 +1194,14 @@ declare namespace ApiPaths {
         namespace Responses {
             export interface $200 {
             }
+        }
+    }
+    namespace UpdateOrganization {
+        export interface BodyParameters {
+            OrganizationUpdateInput: Parameters.OrganizationUpdateInput;
+        }
+        namespace Parameters {
+            export type OrganizationUpdateInput = ApiDef.UpdateOrganizationInput;
         }
     }
     namespace UpdateProject {

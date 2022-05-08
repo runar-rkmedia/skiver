@@ -76,10 +76,13 @@ list-internal:
 	@rg 'skiver/internal' --files-with-matches --glob '**/*.go' --glob '!**/*_test*' || echo "All ok for internal"
 list-fmtP:
 	@echo "\nFmt.Print* is dissallowed"
-	@rg 'fmt\.P' --files-with-matches --glob '**/*.go' --glob '!**/*_test*' --glob '!internal/*' --glob '!cmd/*' || echo "All ok for fmt.P*"
+	@rg 'fmt\.P' --files-with-matches --glob '**/*.go' --glob '!**/*_test*' --glob '!internal/*' --glob '!cmd/*' || echo "All ok for logger.Debug"
+list-logger-debug:
+	@echo "\nlogger.Debug is dissallowed (bad naming, debug-logging is of course allowed)"
+	@rg 'logger\.Debug' --files-with-matches --glob '**/*.go' --glob '!**/*_test*' --glob '!internal/*' --glob '!cmd/*' || echo "All ok for fmt.P*"
 list-deprecated:
 	@echo "\nhandlers should not use rc.Write"
 	@ rg 'rc\.Write' -g '!handlers/{apiHandler,exportHandler}.go' handlers || echo "All ok for deprecated"
-list-invalid: list-fmtP list-internal list-deprecated
+list-invalid: list-fmtP list-internal list-deprecated list-logger-debug
 
 

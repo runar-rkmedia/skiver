@@ -1388,6 +1388,25 @@ definitions:
         minLength: 3
         type: string
     type: object
+  UpdateOrganizationInput:
+    properties:
+      id:
+        maxLength: 36
+        minLength: 3
+        type: string
+      join_id:
+        maxLength: 100
+        minLength: 1
+        type: string
+      join_id_expires:
+        format: date-time
+        maxLength: 100
+        minLength: 1
+        type: string
+        x-nullable: true
+    required:
+    - id
+    type: object
   UpdateProjectInput:
     properties:
       description:
@@ -1890,6 +1909,22 @@ paths:
         "500":
           $ref: '#/responses/apiError'
       summary: Create a new organization
+      tags:
+      - organization
+    put:
+      operationId: updateOrganization
+      parameters:
+      - in: body
+        name: OrganizationUpdateInput
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateOrganizationInput'
+      responses:
+        "200":
+          $ref: '#/responses/OrganizationResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      summary: Update a organization
       tags:
       - organization
   /project/:

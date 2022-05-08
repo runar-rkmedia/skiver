@@ -4,6 +4,7 @@ import type { Updater } from 'svelte/store'
 import merge from 'merge'
 import debounce from './util/debounce'
 import deepEqual from './util/isEqual'
+import { diff } from 'deep-object-diff'
 
 const parseStrOrObject = <T extends {}>(s: string | T | null | undefined) => {
   if (!s) {
@@ -141,6 +142,9 @@ function createStore<T extends {}, V = null, VK extends string = string>({
         }
       }
       ns = validate(ns)
+
+      // const d = diff(s, ns)
+      // console.debug('change', d, new Error('foo'))
 
       if (saveToStorage) {
         storeState ? _saveToStorageNow(ns) : saveToStorage(ns)

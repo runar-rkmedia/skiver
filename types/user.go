@@ -99,6 +99,22 @@ type Organization struct {
 	JoinIDExpires time.Time `json:"join_id_expires"`
 }
 
+type UpdateOrganizationPayload struct {
+	UpdatedBy     string
+	JoinID        *string
+	JoinIDExpires *time.Time
+}
+
+func (e Organization) IDString() string {
+	return e.ID
+}
+func (e Organization) Namespace() string {
+	return e.Kind()
+}
+func (e Organization) Kind() string {
+	return string(PubTypeOrganization)
+}
+
 func (e User) Namespace() string {
 	return e.Kind()
 }

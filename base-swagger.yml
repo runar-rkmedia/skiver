@@ -145,6 +145,25 @@ definitions:
         type: object
         additionalProperties:
           $ref: '#/definitions/LocaleSettingInput'
+  UpdateOrganizationInput:
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        type: string
+        minLength: 3
+        maxLength: 36
+      join_id:
+        type: string
+        minLength: 1
+        maxLength: 100
+      join_id_expires:
+        type: string
+        format: date-time
+        x-nullable: true
+        minLength: 1
+        maxLength: 100
   OkResponse:
     type: object
     required:
@@ -658,6 +677,22 @@ paths:
         name: OrganizationInput
         schema:
           $ref: '#/definitions/OrganizationInput'
+      responses:
+        "200":
+          $ref: '#/responses/OrganizationResponse'
+        "500":
+          $ref: '#/responses/apiError'
+      tags:
+      - organization
+    put:
+      summary: Update a organization
+      operationId: updateOrganization
+      parameters:
+      - in: body
+        required: true
+        name: OrganizationUpdateInput
+        schema:
+          $ref: '#/definitions/UpdateOrganizationInput'
       responses:
         "200":
           $ref: '#/responses/OrganizationResponse'

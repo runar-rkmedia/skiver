@@ -11,43 +11,31 @@
   const now = new Date()
 </script>
 
-{#if selected}
-  <Button color="secondary" on:click={() => (selected = null)}>
-    Back to organization-list
-  </Button>
-  <paper>
-    <h3>{selected.title}</h3>
-  </paper>
-{:else}
-  <h2>Organizations</h2>
-  <paper>
-    <EntityList
-      error={$db.responseStates.organization.error?.error?.error}
-      loading={$db.responseStates.organization.loading}>
-      {#each Object.values($db.organization) as v}
-        <ListItem ID={v.id} deleted={!!v.deleted}>
-          <svelte:fragment slot="header">
-            {v.title}
-          </svelte:fragment>
-          <svelte:fragment slot="description">
-            {#if v.join_id && v.join_id_expires && parseDate(v.join_id_expires)?.getTime() > now.getTime()}
-              Join-id: <a href={'#join/' + v.join_id}>{v.join_id}</a>
-              {formatDate(v.join_id_expires)}
-            {:else if v.join_id}
-              Join-id has expired
-            {:else}
-              No join id
-            {/if}
-            <EntityDetails entity={v} />
-          </svelte:fragment>
-          <svelte:fragment slot="actions">
-            <Button on:click={() => (selected = v)}>Select</Button>
-          </svelte:fragment>
-        </ListItem>
-      {/each}
-    </EntityList>
-  </paper>
-  <paper>
-    <OrganizationForm />
-  </paper>
-{/if}
+<h2>Organizations</h2>
+<paper>
+  <EntityList
+    error={$db.responseStates.organization.error?.error?.error}
+    loading={$db.responseStates.organization.loading}>
+    {#each Object.values($db.organization) as v}
+      <ListItem ID={v.id} deleted={!!v.deleted}>
+        <svelte:fragment slot="header">
+          <a href={'#org/' + v.id}>{v.title}</a>
+        </svelte:fragment>
+        <svelte:fragment slot="description">
+          {#if v.join_id && v.join_id_expires && parseDate(v.join_id_expires)?.getTime() > now.getTime()}
+            Join-id: <a href={'#join/' + v.join_id}>{v.join_id}</a>
+            {formatDate(v.join_id_expires)}
+          {:else if v.join_id}
+            Join-id has expired
+          {:else}
+            No join id
+          {/if}
+          <EntityDetails entity={v} />
+        </svelte:fragment>
+      </ListItem>
+    {/each}
+  </EntityList>
+</paper>
+<paper>
+  <OrganizationForm />
+</paper>

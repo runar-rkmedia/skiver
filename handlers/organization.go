@@ -33,7 +33,7 @@ func GetOrganization(db types.OrgStorage) AppHandler {
 		return out, nil
 	}
 }
-func PostOrganization(db types.OrgStorage) AppHandler {
+func CreateOrganization(db types.OrgStorage) AppHandler {
 	return func(rc requestContext.ReqContext, rw http.ResponseWriter, r *http.Request) (interface{}, error) {
 
 		session, err := GetRequestSession(r)
@@ -63,5 +63,51 @@ func PostOrganization(db types.OrgStorage) AppHandler {
 			return org, ErrApiDatabase("Organization", err)
 		}
 		return org, nil
+	}
+}
+func UpdateOrganization(db types.OrgStorage) AppHandler {
+	return func(rc requestContext.ReqContext, rw http.ResponseWriter, r *http.Request) (interface{}, error) {
+		session, err := GetRequestSession(r)
+		if err != nil {
+			return nil, err
+		}
+		session.User.CanUpdateOrganization = true
+		if !session.User.CanUpdateOrganization {
+			return nil, ErrApiNotAuthorized("Organization", "update")
+		}
+		var j models.UpdateOrganizationInput
+		if err := rc.ValidateBody(&j, false); err != nil {
+			return nil, err
+		}
+		if *j.ID != session.User.OrganizationID {
+			return nil, ErrApiNotAuthorized("Organization other than own organization", "update")
+		}
+		if j.JoinIDExpires != nil {
+			org, err := db.GetOrganization(session.User.OrganizationID)
+			if err != nil {
+				return nil, ErrApiDatabase("Organization", err)
+			}
+			payload := types.UpdateOrganizationPayload{
+				JoinID:        &j.JoinID,
+				JoinIDExpires: (*time.Time)(j.JoinIDExpires),
+				UpdatedBy:     session.User.ID,
+			}
+
+			if payload.JoinID == nil || *payload.JoinID == "" {
+				id, err := utils.GetRandomName()
+				if err != nil {
+					return nil, NewApiErr(err, http.StatusBadGateway, "GetRandomName")
+				}
+				payload.JoinID = &id
+			} else if org.JoinID != j.JoinID {
+				return nil, ErrApiNotFound("JoinId", j.JoinID)
+			}
+			updated, err := db.UpdateOrganization(org.ID, payload)
+			if err != nil {
+				return nil, ErrApiDatabase("Organization", err)
+			}
+			return updated, err
+		}
+		return nil, NewApiError("No changes required", http.StatusAlreadyReported, "NoChanges")
 	}
 }

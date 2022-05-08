@@ -2,7 +2,7 @@
 
 <script lang="ts">
   import 'tippy.js/dist/tippy.css' // Tooltips popover
-  import { api, db, refreshAfterLogin } from './api'
+  import { api, db } from './api'
   import { scale, fly } from 'svelte/transition'
   import Alert from './components/Alert.svelte'
   import Tabs from './components/Tabs.svelte'
@@ -97,7 +97,11 @@
   {/if}
   <div />
 
-  {#if (!$db.login.ok && requiresLogin) || $db.login.temporary_password}
+  {#if $db.login.ok === null && $db}
+    <div style="float: right">
+      <Alert kind="info">Checking login...</Alert>
+    </div>
+  {:else if (!$db.login.ok && requiresLogin) || $db.login.temporary_password}
     <div class="login" transition:scale|local>
       <paper>
         {#if $db.login.temporary_password}
@@ -229,19 +233,21 @@
     </div>
   {/if}
 
-  <main>
-    {#if ($db.serverInfo?.database_size || 0) > dbWarnSize}
-      <Alert kind="warning">
-        <div slot="title">The servers database has grown a bit big.</div>
+  {#if $db.login.ok}
+    <main>
+      {#if ($db.serverInfo?.database_size || 0) > dbWarnSize}
+        <Alert kind="warning">
+          <div slot="title">The servers database has grown a bit big.</div>
 
-        <p>It is currently {$db.serverInfo.database_size_str}</p>
-        <p>This may affect performance.</p>
-        <p>Some functionality may have been disabled.</p>
-        <p>It is adviced to clean the database</p>
-      </Alert>
-    {/if}
-    <PageContent />
-  </main>
+          <p>It is currently {$db.serverInfo.database_size_str}</p>
+          <p>This may affect performance.</p>
+          <p>Some functionality may have been disabled.</p>
+          <p>It is adviced to clean the database</p>
+        </Alert>
+      {/if}
+      <PageContent />
+    </main>
+  {/if}
   {#if showFooter}
     <footer>
       <ServerInfo />

@@ -758,7 +758,8 @@ func main() {
 	// We are migrating to using httprouter, but not all routes have been migrated
 	// Therefore, this is at the moment a bit more verbose than strictly needed
 	router.GET("/api/organization/", pipeline("GetOrganization", handlers.GetOrganization(&db)))
-	router.POST("/api/organization/", pipeline("PostOrganization", handlers.PostOrganization(&db)))
+	router.POST("/api/organization/", pipeline("CreateOrganization", handlers.CreateOrganization(&db)))
+	router.PUT("/api/organization/", pipeline("UpdateOrganization", handlers.UpdateOrganization(&db)))
 	router.GET("/api/project/", pipeline("GetProjects", handlers.GetProjects(&db)))
 	router.POST("/api/project/", pipeline("CreateProject", handlers.CreateProject(&db)))
 	router.PUT("/api/project/", pipeline("UpdateProject", handlers.UpdateProject(&db)))
