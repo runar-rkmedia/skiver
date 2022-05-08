@@ -72,9 +72,14 @@ build:
 	ls -lah dist
 
 list-internal:
+	@echo "\ninternal-package should only be used in tests"
 	@rg 'skiver/internal' --files-with-matches --glob '**/*.go' --glob '!**/*_test*' || echo "All ok for internal"
 list-fmtP:
+	@echo "\nFmt.Print* is dissallowed"
 	@rg 'fmt\.P' --files-with-matches --glob '**/*.go' --glob '!**/*_test*' --glob '!internal/*' --glob '!cmd/*' || echo "All ok for fmt.P*"
-list-invalid: list-fmtP list-internal
+list-deprecated:
+	@echo "\nhandlers should not use rc.Write"
+	@ rg 'rc\.Write' -g '!handlers/{apiHandler,exportHandler}.go' handlers || echo "All ok for deprecated"
+list-invalid: list-fmtP list-internal list-deprecated
 
 
