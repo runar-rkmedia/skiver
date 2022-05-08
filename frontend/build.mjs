@@ -144,7 +144,7 @@ async function run() {
     format: 'esm',
     outdir: outDir,
     logLevel: 'info',
-    // sourcemap: 'external',
+    sourcemap: 'external',
     legalComments: 'external',
     minify: true,
     metafile: true,
