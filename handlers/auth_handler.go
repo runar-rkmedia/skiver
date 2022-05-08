@@ -75,6 +75,11 @@ func ErrApiMissingArgument(key string) error {
 func ErrApiInputValidation(msg, key string) error {
 	return NewApiError(msg, http.StatusBadRequest, "InputValidation:"+key)
 }
+func ErrApiInternalError(msg, key string, err error) error {
+	a := NewApiError(msg, http.StatusBadGateway, "InternalError:"+key)
+	a.InternalError = err
+	return a
+}
 func ErrApiDatabase(key string, err error) error {
 	if err == nil {
 		return nil
