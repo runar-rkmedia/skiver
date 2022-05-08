@@ -67,7 +67,7 @@ func ErrApiNotFound(key string, input string) error {
 	return NewApiError(fmt.Sprintf("%s not found for '%s'", key, input), http.StatusNotFound, "NotFound:"+key)
 }
 func ErrApiNotAuthorized(key, verb string) error {
-	return NewApiError(fmt.Sprintf("You are not authorized to %s: on %s", verb, key), http.StatusNotFound, "Auth:"+key+"+"+verb)
+	return NewApiError(fmt.Sprintf("You are not authorized to %s %s", verb, key), http.StatusNotFound, "Auth:"+key+"+"+verb)
 }
 func ErrApiMissingArgument(key string) error {
 	return NewApiError("Missign argument: "+key, http.StatusBadRequest, "Missing:"+key)

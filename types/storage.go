@@ -15,6 +15,7 @@ type OrgStorage interface {
 	GetOrganization(organizationID string) (*Organization, error)
 	GetOrganizations() (map[string]Organization, error)
 	CreateOrganization(organization Organization) (Organization, error)
+	UpdateOrganization(id string, payload UpdateOrganizationPayload) (Organization, error)
 }
 
 type Storage interface {

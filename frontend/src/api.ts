@@ -31,7 +31,7 @@ export type DB = {
   responseStates: Omit<Record<keyof DB, { loading: boolean; error?: ApiDef.APIError }>, 'responseStates' | 'serverInfo'>
 }
 
-let didRunInital = false
+export let didRunInital = false
 
 export const refreshAfterLogin = () => {
   api.serverInfo()
@@ -82,7 +82,7 @@ export const api = {
   snapshotMeta: {
     create: apiCreateFactory<ApiDef.CreateSnapshotInput, 'project'>('project/snapshot', 'project'),
   },
-  organization: CrudFactory<ApiDef.OrganizationInput, 'organization'>('organization'),
+  organization: CrudFactory<ApiDef.OrganizationInput, 'organization', ApiDef.UpdateOrganizationInput>('organization'),
   category: CrudFactory<ApiDef.CategoryInput, 'category', ApiDef.UpdateCategoryInput>('category'),
   translationValue: CrudFactory<
     ApiDef.TranslationValueInput,
@@ -189,7 +189,7 @@ const tryJsonParse = <T extends any>(s: string | null): null | T => {
 
 const initialLoginResponse = (): ApiDef.LoginResponse => {
   const r: ApiDef.LoginResponse = {
-    ok: false,
+    ok: null as any,
     username: '',
     created_at: '',
     updated_by: '',
@@ -202,10 +202,10 @@ const initialLoginResponse = (): ApiDef.LoginResponse => {
   if (!l) {
     return r
   }
+  l.ok = null as any
   if (!l.ok) {
     return l
   }
-  l.ok = false
   if (!l.expires) {
     return l
   }

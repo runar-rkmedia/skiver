@@ -3,10 +3,23 @@
 </script>
 
 <span class="loader" class:active />
+<span class:active>
+  <slot />
+</span>
 
 <style>
-  .loader.active {
+  .active {
     opacity: 1;
+  }
+  span {
+    -webkit-transform: translateZ(0);
+    -ms-transform: translateZ(0);
+    transform: translateZ(0);
+    opacity: 0;
+    transition: opacity 400ms ease-in-out;
+    transition-delay: 250ms;
+    -webkit-animation: load6 1.7s infinite ease, round 1.7s infinite ease;
+    animation: load6 1.7s infinite ease, round 1.7s infinite ease;
   }
   .loader {
     display: inline-block;
@@ -19,14 +32,6 @@
     height: 1em;
     border-radius: 50%;
     position: relative;
-    -webkit-transform: translateZ(0);
-    -ms-transform: translateZ(0);
-    transform: translateZ(0);
-    opacity: 0;
-    transition: opacity 400ms ease-in-out;
-    transition-delay: 250ms;
-    -webkit-animation: load6 1.7s infinite ease, round 1.7s infinite ease;
-    animation: load6 1.7s infinite ease, round 1.7s infinite ease;
   }
 
   @keyframes load6 {

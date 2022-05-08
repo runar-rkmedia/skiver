@@ -828,6 +828,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"deep-object-diff@npm:^1.1.7":
+  version: 1.1.7
+  resolution: "deep-object-diff@npm:1.1.7"
+  checksum: 543fb1ae87b138ad260691e6949e72bf7dc144825084b7ad1886bb725d2ace1c19ed1ef1280f1116243e86bf2c6b942f45c670958b1468f644613f28c5dc97ea
+  languageName: node
+  linkType: hard
+
 "define-properties@npm:^1.1.3":
   version: 1.1.3
   resolution: "define-properties@npm:1.1.3"
@@ -2986,6 +2993,7 @@ resolve@^1.20.0:
     "@typescript-eslint/parser": ^5.12.1
     "@yarnpkg/esbuild-plugin-pnp": ^2.0.1
     date-fns: ^2.27.0
+    deep-object-diff: ^1.1.7
     dtsgenerator: ^3.13.2
     esbuild: ^0.14.27
     esbuild-svelte: ^0.6.3

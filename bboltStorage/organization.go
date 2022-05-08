@@ -69,3 +69,27 @@ func (bb *BBolter) GetOrganizations() (map[string]types.Organization, error) {
 	}
 	return us, err
 }
+
+func (bb *BBolter) UpdateOrganization(id string, payload types.UpdateOrganizationPayload) (types.Organization, error) {
+	if payload.UpdatedBy == "" {
+		return types.Organization{}, fmt.Errorf("missing updatedBy")
+	}
+	return Update(bb, BucketOrganization, id, func(t types.Organization) (types.Organization, error) {
+		shouldUpdate := false
+		if payload.JoinID != nil && string(*payload.JoinID) != string(t.JoinID) {
+			t.JoinID = *payload.JoinID
+			shouldUpdate = true
+		}
+		if payload.JoinIDExpires != nil && *payload.JoinIDExpires != t.JoinIDExpires {
+			t.JoinIDExpires = *payload.JoinIDExpires
+			shouldUpdate = true
+		}
+		if !shouldUpdate {
+			return t, ErrNoFieldsChanged
+		}
+		t.UpdatedAt = nowPointer()
+		t.UpdatedBy = payload.UpdatedBy
+
+		return t, nil
+	})
+}

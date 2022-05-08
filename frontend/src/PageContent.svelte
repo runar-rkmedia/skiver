@@ -60,10 +60,7 @@
 {:else if mainRoute === 'user'}
   <UserPage />
 {:else if mainRoute === 'org'}
-  <OrgPage
-    organization={routeArgs[1]
-      ? $db.organization[routeArgs[1]]
-      : $db.login.organization} />
+  <OrgPage organizationID={routeArgs[0] || $db.login?.organization?.id} />
 {:else if mainRoute === ''}
   <h2>Welcome to Skiver!</h2>
   <p>
