@@ -57,7 +57,9 @@
 </script>
 
 <Spinner active={$db.responseStates.organization.loading} />
-{#if !organization && !$db.responseStates.organization.loading}
+{#if !organization && $db.responseStates.organization.loading}
+  <Alert kind="info">Fetching...</Alert>
+{:else if !organization}
   <Alert kind="error">Organization Not found</Alert>
 {:else}
   <paper>
