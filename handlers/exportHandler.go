@@ -156,7 +156,6 @@ func getExport(l logger.AppLogger, exportCache Cache, db types.Storage, opt Expo
 		LocaleFilter: locales,
 		LocaleKey:    importexport.LocaleKey(localeKey)})
 	if err != nil {
-		// rc.WriteErr(err, requestContext.CodeErrProject)
 		err = NewApiErr(err, http.StatusBadGateway, string(requestContext.CodeErrProject))
 		return
 	}

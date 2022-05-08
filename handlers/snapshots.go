@@ -98,8 +98,7 @@ func PostSnapshot() AppHandler {
 		}
 		s, err := ep.CreateSnapshot(session.User.ID)
 		if err != nil {
-			rc.WriteErr(err, requestContext.CodeErrProject)
-			return
+			return nil, ErrApiDatabase("Project", err)
 		}
 
 		var projectSnapshot types.ProjectSnapshot

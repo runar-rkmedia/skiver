@@ -66,12 +66,11 @@ func UpdateTranslation() AppHandler {
 		}
 
 		if tid == "" {
-			rc.WriteError("Missing id", requestContext.CodeErrIDEmpty)
 			return nil, ErrApiMissingArgument("ID")
 		}
 		existing, err := rc.Context.DB.GetTranslation(tid)
 		if err != nil {
-			rc.WriteErr(err, requestContext.CodeErrTranslation)
+			return nil, ErrApiDatabase("Translation", err)
 		}
 		if existing == nil || existing.OrganizationID != session.User.OrganizationID {
 			return nil, ErrApiNotFound("Translation", tid)

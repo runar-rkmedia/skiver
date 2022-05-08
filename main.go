@@ -759,6 +759,11 @@ func main() {
 	// Therefore, this is at the moment a bit more verbose than strictly needed
 	router.GET("/api/organization/", pipeline("GetOrganization", handlers.GetOrganization(&db)))
 	router.POST("/api/organization/", pipeline("PostOrganization", handlers.PostOrganization(&db)))
+	router.GET("/api/project/", pipeline("GetProjects", handlers.GetProjects(&db)))
+	router.POST("/api/project/", pipeline("CreateProject", handlers.CreateProject(&db)))
+	router.PUT("/api/project/", pipeline("UpdateProject", handlers.UpdateProject(&db)))
+	router.GET("/api/join/:join-id", pipeline("GetOrgForJoinID", handlers.GetOrgForJoinID(&db)))
+	router.POST("/api/join/:join-id", pipeline("JoinOrgFromJoinID", handlers.JoinOrgFromJoinID(&db, &pw)))
 	router.GET("/api/export/:params", pipeline("GetExport", handlers.GetExport(exportCache)))
 	router.GET("/api/export/", pipeline("GetExportx", handlers.GetExport(exportCache)))
 	router.GET("/api/user/", pipeline("GetSimpleUsers", handlers.ListUsers(&db, true)))
@@ -841,9 +846,9 @@ func main() {
 		// maxBodySize,
 	// 	)
 	)
-	handler.Handle("/api/project/snapshot/", router)
+	handler.Handle("/api/join/", router)
+	handler.Handle("/api/project/", router)
 	handler.Handle("/api/organization/", router)
-	handler.Handle("/api/project/snapshotdiff/", router)
 	handler.Handle("/api/export/", router)
 	handler.Handle("/api/translation/", router)
 	handler.Handle("/api/users/", router)
