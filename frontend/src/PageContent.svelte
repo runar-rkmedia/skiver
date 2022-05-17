@@ -19,6 +19,7 @@
     mainRoute = routeArgs[0]
     routeArgs = routeArgs.slice(1)
   }
+  $: organizationKey = $db.login?.organization?.title
 </script>
 
 <!-- Simplified routing -->
@@ -46,7 +47,7 @@
 {:else if mainRoute === 'project'}
   {#if routeArgs[0]}
     {#if routeArgs[1] === 'settings'}
-      <ProjectSettingsPage projectID={routeArgs[0]} />
+      <ProjectSettingsPage projectID={routeArgs[0]} {organizationKey} />
     {:else}
       <ProjectPage projectID={routeArgs[0]} />
     {/if}

@@ -56,6 +56,30 @@ func (b *BBolter) CreateOrganization(organization types.Organization) (types.Org
 	return organization, err
 }
 
+func orgFilter(f, uu types.Organization) bool {
+	if f.Title != "" && f.Title != uu.Title {
+		return false
+	}
+	if f.ID != "" && f.ID != uu.ID {
+		return false
+	}
+	return true
+}
+
+func (bb *BBolter) FindOrganizationByIdOrTitle(titleOrID string) (*types.Organization, error) {
+	return bb.FindOneOrganization(types.Organization{ID: titleOrID}, types.Organization{Title: titleOrID})
+}
+func (bb *BBolter) FindOneOrganization(filter ...types.Organization) (*types.Organization, error) {
+	return FindOne(bb, BucketOrganization, func(t types.Organization) bool {
+		for _, f := range filter {
+			if orgFilter(f, t) {
+				return true
+			}
+		}
+		return false
+	})
+}
+
 func (bb *BBolter) GetOrganizations() (map[string]types.Organization, error) {
 	us := make(map[string]types.Organization)
 	err := bb.Iterate(BucketOrganization, func(key, b []byte) bool {

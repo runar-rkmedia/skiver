@@ -12,6 +12,7 @@
   import { showDialog, toast } from 'state'
   import { apiUrl } from 'util/appConstants'
   export let projectID: string
+  export let organizationKey: string
   let extendedDiff = false
   $: project = $db.project[projectID]
   $: tags =
@@ -153,7 +154,12 @@
     <paper>
       <div class="tagHeader">
         <h4>Latest unreleased</h4>
-        <a target={projectID} href={apiUrl(`/export/p=${projectID}&f=i18n`)}>
+        <pre>{JSON.stringify(project, null, 2)}</pre>
+        <a
+          target={projectID}
+          href={apiUrl(
+            `/export/${organizationKey}/${project.short_name}/f=i18n`
+          )}>
           i18n
         </a>
       </div>
@@ -172,8 +178,10 @@
         <div class="tagHeader">
           <h4>{tag}</h4>
           <a
-            target={projectID + tag}
-            href={apiUrl(`/export/p=${projectID}&f=i18n&t=${tag}`)}>
+            target={projectID}
+            href={apiUrl(
+              `/export/${organizationKey}/${project.short_name}/f=i18n&t=${tag}`
+            )}>
             i18n
           </a>
         </div>

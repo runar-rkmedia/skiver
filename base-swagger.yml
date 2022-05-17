@@ -562,7 +562,7 @@ paths:
             type: object
         "500":
           $ref: '#/responses/apiError'
-  /export/:
+  /export/{organization}/{project}:
     get:
       tags:
         - export
@@ -574,14 +574,18 @@ paths:
 
       operationId: getExport
       parameters:
-        - in: query
+        - in: path
           name: project
-          required: false
           type: string
+          required: true
           description: >
             The parameter can be any of the Project's ID or ShortName.
-
-            The short-alias for this parameter is: `p`
+        - in: path
+          name: organization
+          type: string
+          required: true
+          description: >
+            The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
         - in: query
           name: format
           required: false
@@ -592,6 +596,8 @@ paths:
             - i18n
           description: >
             Used to set the export-format.
+            
+            The short-alias for this parameter is: `f`
 
             ### `i18n`
 
@@ -606,7 +612,6 @@ paths:
             Outputs a typescript-object-map of translation-keys for use with translation-libraries.
             Information is inclued in the TSDOC for each key.
 
-            The short-alias for this parameter is: `f`
         - in: query
           name: no_flatten
           required: false
@@ -713,7 +718,7 @@ paths:
         - user
   /users/:
     get:
-      summary: List of users within organizaion
+      summary: List of users within organization
       description: Requires the `can_update_users`-privilege
       operationId: listUsers
       responses:

@@ -765,8 +765,17 @@ func main() {
 	router.PUT("/api/project/", pipeline("UpdateProject", handlers.UpdateProject(&db)))
 	router.GET("/api/join/:join-id", pipeline("GetOrgForJoinID", handlers.GetOrgForJoinID(&db)))
 	router.POST("/api/join/:join-id", pipeline("JoinOrgFromJoinID", handlers.JoinOrgFromJoinID(&db, &pw)))
-	router.GET("/api/export/:params", pipeline("GetExport", handlers.GetExport(exportCache)))
-	router.GET("/api/export/", pipeline("GetExportx", handlers.GetExport(exportCache)))
+
+	// Replaced route
+	router.GET("/api/export/:org/:project/:params", pipeline("GetExport", handlers.GetExport(exportCache)))
+	// Replaced route
+	router.GET("/api/export/:org/:project", pipeline("GetExportx", handlers.GetExport(exportCache)))
+
+	// Deprecated
+	router.GET("/api/export/:org", pipeline("DeprecatedGetExport", handlers.GetExport(exportCache)))
+	// Deprecated
+	router.GET("/api/export/", pipeline("DeprecatedGetExportx", handlers.GetExport(exportCache)))
+
 	router.GET("/api/user/", pipeline("GetSimpleUsers", handlers.ListUsers(&db, true)))
 	router.GET("/api/missing/", pipeline("GetMissing", handlers.GetMissing(&db)))
 	router.POST("/api/missing/:locale/:project", pipeline("ReportMissing", handlers.PostMissing(&db)))

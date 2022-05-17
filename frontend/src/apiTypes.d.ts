@@ -970,13 +970,13 @@ declare namespace ApiPaths {
         namespace Parameters {
             /**
              * Used to set the export-format.
+             * The short-alias for this parameter is: `f`
              * ### `i18n`
              * The output is formatted to be i18n-compliant.
              * ### `raw`
              * The output is not converted, and all data is outputted.
              * ### `typescript`
              * Outputs a typescript-object-map of translation-keys for use with translation-libraries. Information is inclued in the TSDOC for each key.
-             * The short-alias for this parameter is: `f`
              *
              */
             export type Format = "raw" | "typescript" | "i18n";
@@ -1001,28 +1001,38 @@ declare namespace ApiPaths {
              */
             export type NoFlatten = boolean;
             /**
+             * The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+             *
+             */
+            export type Organization = string;
+            /**
              * The parameter can be any of the Project's ID or ShortName.
-             * The short-alias for this parameter is: `p`
              *
              */
             export type Project = string;
         }
-        export interface QueryParameters {
-            project?: /**
+        export interface PathParameters {
+            project: /**
              * The parameter can be any of the Project's ID or ShortName.
-             * The short-alias for this parameter is: `p`
              *
              */
             Parameters.Project;
+            organization: /**
+             * The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+             *
+             */
+            Parameters.Organization;
+        }
+        export interface QueryParameters {
             format?: /**
              * Used to set the export-format.
+             * The short-alias for this parameter is: `f`
              * ### `i18n`
              * The output is formatted to be i18n-compliant.
              * ### `raw`
              * The output is not converted, and all data is outputted.
              * ### `typescript`
              * Outputs a typescript-object-map of translation-keys for use with translation-libraries. Information is inclued in the TSDOC for each key.
-             * The short-alias for this parameter is: `f`
              *
              */
             Parameters.Format;
