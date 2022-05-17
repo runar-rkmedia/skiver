@@ -37,6 +37,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/patrickmn/go-cache"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/skiver/bboltStorage"
 	cfg "github.com/runar-rkmedia/skiver/config"
@@ -499,6 +502,45 @@ func main() {
 		handler.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 	}
 
+	if config.Metrics.Enabled {
+		metricsEvents := promauto.NewCounterVec(prometheus.CounterOpts{
+			Name: "application_events_total",
+			Help: "Events created, like database-updates and more",
+		}, []string{"kind", "variant"})
+		events.AddSubscriberFunc("metrics", func(kind, variant string, contents interface{}) {
+			c, err := metricsEvents.GetMetricWithLabelValues(kind, variant)
+			if err != nil {
+				l.Warn().Err(err).
+					Str("kind", kind).
+					Str("variant", variant).
+					Msg("Failed to create metricsEvent with labels")
+			}
+			c.Inc()
+		})
+		if config.Metrics.Port != 0 && config.Metrics.Port != cfg.Port {
+			go func() {
+				m := http.NewServeMux()
+				m.Handle("/metrics", promhttp.Handler())
+				mAddress := net.JoinHostPort("", strconv.Itoa(config.Metrics.Port))
+				l.Debug().
+					Str("address", mAddress).
+					Msg("Creating metrics listener")
+				err := http.ListenAndServe(mAddress, m)
+				if err != nil {
+					l.Fatal().
+						Err(err).
+						Str("address", mAddress).
+						Msg("Failed to set up metrics-handler")
+				}
+			}()
+		} else {
+			handler.Handle("/metrics", promhttp.Handler())
+			l.Debug().
+				Str("address", address+"/metrics").
+				Msg("Metrics available")
+		}
+	}
+
 	// TODO: consider using a buffered channel.
 	handler.Handle("/ws/", handlers.NewWsHandler(logger.GetLoggerWithLevel("ws", "debug"), pubsub.Ch, handlers.WsOptions{}))
 	exportCache := cache.New(time.Hour, time.Hour)
@@ -670,6 +712,15 @@ func main() {
 	type routeOptions struct {
 		sessionRole func(s types.Session, r *http.Request) error
 	}
+
+	metricsHttpSeconds := promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name: "http_requests_duration_seconds",
+		Help: "Duration for http requests for each registered handler",
+	}, []string{"name"})
+	metricsHttpErrs := promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "http_requests_errors_total",
+		Help: "Counter for http-errors",
+	}, []string{"name", "http_code", "code"})
 	// This is still being fleshed out...
 	// Should use middleware-pattern
 	pipeline := func(name string, h handlers.AppHandler, opts ...routeOptions) httprouter.Handle {
@@ -680,12 +731,44 @@ func main() {
 			options = opts[0]
 		}
 		l := logger.GetLogger(name)
+		mSeconds, err := metricsHttpSeconds.GetMetricWith(prometheus.Labels{"name": name})
+		if err != nil {
+			l.Fatal().
+				Err(err).
+				Str("name", name).
+				Msg("Failed to create metrics with name")
+
+		}
 		return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			startTime := time.Now()
 			debug := l.HasDebug()
+			var err error
 			defer func() {
-				expvar.Get("endpoint-" + name).(metric.Metric).Add(float64(time.Since(startTime).Milliseconds()))
+				since := time.Since(startTime)
+				expvar.Get("endpoint-" + name).(metric.Metric).Add(float64(since.Milliseconds()))
 				expvar.Get("endpoint-count-" + name).(metric.Metric).Add(1)
+				mSeconds.Observe(float64(since.Seconds()))
+				if err != nil {
+					httpCode := ""
+					code := ""
+					type CodePrinter interface {
+						ErrCode() string
+					}
+					type HttpStatusPrinter interface {
+						ErrHttpStatus() int
+					}
+					if a, ok := err.(CodePrinter); ok {
+						code = a.ErrCode()
+					}
+					if a, ok := err.(HttpStatusPrinter); ok {
+						httpCode = strconv.Itoa(a.ErrHttpStatus())
+					}
+					if c, cErr := metricsHttpErrs.GetMetricWithLabelValues(name, httpCode, code); cErr == nil {
+						c.Inc()
+					} else {
+						l.Warn().Err(err).Msg("Failed to GetMetricWithLabelValues")
+					}
+				}
 			}()
 
 			if len(p) > 0 {
