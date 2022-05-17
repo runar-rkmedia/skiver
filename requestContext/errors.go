@@ -1,5 +1,11 @@
 package requestContext
 
+import (
+	"fmt"
+
+	"github.com/runar-rkmedia/go-common/logger"
+)
+
 type ErrorCodes string
 type Error struct {
 	Code    ErrorCodes `json:"code,omitempty"`
@@ -26,6 +32,13 @@ func (e APIError) Error() string {
 }
 func (e Error) Error() string {
 	return e.Message
+}
+func (e APIError) ErrCode() string {
+	return fmt.Sprintf("%s", e.Err.Code)
+}
+func (e APIError) ErrHttpStatus() int {
+	logger.Debug("mythank", e)
+	return e.StatusCode
 }
 
 func NewError(msg string, code ErrorCodes) Error {

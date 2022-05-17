@@ -31,6 +31,16 @@ type Config struct {
 	Authentication AuthConfig
 	// Set to enable gzip-module
 	Gzip bool
+
+	Metrics Metrics
+}
+
+type Metrics struct {
+	Enabled bool
+
+	// If set, will be exposed on a different port. if not set, it will be exposed on the same port.
+	// This can be useful to not expose the metrics publicly.
+	Port int
 }
 
 type AuthConfig struct {
