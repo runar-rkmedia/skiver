@@ -88,6 +88,9 @@ func (bb *BBolter) Migrate(hooks ...func(state types.State, wantedMigrationPoint
 					}
 				}
 			}
+		default:
+			l.Fatal().
+				Msg("Missing handler for migration-point")
 		}
 		if err != nil {
 			return *state, err

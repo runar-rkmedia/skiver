@@ -15,15 +15,15 @@ import (
 )
 
 type ExportOptions struct {
-	// FIXME: why do we allow multiple projects here?
-	Projects               []string
+	InOrg                  string
+	Project                string
 	Locales                []string
 	LocaleKey, Format, Tag string
 	NoFlatten              bool
 }
 
 func getExport(l logger.AppLogger, exportCache Cache, db types.Storage, opt ExportOptions) (toWriter interface{}, err error) {
-	projects := opt.Projects
+	projectKey := opt.Project
 	locales := opt.Locales
 	localeKey := opt.LocaleKey
 	format := opt.Format
@@ -51,13 +51,13 @@ func getExport(l logger.AppLogger, exportCache Cache, db types.Storage, opt Expo
 			return
 		}
 	}
-	if len(projects) != 1 {
+	if projectKey == "" {
 		err = NewApiError("A project must be selected", http.StatusBadRequest, string(requestContext.CodeErrInputValidation))
 		return
 	}
-	cacheKeys := []string{format, localeKey, tag}
+	cacheKeys := []string{opt.InOrg, format, localeKey, tag}
 	cacheKeys = append(cacheKeys, locales...)
-	cacheKeys = append(cacheKeys, projects...)
+	cacheKeys = append(cacheKeys, projectKey)
 	sort.Strings(cacheKeys)
 	cacheKey := strings.Join(cacheKeys, "%")
 	if flatten {
@@ -84,14 +84,29 @@ func getExport(l logger.AppLogger, exportCache Cache, db types.Storage, opt Expo
 		}
 	}()
 
-	ps, err := db.GetProjectByIDOrShortName(projects[0])
+	ps, err := db.GetProjectByIDOrShortName(projectKey)
 	if err != nil {
 		err = ErrApiDatabase("Project", err)
 		return
 	}
 	if ps == nil {
-		err = ErrApiNotFound("Project", projects[0])
+		err = ErrApiNotFound("Project", projectKey)
 		return
+	}
+	// In the future, inOrg is required. for now it is optional for clients expecting skiver before v0.5.4
+	if opt.InOrg != "" {
+		if ps.OrganizationID != opt.InOrg {
+			// retry by using looking up the name in the org:
+			org, err := db.FindOrganizationByIdOrTitle(opt.InOrg)
+			if err != nil {
+				err = ErrApiDatabase("Organization", err)
+				return nil, err
+			}
+			if org == nil {
+				err = ErrApiNotFound("Project", projectKey)
+				return nil, err
+			}
+		}
 	}
 	var ep types.ExtendedProject
 
@@ -194,12 +209,26 @@ func GetExport(
 	return func(rc requestContext.ReqContext, rw http.ResponseWriter, r *http.Request) (toWriter interface{}, apiErr error) {
 		AddAccessControl(r, rw)
 
+		// In versions prior to v0.5.4, exports did not not include this organization-id.
+		// It an upcoming release, we plan to allow the users to set CORS-settings per organization-level, and also per project-level.
+		// In addition, we may want to require an api-key to get the the export, so that organizations cannot easily list other orgs translation-files
+		// CORS-requests by default do not include query-parameters.
+		// This requires that the path includes both organization and project.
+		//
+		// To not break existing clients, we keep the old behaviour. Since we are not in v1 yet, backwards-compatibility is not a
+		// requirement, but we try to be nice and keep this behaviour until all clients have upgraded and are ok with this change.
+		params := GetParams(r)
+		orgKey := params.ByName("org")
+		projectKey := params.ByName("project")
+		// This check will be removed lated on
+		if strings.Contains(orgKey, "p=") {
+			orgKey = ""
+		}
+
 		q, err := ExtractParams(r)
 		format := "i18n" // Default format
 		localeKey := ""
 		tag := ""
-		// FIXME: why do we allow multiple projects here?
-		var projects []string
 		var locales []string
 		flatten := true
 		for k, v := range q {
@@ -219,7 +248,21 @@ func GetExport(
 				}
 				format = v[0]
 			case "project", "p":
-				projects = v
+				rc.L.Warn().
+					Str("org", orgKey).
+					Str("project", projectKey).
+					Str("raw", v[0]).
+					Msg("A client requested an export with project using the deprecated query-option")
+				if projectKey != "" {
+					rc.WriteError("project is already specified", requestContext.CodeErrInputValidation)
+					return
+
+				}
+				if len(v) > 1 {
+					rc.WriteError("project specified more than once", requestContext.CodeErrInputValidation)
+					return
+				}
+				projectKey = v[0]
 			case "locale_key":
 				if len(v) > 1 {
 					rc.WriteError("locale_key specified more than once", requestContext.CodeErrInputValidation)
@@ -232,7 +275,8 @@ func GetExport(
 		}
 
 		toWriter, err = getExport(rc.L, exportCache, rc.Context.DB, ExportOptions{
-			Projects:  projects,
+			InOrg:     orgKey,
+			Project:   projectKey,
 			Locales:   locales,
 			LocaleKey: localeKey,
 			Format:    format,

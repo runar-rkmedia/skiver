@@ -151,6 +151,7 @@ async function run() {
     entryNames: '[name]-[hash]',
     ...(isDev && {
       metafile: false,
+      entryNames: undefined,
       watch: {
         onRebuild: (error, result) => {
           if (error) {

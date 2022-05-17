@@ -1633,7 +1633,7 @@ paths:
       summary: Create a new category
       tags:
       - category
-  /export/:
+  /export/{organization}/{project}:
     get:
       description: |
         For caching in browsers, proxy caching services etc. to work consistenly with parameters, the `?`-prefix for the query-parameters should be removed.
@@ -1642,19 +1642,25 @@ paths:
       parameters:
       - description: |
           The parameter can be any of the Project's ID or ShortName.
-          The short-alias for this parameter is: `p`
-        in: query
+        in: path
         name: project
+        required: true
+        type: string
+      - description: |
+          The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+        in: path
+        name: organization
+        required: true
         type: string
       - description: |
           Used to set the export-format.
+          The short-alias for this parameter is: `f`
           ### `i18n`
           The output is formatted to be i18n-compliant.
           ### `raw`
           The output is not converted, and all data is outputted.
           ### `typescript`
           Outputs a typescript-object-map of translation-keys for use with translation-libraries. Information is inclued in the TSDOC for each key.
-          The short-alias for this parameter is: `f`
         enum:
         - raw
         - typescript
@@ -2168,7 +2174,7 @@ paths:
           $ref: '#/responses/UsersResponse'
         "500":
           $ref: '#/responses/apiError'
-      summary: List of users within organizaion
+      summary: List of users within organization
       tags:
       - user
 produces:

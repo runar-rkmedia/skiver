@@ -26,17 +26,17 @@ func GetDiff(exportCache Cache) AppHandler {
 			return nil, NewApiError("Cannot diff with equal objects", http.StatusBadRequest, string(requestContext.CodeErrInputValidation))
 		}
 		a, err := getExport(rc.L, exportCache, rc.Context.DB, ExportOptions{
-			Projects: []string{*input.A.ProjectID},
-			Tag:      input.A.Tag,
-			Format:   input.Format,
+			Project: *input.A.ProjectID,
+			Tag:     input.A.Tag,
+			Format:  input.Format,
 		})
 		if err != nil {
 			return nil, err
 		}
 		b, err := getExport(rc.L, exportCache, rc.Context.DB, ExportOptions{
-			Projects: []string{*input.B.ProjectID},
-			Tag:      input.B.Tag,
-			Format:   input.Format,
+			Project: *input.B.ProjectID,
+			Tag:     input.B.Tag,
+			Format:  input.Format,
 		})
 		if err != nil {
 			return nil, err
