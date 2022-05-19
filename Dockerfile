@@ -16,6 +16,17 @@ COPY --from=builder /app/skiver-api .
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 ENTRYPOINT [ "/app/skiver-api" ]
 
+
+FROM grafana/agent as grafana
+
+WORKDIR /app
+
+COPY --from=builder /app/skiver-api .
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+ENTRYPOINT [ "sh" ]
+
+CMD ["-c", "/bin/agent --config.file=/etc/agent/agent.yaml >agent.log 2>agent-err.log --metrics.wal-directory=/etc/agent/data & /app/skiver-api"]
+
 FROM scratch as scratch
 
 WORKDIR /app
