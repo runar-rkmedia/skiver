@@ -7,6 +7,7 @@
   import { closeDialog, showDialog, state } from 'state'
   import Button from './Button.svelte'
   import Dialog from './Dialog.svelte'
+  import JsonDetail from './JsonDetail.svelte'
   import ScrollAnchor from './ScrollAnchor.svelte'
 
   export let projectID: string
@@ -93,7 +94,7 @@
     {:else}
       <paper>
         <p>Unhandled dialog-option</p>
-        <pre>{JSON.stringify($state.dialog, null, 2)}</pre>
+        <JsonDetail json={JSON.stringify($state.dialog, null, 2)} />
         <p>Sorry for the inconvenience</p>
       </paper>
     {/if}

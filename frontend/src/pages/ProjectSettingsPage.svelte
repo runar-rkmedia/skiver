@@ -154,7 +154,6 @@
     <paper>
       <div class="tagHeader">
         <h4>Latest unreleased</h4>
-        <pre>{JSON.stringify(project, null, 2)}</pre>
         <a
           target={projectID}
           href={apiUrl(

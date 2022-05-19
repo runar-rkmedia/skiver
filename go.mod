@@ -16,6 +16,7 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/matthewhartstonge/argon2 v0.2.1
 	github.com/mitchellh/hashstructure/v2 v2.0.2
+	github.com/prometheus/client_golang v1.12.2
 	github.com/r3labs/diff/v2 v2.15.1
 	github.com/runar-rkmedia/go-common v0.0.5
 	github.com/schollz/mnemonicode v1.0.1
@@ -46,7 +47,6 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.0-beta.8 // indirect
-	github.com/prometheus/client_golang v1.12.2 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect

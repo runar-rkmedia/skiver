@@ -62,7 +62,7 @@
 
 {#if err}
   <Alert kind="error">
-    <pre>{JSON.stringify(err)}</pre>
+    <JsonDetail json={JSON.stringify(err, null, 2)} />
   </Alert>
 {/if}
 {#if response}
