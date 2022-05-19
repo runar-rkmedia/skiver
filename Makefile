@@ -51,11 +51,22 @@ container: build-web
     --label "org.opencontainers.image.created=$(buildDate)" \
     --label "org.opencontainers.image.version=$(version)" \
     --build-arg "ldflags=$(ldflags)"
+	docker build . \
+		-t runardocker/skiver-api:grafana \
+		-t runardocker/skiver-api:$(version)-grafana \
+		--target grafana \
+    --label "org.opencontainers.image.title=skiver-api" \
+    --label "org.opencontainers.image.revision=$(gitHash)" \
+    --label "org.opencontainers.image.created=$(buildDate)" \
+    --label "org.opencontainers.image.version=$(version)" \
+    --build-arg "ldflags=$(ldflags)"
 container-publish: 
 	docker push runardocker/skiver-api:latest 
 	docker push runardocker/skiver-api:alpine
+	docker push runardocker/skiver-api:grafana
 	docker push runardocker/skiver-api:$(version) 
 	docker push runardocker/skiver-api:$(version)-alpine
+	docker push runardocker/skiver-api:$(version)-grafana
 
 publish: container container-publish release
 
@@ -71,6 +82,8 @@ build:
 
 	ls -lah dist
 
+# This is kind of stupid, ans should probably be handled by some linter. however, I don't want to look for a linter
+# for both go and svelte that accepts custom rules
 list-internal:
 	@echo "\ninternal-package should only be used in tests"
 	@rg 'skiver/internal' --files-with-matches --glob '**/*.go' --glob '!**/*_test*' || echo "All ok for internal"
@@ -83,6 +96,9 @@ list-logger-debug:
 list-deprecated:
 	@echo "\nhandlers should not use rc.Write"
 	@ rg 'rc\.Write' -g '!handlers/{apiHandler,exportHandler}.go' handlers || echo "All ok for deprecated"
-list-invalid: list-fmtP list-internal list-deprecated list-logger-debug
+list-pre:
+	@echo "\nfrontend should not use <pre>-tags"
+	@ rg '<pre' frontend/src  -g '!**/*/JsonDetail*' || echo "All ok for <pre>"
+list-invalid: list-fmtP list-internal list-deprecated list-logger-debug list-pre
 
 

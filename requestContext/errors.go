@@ -2,8 +2,6 @@ package requestContext
 
 import (
 	"fmt"
-
-	"github.com/runar-rkmedia/go-common/logger"
 )
 
 type ErrorCodes string
@@ -37,7 +35,6 @@ func (e APIError) ErrCode() string {
 	return fmt.Sprintf("%s", e.Err.Code)
 }
 func (e APIError) ErrHttpStatus() int {
-	logger.Debug("mythank", e)
 	return e.StatusCode
 }
 
