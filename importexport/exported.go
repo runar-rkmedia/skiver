@@ -28,6 +28,23 @@ const (
 	LocaleKeyISO3 LocaleKey = "iso3"
 )
 
+type LocaleKeyEnum struct {
+	name string
+}
+
+func (f LocaleKeyEnum) String() string                   { return f.name }
+func (f LocaleKeyEnum) Is(comparitor LocaleKeyEnum) bool { return f.name == comparitor.name }
+
+// Deprecated, only used for earlier enums
+func (f LocaleKeyEnum) From(s string) LocaleKeyEnum { return LocaleKeyEnum{s} }
+
+var (
+	LocaleKeyEnumIETF = LocaleKeyEnum{string(LocaleKeyIETF)}
+	LocaleKeyEnumISO1 = LocaleKeyEnum{string(LocaleKeyISO1)}
+	LocaleKeyEnumISO2 = LocaleKeyEnum{string(LocaleKeyISO2)}
+	LocaleKeyEnumISO3 = LocaleKeyEnum{string(LocaleKeyISO3)}
+)
+
 func addi18nnode(c types.ExtendedCategory, localeID string) (I18N, error) {
 	node := I18N{
 		Nodes: make(map[string]I18N),

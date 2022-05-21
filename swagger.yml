@@ -1075,6 +1075,11 @@ definitions:
       id:
         type: string
         x-go-name: SnapshotID
+      uploadMeta:
+        items:
+          $ref: '#/definitions/UploadMeta'
+        type: array
+        x-go-name: UploadMeta
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
   ReleaseInfo:
@@ -1478,6 +1483,35 @@ definitions:
     required:
     - id
     type: object
+  UploadMeta:
+    properties:
+      id:
+        type: string
+        x-go-name: ID
+      locale:
+        type: string
+        x-go-name: Locale
+      locale_key:
+        type: string
+        x-go-name: LocaleKey
+      parent:
+        type: string
+        x-go-name: Parent
+      provider_id:
+        type: string
+        x-go-name: ProviderID
+      size:
+        format: int64
+        type: integer
+        x-go-name: Size
+      tag:
+        type: string
+        x-go-name: Tag
+      url:
+        type: string
+        x-go-name: URL
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/types
   User:
     properties:
       active:

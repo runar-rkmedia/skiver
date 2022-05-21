@@ -5,6 +5,7 @@ go 1.18
 require (
 	bou.ke/monkey v1.0.2
 	github.com/MarvinJWendt/testza v0.4.1
+	github.com/aws/aws-sdk-go v1.44.17
 	github.com/go-openapi/errors v0.20.2
 	github.com/go-openapi/runtime v0.23.3
 	github.com/go-openapi/strfmt v0.21.2
@@ -12,6 +13,7 @@ require (
 	github.com/go-openapi/validate v0.21.0
 	github.com/go-test/deep v1.0.8
 	github.com/gobeam/stringy v0.0.5
+	github.com/gogo/protobuf v1.1.1
 	github.com/jakobvarmose/go-qidenticon v0.0.0-20170128000056-5c327fb4e74a
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/matthewhartstonge/argon2 v0.2.1
@@ -67,6 +69,7 @@ require (
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
+	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/dustin/go-humanize v1.0.0

@@ -51,6 +51,7 @@ import (
 	"github.com/runar-rkmedia/skiver/requestContext"
 	"github.com/runar-rkmedia/skiver/translator"
 	"github.com/runar-rkmedia/skiver/types"
+	"github.com/runar-rkmedia/skiver/uploader"
 	"github.com/runar-rkmedia/skiver/utils"
 	"github.com/zserge/metric"
 )
@@ -334,12 +335,12 @@ func main() {
 		panic(err)
 	}
 	config := cfg.GetConfig()
-	cfg := config.Api
-	if cfg.Address == "" {
-		cfg.Address = "0.0.0.0"
+	apiConfig := config.Api
+	if apiConfig.Address == "" {
+		apiConfig.Address = "0.0.0.0"
 	}
-	if cfg.Port == 0 {
-		cfg.Port = 80
+	if apiConfig.Port == 0 {
+		apiConfig.Port = 80
 	}
 	if config.LogFormat == "" {
 		config.LogFormat = "json"
@@ -347,8 +348,8 @@ func main() {
 	if config.LogLevel == "" {
 		config.LogLevel = "info"
 	}
-	if cfg.DBLocation == "" {
-		cfg.DBLocation = getDefaultDBLocation()
+	if apiConfig.DBLocation == "" {
+		apiConfig.DBLocation = getDefaultDBLocation()
 	}
 	logger.InitLogger(logger.LogConfig{
 		Level:  config.LogLevel,
@@ -364,20 +365,21 @@ func main() {
 	if config.Authentication.SessionLifeTime < time.Minute {
 		l.Fatal().Str("Authentication.SessionLifeTime", config.Authentication.SessionLifeTime.String()).Msg("SessionLifeTime cannot be shorter than a minute. That would just be really annoying.")
 	}
+
 	events := NewMultiPublisher()
 	l.Info().
 		Str("version", version).
 		Time("buildDate", buildDate).
 		Time("buildDateLocal", buildDate.Local()).
 		Str("gitHash", commit).
-		Str("db", cfg.DBLocation).
+		Str("db", apiConfig.DBLocation).
 		Int("pid", os.Getpid()).
 		Msg("Starting")
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 	// IMPORTANT: database publishes changes, but for performance-reasons, it should not be used until the listener (ws) is started.
-	db, err := bboltStorage.NewBbolt(l, cfg.DBLocation, &events)
+	db, err := bboltStorage.NewBbolt(l, apiConfig.DBLocation, &events)
 	if err != nil {
 		l.Fatal().Err(err).Msg("Failed to initialize storage")
 	}
@@ -479,7 +481,7 @@ func main() {
 		}()
 	}
 
-	address := net.JoinHostPort(cfg.Address, strconv.Itoa(cfg.Port))
+	address := net.JoinHostPort(apiConfig.Address, strconv.Itoa(apiConfig.Port))
 	handler := http.NewServeMux()
 	handler.Handle("/docs", swaggerMiddleware.SwaggerUI(swaggerMiddleware.SwaggerUIOpts{
 		BasePath:         "/",
@@ -492,7 +494,7 @@ func main() {
 		Favicon16:        "",
 		Title:            "Skiver",
 	}, handler))
-	if cfg.Debug {
+	if apiConfig.Debug {
 		handler.Handle("/debug/vars/", expvar.Handler())
 		handler.Handle("/debug/metrics", metric.Handler(metric.Exposed))
 		handler.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
@@ -500,6 +502,28 @@ func main() {
 		handler.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
 		handler.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 		handler.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+	}
+	var uploaders []uploader.FileUploader
+	if len(config.UploadSnapShots) > 0 {
+		for key, cu := range config.UploadSnapShots {
+			if cu.S3 != nil {
+				u := uploader.NewS3Uplaoder(
+					logger.GetLogger("snapshot-uploader-"+key),
+					key,
+					uploader.S3UploaderOptions{
+						Endpoint:       cu.S3.Endpoint,
+						Region:         cu.S3.Region,
+						Bucket:         cu.S3.BucketID,
+						AccessKey:      cu.S3.AccessKey,
+						ForcePathStyle: cu.S3.ForcePathStyle,
+					},
+					cu.S3.PrivateKey,
+				)
+				uploaders = append(uploaders, u)
+				continue
+			}
+			l.Fatal().Str("key", key).Msg("Config for UploadSnapShots was invalid (empty)")
+		}
 	}
 
 	if config.Metrics.Enabled {
@@ -517,7 +541,7 @@ func main() {
 			}
 			c.Inc()
 		})
-		if config.Metrics.Port != 0 && config.Metrics.Port != cfg.Port {
+		if config.Metrics.Port != 0 && config.Metrics.Port != apiConfig.Port {
 			go func() {
 				m := http.NewServeMux()
 				m.Handle("/metrics", promhttp.Handler())
@@ -918,7 +942,7 @@ func main() {
 		return &info.ServerInfo
 
 	})))
-	router.POST("/api/project/snapshot/", pipeline("PostSnapshot", handlers.PostSnapshot(), routeOptions{sessionRole: func(s types.Session, _ *http.Request) error {
+	router.POST("/api/project/snapshot/", pipeline("PostSnapshot", handlers.PostSnapshot(uploaders), routeOptions{sessionRole: func(s types.Session, _ *http.Request) error {
 		if !s.User.CanUpdateProjects {
 			return fmt.Errorf("You are not authorized to create snapshots")
 		}
@@ -951,8 +975,8 @@ func main() {
 	handler.Handle("/api/serverInfo/", router)
 	handler.Handle("/api/category/", router)
 	useCert := false
-	if cfg.CertFile != "" {
-		_, err := os.Stat(cfg.CertFile)
+	if apiConfig.CertFile != "" {
+		_, err := os.Stat(apiConfig.CertFile)
 		if err == nil {
 			useCert = true
 		}
@@ -984,28 +1008,28 @@ func main() {
 	} else {
 		handler.Handle("/", frontend.DistServer)
 	}
-	l.Info().Str("address", cfg.Address).Int("port", cfg.Port).Bool("redirectHttpToHttps", useCert && cfg.RedirectPort != 0).Bool("tls", useCert).Msg("Creating listener")
+	l.Info().Str("address", apiConfig.Address).Int("port", apiConfig.Port).Bool("redirectHttpToHttps", useCert && apiConfig.RedirectPort != 0).Bool("tls", useCert).Msg("Creating listener")
 
 	serverErrors := make(chan error, 1)
 	srv := http.Server{
 		Addr: address, Handler: handler,
-		ReadTimeout:  cfg.ReadTimeout,
-		WriteTimeout: cfg.WriteTimeout,
-		IdleTimeout:  cfg.IdleTimeout,
+		ReadTimeout:  apiConfig.ReadTimeout,
+		WriteTimeout: apiConfig.WriteTimeout,
+		IdleTimeout:  apiConfig.IdleTimeout,
 		ErrorLog:     Logger(logger.GetLogger("http-server")),
 	}
 	if useCert {
 		// TODO: re-read the certificate before it expires.
-		if cfg.RedirectPort != 0 {
+		if apiConfig.RedirectPort != 0 {
 			redirectTLS := func(w http.ResponseWriter, r *http.Request) {
 				newAddress := "https://" + r.Host
-				if cfg.Port != 443 {
-					newAddress += fmt.Sprintf(":%d", cfg.Port)
+				if apiConfig.Port != 443 {
+					newAddress += fmt.Sprintf(":%d", apiConfig.Port)
 				}
 				http.Redirect(w, r, newAddress+r.RequestURI, http.StatusMovedPermanently)
 			}
 			go func() {
-				redirectAddress := fmt.Sprintf("%s:%d", cfg.Address, cfg.RedirectPort)
+				redirectAddress := fmt.Sprintf("%s:%d", apiConfig.Address, apiConfig.RedirectPort)
 				serverErrors <- http.ListenAndServe(redirectAddress, http.HandlerFunc(redirectTLS))
 			}()
 
@@ -1033,7 +1057,7 @@ func main() {
 
 		defer l.Info().Interface("signal", sig).Msg("Shutdown complete")
 
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), apiConfig.ShutdownTimeout)
 		defer cancel()
 
 		if err := srv.Shutdown(ctx); err != nil {

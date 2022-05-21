@@ -68,9 +68,9 @@ container-publish:
 	docker push runardocker/skiver-api:$(version)-alpine
 	docker push runardocker/skiver-api:$(version)-grafana
 
-publish: container container-publish release
+publish: test container container-publish release
 
-release:
+release: test
 	goreleaser release
 
 build:

@@ -31,6 +31,14 @@ export type DB = {
   responseStates: Omit<Record<keyof DB, { loading: boolean; error?: ApiDef.APIError }>, 'responseStates' | 'serverInfo'>
 }
 
+export const localeKeyToKeyOfLocaleMap = {
+  ietf: 'ietf',
+  iso1: 'iso_639_1',
+  iso2: 'iso_639_2',
+  iso3: 'iso_639_3',
+
+}
+
 export let didRunInital = false
 
 export const refreshAfterLogin = () => {

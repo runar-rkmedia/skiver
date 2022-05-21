@@ -31,3 +31,14 @@ func (e ProjectSnapshot) Namespace() string {
 func (e ProjectSnapshot) Kind() string {
 	return string(PubTypeSnapshot)
 }
+
+type UploadMeta struct {
+	ID         string `json:"id"`
+	Locale     string `json:"locale"`
+	LocaleKey  string `json:"locale_key"`
+	Parent     string `json:"parent"`
+	Tag        string `json:"tag"`
+	ProviderID string `json:"provider_id"`
+	URL        string `json:"url"`
+	Size       int64  `json:"size"`
+}

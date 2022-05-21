@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { db } from 'api'
+  import { db, localeKeyToKeyOfLocaleMap } from 'api'
   import Button from 'components/Button.svelte'
+  import Collapse from 'components/Collapse.svelte'
   import Dialogs from 'components/Dialogs.svelte'
   import EntityDetails from 'components/EntityDetails.svelte'
+  import LocaleFlag from 'components/LocaleFlag.svelte'
   import Spinner from 'components/Spinner.svelte'
   import TagDiff from 'components/TagDiff.svelte'
   import Tip from 'components/Tip.svelte'
@@ -11,6 +13,7 @@
   import sortOn from 'sort-on'
   import { showDialog, toast } from 'state'
   import { apiUrl } from 'util/appConstants'
+  import isSemver from 'util/semver'
   export let projectID: string
   export let organizationKey: string
   let extendedDiff = false
@@ -29,14 +32,6 @@
     const catKeyA = diff.path.slice(1, -1).join('.')
     const catKeyB = diff.path.slice(0, -1).join('.')
     const translationKey = diff.path[diff.path.length - 1].split('_')[0]
-    console.log({
-      catKeyA,
-      catKeyB,
-      translationKey,
-      length: diff.path,
-      diff,
-      cats: $db.category,
-    })
     const cat = Object.values($db.category).find((c) => {
       if (c.project_id !== projectID) {
         return false
@@ -79,7 +74,6 @@
     const translation = cat.translation_ids
       .map((id) => $db.translation[id])
       .find((t) => t && t.key === translationKey)
-    console.log(catKeyA, translationKey, cat, translation)
     if (!translation) {
       toast({
         kind: 'error',
@@ -176,13 +170,38 @@
       <paper>
         <div class="tagHeader">
           <h4>{tag}</h4>
-          <a
-            target={projectID}
-            href={apiUrl(
-              `/export/${organizationKey}/${project.short_name}/f=i18n&t=${tag}`
-            )}>
-            i18n
-          </a>
+          <div>
+            <Collapse>
+              <h5 name="title">Exported files:</h5>
+              <div>
+                <a
+                  target={projectID}
+                  href={apiUrl(
+                    `/export/${organizationKey}/${project.short_name}/f=i18n&t=${tag}`
+                  )}>
+                  Dynamically generated export
+                </a>
+              </div>
+              {#if snapshot.uploadMeta}
+                {#each snapshot.uploadMeta as u}
+                  <div>
+                    <a target={projectID} href={u.url}>
+                      Exported
+                      {u.provider_id}
+                      <LocaleFlag locale={$db.locale[u.locale || '']} />
+                      {$db.locale[u.locale || '']?.title} ({$db.locale[
+                        u.locale || ''
+                      ]?.[localeKeyToKeyOfLocaleMap[u.locale_key || '']]}) {isSemver(
+                        u.tag || ''
+                      )
+                        ? 'v'
+                        : ''}{u.tag}
+                    </a>
+                  </div>
+                {/each}
+              {/if}
+            </Collapse>
+          </div>
         </div>
         {snapshot.description}
         {#if tags[i + 1]}
