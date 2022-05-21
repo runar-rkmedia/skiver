@@ -10,6 +10,7 @@ import (
 
 	"github.com/jakobvarmose/go-qidenticon"
 	"github.com/r3labs/diff/v2"
+	"github.com/runar-rkmedia/skiver/importexport"
 	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/requestContext"
 )
@@ -25,7 +26,7 @@ func GetDiff(exportCache Cache) AppHandler {
 		if areEqaul(*input.A, *input.B) {
 			return nil, NewApiError("Cannot diff with equal objects", http.StatusBadRequest, string(requestContext.CodeErrInputValidation))
 		}
-		a, err := getExport(rc.L, exportCache, rc.Context.DB, ExportOptions{
+		a, _, err := getExport(rc.L, exportCache, rc.Context.DB, importexport.ExportOptions{
 			Project: *input.A.ProjectID,
 			Tag:     input.A.Tag,
 			Format:  input.Format,
@@ -33,7 +34,7 @@ func GetDiff(exportCache Cache) AppHandler {
 		if err != nil {
 			return nil, err
 		}
-		b, err := getExport(rc.L, exportCache, rc.Context.DB, ExportOptions{
+		b, _, err := getExport(rc.L, exportCache, rc.Context.DB, importexport.ExportOptions{
 			Project: *input.B.ProjectID,
 			Tag:     input.B.Tag,
 			Format:  input.Format,

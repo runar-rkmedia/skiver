@@ -72,6 +72,9 @@ func ErrApiNotAuthorized(key, verb string) error {
 func ErrApiMissingArgument(key string) error {
 	return NewApiError("Missign argument: "+key, http.StatusBadRequest, "Missing:"+key)
 }
+func ErrApiNotImplemeted(key string) error {
+	return NewApiError("Not implemeted: "+key, http.StatusNotImplemented, "NotImplemented:"+key)
+}
 func ErrApiInputValidation(msg, key string) error {
 	return NewApiError(msg, http.StatusBadRequest, "InputValidation:"+key)
 }

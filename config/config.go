@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"time"
@@ -33,6 +34,25 @@ type Config struct {
 	Gzip bool
 
 	Metrics Metrics
+
+	UploadSnapShots map[string]Uploader
+}
+
+type Uploader struct {
+	S3 *S3UploaderConfig
+}
+type S3UploaderConfig struct {
+	// Endpoint for the s3-compatible service
+	Endpoint,
+	// The region for the service.
+	Region,
+	// Bucket to upload into
+	BucketID,
+	// AccessKey for the bucket / application
+	AccessKey,
+	// PrivateKey for the bucket / application
+	PrivateKey string
+	ForcePathStyle bool
 }
 
 type Metrics struct {
@@ -122,4 +142,32 @@ func InitConfig() error {
 		}
 	}
 	return nil
+}
+
+func CreateSampleComfig() Config {
+	return Config{
+		TranslatorServices: []TranslatorService{
+			{},
+		},
+		UploadSnapShots: map[string]Uploader{
+			"example": {
+				S3: &S3UploaderConfig{
+					BucketID:   "my-bucket",
+					Endpoint:   "https://s3.us-west-001.backblazeb2.com",
+					AccessKey:  "0012345678901234567890123",
+					PrivateKey: "secret",
+					Region:     "us-west-001",
+				},
+			},
+		},
+	}
+}
+
+func WriteToml(w io.Writer, j interface{}) error {
+	tomler := toml.NewEncoder(w)
+	tomler.SetTagName("json")
+	tomler.CompactComments(true)
+	tomler.ArraysWithOneElementPerLine(true)
+	tomler.SetTagComment("help")
+	return tomler.Encode(j)
 }

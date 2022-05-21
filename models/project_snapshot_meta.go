@@ -7,6 +7,7 @@ package models
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -34,6 +35,9 @@ type ProjectSnapshotMeta struct {
 
 	// snapshot ID
 	SnapshotID string `json:"id,omitempty"`
+
+	// upload meta
+	UploadMeta []*UploadMeta `json:"uploadMeta"`
 }
 
 // Validate validates this project snapshot meta
@@ -41,6 +45,10 @@ func (m *ProjectSnapshotMeta) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateCreatedAt(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateUploadMeta(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -62,8 +70,63 @@ func (m *ProjectSnapshotMeta) validateCreatedAt(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this project snapshot meta based on context it is used
+func (m *ProjectSnapshotMeta) validateUploadMeta(formats strfmt.Registry) error {
+	if swag.IsZero(m.UploadMeta) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(m.UploadMeta); i++ {
+		if swag.IsZero(m.UploadMeta[i]) { // not required
+			continue
+		}
+
+		if m.UploadMeta[i] != nil {
+			if err := m.UploadMeta[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("uploadMeta" + "." + strconv.Itoa(i))
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("uploadMeta" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// ContextValidate validate this project snapshot meta based on the context it is used
 func (m *ProjectSnapshotMeta) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.contextValidateUploadMeta(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *ProjectSnapshotMeta) contextValidateUploadMeta(ctx context.Context, formats strfmt.Registry) error {
+
+	for i := 0; i < len(m.UploadMeta); i++ {
+
+		if m.UploadMeta[i] != nil {
+			if err := m.UploadMeta[i].ContextValidate(ctx, formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("uploadMeta" + "." + strconv.Itoa(i))
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("uploadMeta" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
 	return nil
 }
 

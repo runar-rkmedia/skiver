@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 	"sort"
@@ -14,15 +13,7 @@ import (
 	"github.com/runar-rkmedia/skiver/types"
 )
 
-type ExportOptions struct {
-	InOrg                  string
-	Project                string
-	Locales                []string
-	LocaleKey, Format, Tag string
-	NoFlatten              bool
-}
-
-func getExport(l logger.AppLogger, exportCache Cache, db types.Storage, opt ExportOptions) (toWriter interface{}, err error) {
+func getExport(l logger.AppLogger, exportCache Cache, db types.Storage, opt importexport.ExportOptions) (toWriter interface{}, contentType string, err error) {
 	projectKey := opt.Project
 	locales := opt.Locales
 	localeKey := opt.LocaleKey
@@ -65,7 +56,7 @@ func getExport(l logger.AppLogger, exportCache Cache, db types.Storage, opt Expo
 	}
 	if exportCache != nil {
 		if v, ok := exportCache.Get(cacheKey); ok {
-			return v, nil
+			return v, "", nil
 		}
 	}
 
@@ -100,11 +91,11 @@ func getExport(l logger.AppLogger, exportCache Cache, db types.Storage, opt Expo
 			org, err := db.FindOrganizationByIdOrTitle(opt.InOrg)
 			if err != nil {
 				err = ErrApiDatabase("Organization", err)
-				return nil, err
+				return nil, "", err
 			}
 			if org == nil {
 				err = ErrApiNotFound("Project", projectKey)
-				return nil, err
+				return nil, "", err
 			}
 		}
 	}
@@ -127,11 +118,11 @@ func getExport(l logger.AppLogger, exportCache Cache, db types.Storage, opt Expo
 		s, err := db.GetSnapshot(snapshotMeta.SnapshotID)
 		if err != nil {
 			err = NewApiErr(err, http.StatusInternalServerError, string(requestContext.CodeErrSnapshot))
-			return toWriter, err
+			return toWriter, "", err
 		}
 		if s == nil {
 			err = NewApiError("The snapshot was not found", http.StatusNotFound, string(CodeInternalServerError))
-			return toWriter, err
+			return toWriter, "", err
 		}
 		ep = s.Project
 
@@ -156,51 +147,16 @@ func getExport(l logger.AppLogger, exportCache Cache, db types.Storage, opt Expo
 
 	}
 	if err != nil {
-		NewApiErr(fmt.Errorf("Error extending project '%s' (%s): %w", ep.Title, ep.ID, err), http.StatusBadGateway, string(requestContext.CodeErrProject))
+		err = fmt.Errorf("Error extending project '%s' (%s): %w", ep.Title, ep.ID, err)
 		return
 	}
-	if format == "raw" {
-		toWriter = ep
-		return
-	}
-	if len(ep.Locales) == 0 {
-		err = NewApiError("No locales were published", http.StatusBadGateway, "NoLocalesPublished")
-		return
-	}
-	i18nodes, err := importexport.ExportI18N(ep, importexport.ExportI18NOptions{
-		LocaleFilter: locales,
-		LocaleKey:    importexport.LocaleKey(localeKey)})
+	writer, contentType, err := importexport.ExportExtendedProject(l, ep, opt.Locales, importexport.LocaleKeyEnum{}.From(opt.LocaleKey),
+		importexport.Format{}.From(opt.Format),
+		opt.Locales)
 	if err != nil {
-		err = NewApiErr(err, http.StatusBadGateway, string(requestContext.CodeErrProject))
-		return
+		err = NewApiErr(err, http.StatusBadGateway, "ExportExtended")
 	}
-	if i18nodes.Nodes == nil {
-		return
-	}
-	i18n, err := importexport.I18NNodeToI18Next(i18nodes)
-	if err != nil {
-		err = NewApiErr(err, http.StatusBadGateway, string(requestContext.CodeErrProject))
-		return
-	}
-
-	if format == "typescript" {
-		var w bytes.Buffer
-		if err := importexport.ExportByGoTemplate("typescript.tmpl", ep, i18nodes, &w); err != nil {
-
-			err = NewApiErr(err, http.StatusBadGateway, string(requestContext.CodeErrTemplating))
-			return toWriter, err
-		}
-		// toWriter = w.String()
-		toWriter = w.Bytes()
-		return
-	} else {
-		if len(locales) == 1 {
-			toWriter = i18n[locales[0]]
-		} else {
-			toWriter = i18n
-		}
-	}
-	return
+	return writer, contentType, err
 }
 
 func GetExport(
@@ -274,7 +230,7 @@ func GetExport(
 			}
 		}
 
-		toWriter, err = getExport(rc.L, exportCache, rc.Context.DB, ExportOptions{
+		toWriter, contentType, err := getExport(rc.L, exportCache, rc.Context.DB, importexport.ExportOptions{
 			InOrg:     orgKey,
 			Project:   projectKey,
 			Locales:   locales,
@@ -289,8 +245,8 @@ func GetExport(
 		if toWriter == nil {
 			return nil, NewApiError("No content", http.StatusNoContent, "NoContent:export")
 		}
-		if format == "typescript" {
-			rw.Header().Set("Content-Type", "application/json")
+		if contentType != "" {
+			rw.Header().Set("Content-Type", contentType)
 			rw.Write(toWriter.([]byte))
 			return nil, nil
 		}

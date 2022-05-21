@@ -640,6 +640,7 @@ declare namespace ApiDef {
         description?: string;
         hash?: number; // uint64
         id?: string;
+        uploadMeta?: UploadMeta[];
     }
     export interface ReleaseInfo {
         assets_url?: string;
@@ -850,6 +851,16 @@ declare namespace ApiDef {
         context_key?: string; // ^[^\s]*$
         id: string;
         value?: string;
+    }
+    export interface UploadMeta {
+        id?: string;
+        locale?: string;
+        locale_key?: string;
+        parent?: string;
+        provider_id?: string;
+        size?: number; // int64
+        tag?: string;
+        url?: string;
     }
     export interface User {
         /**
