@@ -233,7 +233,7 @@
     </div>
   {/if}
 
-  {#if $db.login.ok}
+  {#if $db.login.ok || !requiresLogin}
     <main>
       {#if ($db.serverInfo?.database_size || 0) > dbWarnSize}
         <Alert kind="warning">
