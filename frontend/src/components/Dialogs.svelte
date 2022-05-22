@@ -22,7 +22,7 @@
         }}>
         <paper>
           <TranslationForm
-            categoryID={$state.dialog.id || ''}
+            categoryID={$state.dialog.parent || ''}
             on:complete={closeDialog}>
             <Button
               slot="actions"
