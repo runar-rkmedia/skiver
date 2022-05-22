@@ -187,7 +187,7 @@
                   <div>
                     <a target={projectID} href={u.url}>
                       Exported
-                      {u.provider_id}
+                      {u.provider_name || u.provider_id}
                       <LocaleFlag locale={$db.locale[u.locale || '']} />
                       {$db.locale[u.locale || '']?.title} ({$db.locale[
                         u.locale || ''

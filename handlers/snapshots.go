@@ -55,9 +55,7 @@ func uploadSnapshot(l logger.AppLogger, uploaders []uploader.FileUploader, tag s
 
 	var tags []string
 	if _, err := semver.StrictNewVersion(tag); err == nil {
-		fmt.Println("tags ok")
 		ts, err := utils.ResolveSemver(tag)
-		fmt.Println("tags ok???, ", ts, err)
 		if err != nil {
 			return nil, err
 		}

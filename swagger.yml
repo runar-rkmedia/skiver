@@ -1500,6 +1500,9 @@ definitions:
       provider_id:
         type: string
         x-go-name: ProviderID
+      provider_name:
+        type: string
+        x-go-name: ProviderName
       size:
         format: int64
         type: integer

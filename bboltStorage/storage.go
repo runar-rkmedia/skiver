@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/go-common/utils"
 	"github.com/runar-rkmedia/skiver/types"
@@ -40,6 +41,17 @@ func NewBbolt(l logger.AppLogger, path string, pubsub PubSubPublisher, options .
 	}
 
 	bb.l = l
+	if l.HasDebug() {
+		fileInfo, err := os.Stat(path)
+		if err != nil {
+			l.Error().Str("db-location", path).Err(err).Msg("Reading database from disk failed...")
+		} else {
+			l.Debug().Str("db-location", path).Err(err).
+				Str("size", humanize.Bytes(uint64(fileInfo.Size()))).
+				Str("mode", fileInfo.Mode().String()).
+				Msg("Database found on disk")
+		}
+	}
 	db, err := bolt.Open(path, 0666, &bolt.Options{
 		Timeout: 1 * time.Second,
 	})

@@ -97,6 +97,8 @@ func getDefaultDBLocation() string {
 		// When running in a
 	} else if s, err := os.Stat("./storage"); err == nil && s.IsDir() {
 		return "./storage/skiver.bbolt"
+	} else if s, err := os.Stat("/storage"); err == nil && s.IsDir() {
+		return "/storage/skiver.bbolt"
 	}
 	return "./skiver.bbolt"
 }
@@ -514,6 +516,7 @@ func main() {
 						Endpoint:       cu.S3.Endpoint,
 						Region:         cu.S3.Region,
 						Bucket:         cu.S3.BucketID,
+						ProviderName:   cu.S3.ProviderName,
 						AccessKey:      cu.S3.AccessKey,
 						ForcePathStyle: cu.S3.ForcePathStyle,
 					},
@@ -523,6 +526,10 @@ func main() {
 				continue
 			}
 			l.Fatal().Str("key", key).Msg("Config for UploadSnapShots was invalid (empty)")
+		}
+		if l.HasDebug() {
+			keys := utils.SortedMapKeys(config.UploadSnapShots)
+			l.Debug().Interface("UploadSnapShots", keys).Int("count", len(keys)).Msg("Uploaders initialized successfully")
 		}
 	}
 

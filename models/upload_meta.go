@@ -32,6 +32,9 @@ type UploadMeta struct {
 	// provider ID
 	ProviderID string `json:"provider_id,omitempty"`
 
+	// provider name
+	ProviderName string `json:"provider_name,omitempty"`
+
 	// size
 	Size int64 `json:"size,omitempty"`
 
