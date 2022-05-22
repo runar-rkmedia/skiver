@@ -33,12 +33,13 @@ func (e ProjectSnapshot) Kind() string {
 }
 
 type UploadMeta struct {
-	ID         string `json:"id"`
-	Locale     string `json:"locale"`
-	LocaleKey  string `json:"locale_key"`
-	Parent     string `json:"parent"`
-	Tag        string `json:"tag"`
-	ProviderID string `json:"provider_id"`
-	URL        string `json:"url"`
-	Size       int64  `json:"size"`
+	ID           string `json:"id"`
+	Locale       string `json:"locale"`
+	LocaleKey    string `json:"locale_key"`
+	Parent       string `json:"parent"`
+	Tag          string `json:"tag"`
+	ProviderID   string `json:"provider_id"`
+	ProviderName string `json:"provider_name"`
+	URL          string `json:"url"`
+	Size         int64  `json:"size"`
 }

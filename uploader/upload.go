@@ -30,6 +30,7 @@ type S3UploaderOptions struct {
 	Endpoint,
 	Region,
 	Bucket,
+	ProviderName,
 	AccessKey string
 	ForcePathStyle bool
 }
@@ -52,6 +53,9 @@ func NewS3Uplaoder(
 	}
 	if options.Endpoint == "" {
 		l.Fatal().Msg("Endpoint is required")
+	}
+	if options.ProviderName == "" {
+		l.Fatal().Msg("ProviderName is required")
 	}
 	if options.Region == "" {
 		l.Fatal().Msg("Region is required")
@@ -253,10 +257,11 @@ func (su *s3Uploader) AddPublicFileWithAliases(keys []string, r io.ReadSeeker, s
 			su.L.Debug().Msg("Made a copy of the file")
 		}
 		m[i] = types.UploadMeta{
-			ID:         keys[i],
-			Parent:     su.Bucket,
-			ProviderID: su.Identifier(),
-			Size:       size,
+			ID:           keys[i],
+			Parent:       su.Bucket,
+			ProviderID:   su.Identifier(),
+			ProviderName: su.ProviderName,
+			Size:         size,
 		}
 		url, err := su.UrlForFile(keys[i])
 		if err != nil {
@@ -296,10 +301,11 @@ func (su *s3Uploader) AddPublicFile(key string, r io.ReadSeeker, size int64, con
 		r.Seek(0, io.SeekStart)
 	}
 	um := types.UploadMeta{
-		ID:         key,
-		Parent:     su.Bucket,
-		ProviderID: su.Identifier(),
-		Size:       size,
+		ID:           key,
+		Parent:       su.Bucket,
+		ProviderID:   su.Identifier(),
+		ProviderName: su.ProviderName,
+		Size:         size,
 	}
 	url, err := su.UrlForFile(key)
 	if err != nil {

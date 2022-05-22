@@ -858,6 +858,7 @@ declare namespace ApiDef {
         locale_key?: string;
         parent?: string;
         provider_id?: string;
+        provider_name?: string;
         size?: number; // int64
         tag?: string;
         url?: string;

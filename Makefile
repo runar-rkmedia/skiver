@@ -4,9 +4,12 @@ gitHash := $(shell git rev-parse --short HEAD)
 buildDate := $(shell TZ=UTC date +"%Y-%m-%dT%H:%M:%SZ")
 ldflags=-X 'main.version=$(version)' -X 'main.date=$(buildDate)' -X 'main.commit=$(gitHash)' -X 'main.IsDevStr=0'
 watch:
-	cd frontend && yarn watch &
+	${MAKE} watch_ -j2
+watch_: web_watch go_watch
+web_watch:
+	cd frontend && yarn watch
+go_watch:
 	fd -e go -e tmpl  | entr -r  sh -c "echo restarting...; go run main.go"
-	wait
 gen:
 	go generate ./...
 build-api:
@@ -68,7 +71,7 @@ container-publish:
 	docker push runardocker/skiver-api:$(version)-alpine
 	docker push runardocker/skiver-api:$(version)-grafana
 
-publish: test container container-publish release
+publish: gen test release container container-publish fy
 
 release: test
 	goreleaser release
@@ -100,5 +103,13 @@ list-pre:
 	@echo "\nfrontend should not use <pre>-tags"
 	@ rg '<pre' frontend/src  -g '!**/*/JsonDetail*' || echo "All ok for <pre>"
 list-invalid: list-fmtP list-internal list-deprecated list-logger-debug list-pre
-
-
+fly:
+	./fly.sh .x/skiver-fly.toml
+	@echo "Will deploy image 'runardocker/skiver-api:$(version)' on fly"
+	fly deploy -i "runardocker/skiver-api:$(version)" --detach
+	fly logs
+fly_latest: container
+	./fly.sh .x/skiver-fly.toml
+	@echo "Will deploy image 'runardocker/skiver-api:latest' on fly"
+	fly deploy -i "runardocker/skiver-api:latest" --detach
+	fly logs

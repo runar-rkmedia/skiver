@@ -1,6 +1,8 @@
 package config
 
 import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"os"
@@ -8,6 +10,7 @@ import (
 	"time"
 
 	"github.com/pelletier/go-toml"
+	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/spf13/viper"
 )
 
@@ -50,6 +53,8 @@ type S3UploaderConfig struct {
 	BucketID,
 	// AccessKey for the bucket / application
 	AccessKey,
+	// Pretty name, will be displayed to users
+	ProviderName,
 	// PrivateKey for the bucket / application
 	PrivateKey string
 	ForcePathStyle bool
@@ -105,31 +110,84 @@ func GetConfig() *Config {
 	}
 	return &cfg
 }
+func getDefaultConfigPaths(name string) ([]string, error) {
+	viper.SetConfigName(name)
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	paths := []string{
+		path.Join(home, "."+name),
+		path.Join(home, ".config", name),
+		".",
+	}
+	for _, p := range paths {
+		viper.AddConfigPath(p)
+	}
+
+	return paths, nil
+
+}
+
+// Gets a base64-encoded config-file from environment-variables, decodes it and
+// loads it into viper This is useful in environments where it is not practical
+// to mount a file on disk for configuration, but a structured configuration is
+// still wanted.
+func getEnvConfig() (bool, error) {
+	cfg_b64 := os.Getenv("SKIVER_CONFIG_B64")
+	if cfg_b64 == "" {
+		return false, nil
+	}
+	cfg_b, err := base64.StdEncoding.DecodeString(cfg_b64)
+	if err != nil {
+		_pre_init_fatal_logger(err, "failed to decode SKIVER_CONFIG_B64", nil)
+	}
+	configType := os.Getenv("SKIVER_CONFIG_B64_TYPE")
+	if configType == "" {
+		configType = "toml"
+	}
+
+	viper.SetConfigType(configType)
+
+	r := bytes.NewReader(cfg_b)
+	err = viper.ReadConfig(r)
+	if err != nil {
+		_pre_init_fatal_logger(err, "viper failed in ReadConfig", nil)
+	}
+	return true, nil
+}
 
 func InitConfig() error {
-	if cfgFile != "" {
-		viper.SetConfigFile(cfgFile)
-	} else {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return err
-		}
-		viper.SetConfigName("skiver")
-		viper.AddConfigPath(path.Join(home, "skiver"))
-		viper.AddConfigPath(path.Join(home, ".config", "skiver"))
-		viper.AddConfigPath(".")
-	}
 	viper.SetEnvPrefix("skiver")
 	viper.AutomaticEnv()
-
 	viper.SetDefault("Api.ShutdownTimeout", time.Second*20)
 	viper.SetDefault("Api.WriteTimeout", time.Second*40)
 	viper.SetDefault("Api.IdleTimeout", time.Second*120)
 	viper.SetDefault("Api.ReadTimeout", time.Second*5)
+
+	if fromEnv, err := getEnvConfig(); err != nil {
+		panic(err)
+	} else if fromEnv {
+		return nil
+	}
+
+	paths := []string{cfgFile}
+	if cfgFile != "" {
+		viper.SetConfigFile(cfgFile)
+	} else {
+		ps, err := getDefaultConfigPaths("skiver")
+		if err != nil {
+			return err
+		}
+		paths = ps
+	}
+
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			l := logger.GetLogger("config")
+			l.Warn().Interface("default-config-paths", paths).Msg("Config-file was not found in any of the default paths")
 			// Config file not found; ignore error if desired
-			b, err := toml.Marshal(Config{})
+			b, err := toml.Marshal(CreateSampleComfig())
 			if err != nil {
 				panic(err)
 			}
@@ -152,11 +210,12 @@ func CreateSampleComfig() Config {
 		UploadSnapShots: map[string]Uploader{
 			"example": {
 				S3: &S3UploaderConfig{
-					BucketID:   "my-bucket",
-					Endpoint:   "https://s3.us-west-001.backblazeb2.com",
-					AccessKey:  "0012345678901234567890123",
-					PrivateKey: "secret",
-					Region:     "us-west-001",
+					BucketID:     "my-bucket",
+					Endpoint:     "https://s3.us-west-001.backblazeb2.com",
+					AccessKey:    "0012345678901234567890123",
+					ProviderName: "BackBlaze B2 Public",
+					PrivateKey:   "secret",
+					Region:       "us-west-001",
 				},
 			},
 		},
@@ -170,4 +229,19 @@ func WriteToml(w io.Writer, j interface{}) error {
 	tomler.ArraysWithOneElementPerLine(true)
 	tomler.SetTagComment("help")
 	return tomler.Encode(j)
+}
+
+// Should only be used before the logger has been initialized, for instance when parsing config etc.
+func _pre_init_fatal_logger(err error, msg string, details map[string]interface{}) {
+	l := logger.InitLogger(logger.LogConfig{
+		Level:      "debug",
+		Format:     "human",
+		WithCaller: false,
+	})
+	lerr := l.Fatal().Err(err)
+	for k, v := range details {
+		lerr = lerr.Interface(k, v)
+	}
+	lerr.Msg(msg)
+	panic("fatal")
 }
