@@ -17,6 +17,9 @@ processes = []
   allowed_public_ports = []
   auto_rollback = true
 
+[metrics]
+port = 9091 # default for most prometheus clients
+path = "/metrics" # default for most prometheus clients
 [[mounts]]
 source="skiver_data"
 destination="/storage"
