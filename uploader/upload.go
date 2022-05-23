@@ -33,6 +33,8 @@ type S3UploaderOptions struct {
 	ProviderName,
 	AccessKey string
 	ForcePathStyle bool
+	UrlFormat      string
+	CacheControl   string
 }
 
 func NewS3Uplaoder(
@@ -76,10 +78,18 @@ func NewS3Uplaoder(
 		EndpointURL:       *endpointUrl,
 		S3UploaderOptions: options,
 		ID:                Identifier,
-		Provider:          findProvider(options.Endpoint),
 		privateKey:        privateKey,
 	}
 
+	if options.UrlFormat != "" {
+		s.Provider = &Provider{
+			Name:      options.ProviderName,
+			UrlFormat: options.ProviderName,
+		}
+	}
+	if s.Provider == nil {
+		s.Provider = findProvider(options.Endpoint)
+	}
 	return s
 }
 
@@ -157,7 +167,7 @@ func (su *s3Uploader) GetFileInfo(key string) error {
 type Provider struct {
 	Name          string
 	endpointRegex *regexp.Regexp
-	urlFormat     string
+	UrlFormat     string
 }
 
 func (p Provider) String() string { return p.Name }
@@ -179,9 +189,9 @@ func findProvider(endpoint string) *Provider {
 
 func (su *s3Uploader) UrlForFile(objectID string) (string, error) {
 
-	if su.Provider.urlFormat != "" {
+	if su.Provider != nil && su.Provider.UrlFormat != "" {
 
-		tmpl, err := template.New("").Parse(su.Provider.urlFormat)
+		tmpl, err := template.New("").Parse(su.Provider.UrlFormat)
 		if err != nil {
 			return "", err
 		}
@@ -333,6 +343,9 @@ func (su *s3Uploader) AddPublicFile(key string, r io.ReadSeeker, size int64, con
 		ContentType:          aws.String(contentType),
 		ContentDisposition:   aws.String(contentDisposition),
 		ServerSideEncryption: aws.String("AES256"),
+	}
+	if su.CacheControl != "" {
+		putInput.CacheControl = aws.String(su.CacheControl)
 	}
 	_, err = client.PutObject(&putInput)
 

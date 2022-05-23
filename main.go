@@ -513,6 +513,8 @@ func main() {
 					logger.GetLogger("snapshot-uploader-"+key),
 					key,
 					uploader.S3UploaderOptions{
+						UrlFormat:      cu.S3.UrlFormat,
+						CacheControl:   cu.S3.CacheControl,
 						Endpoint:       cu.S3.Endpoint,
 						Region:         cu.S3.Region,
 						Bucket:         cu.S3.BucketID,
