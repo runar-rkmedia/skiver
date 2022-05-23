@@ -84,11 +84,11 @@ func NewS3Uplaoder(
 	if options.UrlFormat != "" {
 		s.Provider = &Provider{
 			Name:      options.ProviderName,
-			UrlFormat: options.ProviderName,
+			UrlFormat: options.UrlFormat,
 		}
 	}
 	if s.Provider == nil {
-		s.Provider = findProvider(options.Endpoint)
+		s.Provider = findProvider(options.Endpoint, options.ProviderName, options.UrlFormat)
 	}
 	return s
 }
@@ -173,13 +173,29 @@ type Provider struct {
 func (p Provider) String() string { return p.Name }
 
 var (
-	// TODO: Ensure this url is correct. This is just a placeholder for now.
-	ProviderBackBlaze = Provider{"BackBlazeB@", regexp.MustCompile(`.*backblazeb2\.com\/?$`), "{{.EndpointURL.Scheme}}://{{.Bucket}}.{{.EndpointURL.Host}}/{{.Object}}"}
-	providers         = []Provider{ProviderBackBlaze}
+	ProviderBackBlaze    = Provider{"BackBlazeB2", regexp.MustCompile(`.*backblazeb2\.com\/?$`), "{{.EndpointURL.Scheme}}://{{.Bucket}}.{{.EndpointURL.Host}}/{{.Object}}"}
+	ProviderSkiverPublic = Provider{"B2 Skiver", nil, "https://b2p.runar.dev/file/{{.Bucket}}/{{.Object}}"}
+	providers            = []Provider{ProviderBackBlaze, ProviderSkiverPublic}
 )
 
-func findProvider(endpoint string) *Provider {
+func findProvider(endpoint, providerName, urlFormat string) *Provider {
+	if urlFormat != "" {
+
+		switch urlFormat {
+		case "skiver-public":
+			return &ProviderSkiverPublic
+		case "backblazeb2":
+			return &ProviderBackBlaze
+		}
+		return &Provider{
+			Name:      providerName,
+			UrlFormat: urlFormat,
+		}
+	}
 	for _, p := range providers {
+		if p.endpointRegex == nil {
+			return nil
+		}
 		if p.endpointRegex.MatchString(endpoint) {
 			return &p
 		}
