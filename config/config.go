@@ -53,10 +53,21 @@ type S3UploaderConfig struct {
 	BucketID,
 	// AccessKey for the bucket / application
 	AccessKey,
+	// Can be used to override the url that is produced.
+	// Golang-templating is available
+	// Variables:
+	// `.Object`:        The current Object-id (fileName)
+	// `.Bucket`:        The current Object-id (fileName)
+	// `.EndpointURL`:   net.Url version of the Endpoint
+	// `.Endpoint`:      Endpoint as string
+	// `.Region`:        Region.
+	UrlFormat,
 	// Pretty name, will be displayed to users
 	ProviderName,
 	// PrivateKey for the bucket / application
 	PrivateKey string
+	CacheControl string
+	// If set, will add headers for use with Browser-TTL, CDN-TTL and CloudFlare-TTL
 	ForcePathStyle bool
 }
 
