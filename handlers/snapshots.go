@@ -55,13 +55,11 @@ func uploadSnapshot(l logger.AppLogger, uploaders []uploader.FileUploader, tag s
 
 	var tags []string
 	if _, err := semver.StrictNewVersion(tag); err == nil {
-		ts, err := utils.ResolveSemver(tag)
+		ts, err := utils.ResolveAndStripSemver(tag)
 		if err != nil {
 			return nil, err
 		}
-		for _, v := range ts {
-			tags = append(tags, v.String())
-		}
+		tags = ts
 	} else {
 		tags = []string{tag}
 	}
