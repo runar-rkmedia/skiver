@@ -71,10 +71,14 @@ container-publish:
 	docker push runardocker/skiver-api:$(version)-alpine
 	docker push runardocker/skiver-api:$(version)-grafana
 
-publish: gen test release container container-publish fly
+publish: check-git-clean gen test release container container-publish fly
 
-release: test
+release: check-git-clean test
 	goreleaser release
+
+check-git-clean: 
+	git describe --exact-match HEAD
+	git diff --quiet
 
 build:
 	${MAKE} clean
