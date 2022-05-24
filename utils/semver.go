@@ -6,36 +6,37 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-// Returns an array of strings that resolves to the given version
-func ResolveSemver(v string) (semver.Collection, error) {
-	var resolved semver.Collection
+func ResolveAndStripSemver(v string) ([]string, error) {
 	sv, err := semver.NewVersion(v)
 	if err != nil {
-		return resolved, err
+		return nil, err
 	}
 	prerelease := sv.Prerelease()
+	if prerelease != "" {
+		return []string{sv.String()}, nil
+	}
 	patch := sv.Patch()
 	minor := sv.Minor()
 	major := sv.Major()
 
-	if prerelease != "" {
-		resolved = append(resolved, sv)
-		// On prereleases, we dont return the rest of the versions.
-		// since they should not resolve to this version
-		return resolved, nil
-	}
-	if patch != 0 {
-		s := fmt.Sprintf("v%d.%d.%d", major, minor, patch)
-		resolved = append(resolved, semver.MustParse(s))
-	}
-	if minor != 0 {
-		s := fmt.Sprintf("v%d.%d", major, minor)
-		resolved = append(resolved, semver.MustParse(s))
-	}
-	if major != 0 {
-		s := fmt.Sprintf("v%d", major)
-		resolved = append(resolved, semver.MustParse(s))
-	}
+	slc := make([]string, 3)
+	slc[0] = fmt.Sprintf("%d.%d.%d", major, minor, patch)
+	slc[1] = fmt.Sprintf("%d.%d", major, minor)
+	slc[2] = fmt.Sprintf("%d", major)
 
-	return resolved, err
+	return slc, nil
+
+}
+
+func unique(slice semver.Collection) semver.Collection {
+	keys := make(map[string]bool)
+	list := semver.Collection{}
+	for _, entry := range slice {
+		s := entry.String()
+		if _, value := keys[s]; !value {
+			keys[s] = true
+			list = append(list, entry)
+		}
+	}
+	return list
 }

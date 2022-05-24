@@ -81,14 +81,14 @@ func NewS3Uplaoder(
 		privateKey:        privateKey,
 	}
 
-	if options.UrlFormat != "" {
-		s.Provider = &Provider{
-			Name:      options.ProviderName,
-			UrlFormat: options.UrlFormat,
-		}
-	}
+	s.Provider = findProvider(options.Endpoint, options.ProviderName, options.UrlFormat)
 	if s.Provider == nil {
-		s.Provider = findProvider(options.Endpoint, options.ProviderName, options.UrlFormat)
+		if options.UrlFormat != "" {
+			s.Provider = &Provider{
+				Name:      options.ProviderName,
+				UrlFormat: options.UrlFormat,
+			}
+		}
 	}
 	return s
 }

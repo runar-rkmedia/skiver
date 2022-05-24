@@ -1,9 +1,9 @@
 
 // Very naive regex for semver.
-const semverReges = /^\d+\.\d+\.\d+-?/
+const semverReges = /^\d(?:\.0)?(?:\.0)?-?/
 
-const isSemver = (s: string) => {
+const isPartialSemver = (s: string) => {
   return semverReges.test(s)
 }
 
-export default isSemver
+export default isPartialSemver
