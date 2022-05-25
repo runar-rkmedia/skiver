@@ -13,7 +13,7 @@
   import sortOn from 'sort-on'
   import { showDialog, toast } from 'state'
   import { apiUrl } from 'util/appConstants'
-  import isSemver from 'util/semver'
+  import isPartialSemver from 'util/semver'
   export let projectID: string
   export let organizationKey: string
   let extendedDiff = false
@@ -191,7 +191,7 @@
                       <LocaleFlag locale={$db.locale[u.locale || '']} />
                       {$db.locale[u.locale || '']?.title} ({$db.locale[
                         u.locale || ''
-                      ]?.[localeKeyToKeyOfLocaleMap[u.locale_key || '']]}) {isSemver(
+                      ]?.[localeKeyToKeyOfLocaleMap[u.locale_key || '']]}) {isPartialSemver(
                         u.tag || ''
                       )
                         ? 'v'
