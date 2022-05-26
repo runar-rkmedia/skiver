@@ -1106,7 +1106,7 @@ declare namespace ApiPaths {
              * If set to auto, the server will attempt to find the format for you.
              *
              */
-            export type Kind = "i18n" | "auto";
+            export type Kind = "i18n" | "describe" | "auto";
             /**
              * The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
              *

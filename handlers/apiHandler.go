@@ -117,7 +117,7 @@ func EndpointsHandler(
 			{
 				if isPost {
 					logout(session, userSessions, rw)
-					rc.WriteOutput(models.LogoutResponse{Ok: boolPointer(true)}, http.StatusOK)
+					rc.WriteOutput(models.OkResponse{Ok: boolPointer(true)}, http.StatusOK)
 					return
 				}
 			}
@@ -281,12 +281,12 @@ func EndpointsHandler(
 				var input map[string]interface{}
 				switch kind {
 				case "":
-					rc.WriteError("empty value for kind, allowed values: i18n, auto", requestContext.CodeErrInputValidation)
+					rc.WriteError("empty value for kind, allowed values: i18n, describe, auto", requestContext.CodeErrInputValidation)
 					return
-				case "i18n", "auto":
+				case "i18n", "auto", "describe":
 					break
 				default:
-					rc.WriteError("Invalid value for kind, allowed values: i18n, auto", requestContext.CodeErrInputValidation)
+					rc.WriteError("Invalid value for kind, allowed values: i18n, describe, auto", requestContext.CodeErrInputValidation)
 					return
 				}
 				if projectLike == "" {
@@ -317,7 +317,7 @@ func EndpointsHandler(
 					return
 				}
 
-				out, Err := ImportIntoProject(ctx.DB, kind, session.User.ID, *project, localeLike, dry, input)
+				out, Err := ImportIntoProject(ctx.L, ctx.DB, kind, session.User.ID, *project, localeLike, dry, input)
 				if Err != nil {
 					rc.WriteErr(Err, Err.GetCode())
 					return

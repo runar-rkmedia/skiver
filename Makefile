@@ -77,7 +77,11 @@ release: check-git-clean test
 	goreleaser release
 
 check-git-clean: 
-	git describe --exact-match HEAD
+	@echo "Latest tag on this branch:"
+	git describe --tags
+	@echo "Latest tag on any branch"
+	git describe --tags `git rev-list --tags --max-count=1`
+	git describe --exact-match HEAD --tags
 	git diff --quiet
 
 build:

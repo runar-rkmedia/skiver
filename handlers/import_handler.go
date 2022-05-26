@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/skiver/importexport"
 	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/requestContext"
@@ -66,39 +68,119 @@ type Updates struct {
 	CategoryCreations          map[string]types.Category
 	// TODO: support category-updates
 }
+
+// TODO: Reevaluate this structure.
 type ImportResult struct {
-	Changes  Updates
-	Imp      importexport.Import
-	Ex       types.ExtendedProject
-	Warnings []importexport.Warning
+	Changes   Updates                      `json:"changes,omitempty"`
+	ChangeSet []importexport.ChangeRequest `json:"change_set,omitempty"`
+	Imp       importexport.Import          `json:"imp,omitempty"`
+	Ex        types.ExtendedProject        `json:"ex,omitempty"`
+	Warnings  []importexport.Warning       `json:"warnings,omitempty"`
 }
 
-func ImportIntoProject(db types.Storage, kind string, createdBy string, project types.Project, localeLike string, dry bool, input map[string]interface{}) (*ImportResult, *Error) {
+func ImportDescriptionsIntoProject(l logger.AppLogger, db types.Storage, createdBy string, project types.Project, dry bool, input map[string]interface{}) (*ImportResult, *Error) {
+
+	if len(input) == 0 {
+		return nil, NewError("Empty map", "ImportDescription:Empty")
+	}
+
+	es, err := project.Extend(db)
+	if err != nil {
+		return nil, NewError("failed during extending project", requestContext.CodeErrProject).AddError(err)
+	}
+
+	imp := ImportResult{}
+	changeRequests, err := importexport.DescribeProjectContent(es, input)
+	if err != nil {
+		return nil, NewError("failed during creation of changerequests", requestContext.CodeErrImport).AddError(err)
+	}
+	imp.ChangeSet = changeRequests
+
+	if len(changeRequests) == 0 {
+		return &imp, nil
+	}
+	if dry {
+		return &imp, nil
+	}
+	for _, v := range changeRequests {
+		switch v.Kind {
+		case "CategoryTitle":
+			payload, ok := v.Payload.(types.Category)
+			if !ok {
+				return nil, NewError("failed to convert changerequest-payload to Category", "ChangeRequest:To:Category")
+			}
+			if payload.UpdatedBy == "" {
+				payload.UpdatedBy = createdBy
+			}
+			_, err := db.UpdateCategory(payload.ID, payload)
+			if err != nil {
+				l.Error().Err(err).Interface("payload", payload).Msg("Failed to update category")
+				return nil, NewError(err.Error(), requestContext.CodeErrCategory)
+			}
+			l.Debug().
+				Interface("changerequests", v).
+				Msg("Category updated from changerequest")
+		case "TranslationTitle":
+			payload, ok := v.Payload.(types.Translation)
+			if !ok {
+				return nil, NewError("failed to convert changerequest-field to string", "ChangeRequest:To:String")
+			}
+			if payload.UpdatedBy == "" {
+				payload.UpdatedBy = createdBy
+			}
+			payload.UpdatedBy = createdBy
+			_, err := db.UpdateTranslation(payload.ID, payload)
+			if err != nil {
+				l.Error().Err(err).Interface("payload", payload).Msg("Failed to update translation")
+				return nil, NewError(err.Error(), requestContext.CodeErrCategory)
+			}
+			l.Debug().
+				Interface("changerequests", v).
+				Msg("Translation updated from changerequest")
+		}
+
+	}
+
+	return &imp, nil
+}
+func ImportIntoProject(l logger.AppLogger, db types.Storage, kind string, createdBy string, project types.Project, localeLike string, dry bool, input map[string]interface{}) (*ImportResult, *Error) {
 	switch kind {
 	case "":
-		return nil, NewError("empty value for kind, allowed values: i18n, auto", requestContext.CodeErrInputValidation)
+		return nil, NewError("empty value for kind, allowed values: i18n, describe, auto", requestContext.CodeErrInputValidation)
+	case "describe":
+		return ImportDescriptionsIntoProject(l, db, createdBy, project, dry, input)
 	case "i18n", "auto":
 		break
 	default:
 		return nil, NewError("Invalid value for kind, allowed values: i18n, auto", requestContext.CodeErrInputValidation)
 	}
-	var locale *types.Locale
-	if localeLike != "" {
-		// if true {
-		// 	return nil, NewError("Locale from url is not yet implemented. Please add the locale as the root-key in the body", requestContext.CodeErrNotImplemented)
-		// }
-		loc, err := db.GetLocaleByIDOrShortName(localeLike)
-		if err != nil {
-			return nil, NewError("Failed ot get locale", requestContext.CodeErrLocale).AddError(err)
-		}
-		if loc == nil {
-			return nil, NewError("Locale not found", requestContext.CodeErrNotFoundLocale, localeLike)
-		}
-		locale = loc
-	}
 	locales, err := db.GetLocales()
 	if err != nil {
 		return nil, NewError("failed to get locales", requestContext.CodeErrLocale).AddError(err)
+	}
+	var locale types.Locale
+	if localeLike != "" {
+		var matches []types.Locale
+		for _, l := range locales {
+			if localeLike == l.IETF ||
+				localeLike == l.Iso639_3 ||
+				localeLike == l.Iso639_2 ||
+				localeLike == l.Iso639_1 {
+				matches = append(matches, l)
+			}
+		}
+		if len(matches) > 1 {
+			ietfs := make([]string, len(matches))
+			for i, m := range matches {
+				ietfs[i] = m.IETF
+			}
+			return nil, NewError(fmt.Sprintf("The provided locale could not match uniquely against a locale. Try being a bit more specific, for instance %s", ietfs), "Locale:NonUniqueMatch", map[string]interface{}{"possibleMatches": matches, "mostSpecific": ietfs})
+		}
+		if len(matches) == 0 {
+			return nil, NewError("The provided locale did not match any of the known locales", "Locale:NonMatch")
+		}
+		locale = matches[0]
+
 	}
 	localesSlice := make([]types.Locale, len(locales))
 	localeKeys := utils.SortedMapKeys(locales)
@@ -109,7 +191,7 @@ func ImportIntoProject(db types.Storage, kind string, createdBy string, project 
 	base.ID = project.ID
 	base.CreatedBy = createdBy
 	base.OrganizationID = project.OrganizationID
-	imp, warnings, err := importexport.ImportI18NTranslation(localesSlice, locale, base, types.CreatorSourceImport, input)
+	imp, warnings, err := importexport.ImportI18NTranslation(localesSlice, &locale, base, types.CreatorSourceImport, input)
 	if err != nil {
 		return nil, NewError("failed to import", requestContext.CodeErrImport).AddError(err)
 	}

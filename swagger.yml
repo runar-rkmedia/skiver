@@ -1746,6 +1746,7 @@ paths:
           If set to auto, the server will attempt to find the format for you.
         enum:
         - i18n
+        - describe
         - auto
         in: path
         name: kind

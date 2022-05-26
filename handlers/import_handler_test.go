@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MarvinJWendt/testza"
+	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/skiver/bboltStorage"
 	"github.com/runar-rkmedia/skiver/importexport"
 	"github.com/runar-rkmedia/skiver/internal"
@@ -60,6 +61,7 @@ nb:
 
 	for _, tt := range tests {
 		internal.NewMockTimeNow()
+		l := logger.GetLoggerWithLevel("test", "fatal")
 		t.Run(tt.name, func(t *testing.T) {
 			// 1. Setup
 			bb := bboltStorage.NewMockDB(t)
@@ -78,7 +80,7 @@ nb:
 			var j map[string]interface{}
 			err = internal.YamlUnmarshalAllowTabs(tt.fields, &j)
 			testza.AssertNoError(t, err)
-			impo, err := ImportIntoProject(bb, "i18n", base.CreatedBy, project, "", false, j)
+			impo, err := ImportIntoProject(l, bb, "i18n", base.CreatedBy, project, "", false, j)
 			testza.AssertNil(t, err)
 			testza.AssertNotNil(t, impo)
 			internal.MatchSnapshot(t, "2-import.yaml", impo.Imp)
