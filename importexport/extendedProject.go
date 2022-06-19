@@ -49,7 +49,7 @@ func ExportExtendedProject(l logger.AppLogger, ep types.ExtendedProject, locales
 	}
 	i18nodes, err := ExportI18N(ep, ExportI18NOptions{
 		LocaleFilter: localeFilter,
-		LocaleKey:    LocaleKey(localeKey.name)})
+		LocaleKey:    LocaleKey(localeKey.Name)})
 	if err != nil {
 		return
 	}
@@ -83,7 +83,7 @@ func ExportExtendedProjectToI18Next(l logger.AppLogger, ep types.ExtendedProject
 	if len(ep.Locales) == 0 {
 		return nil, fmt.Errorf("No locales were published")
 	}
-	i18nodes, err := ExportI18N(ep, ExportI18NOptions{LocaleKey: LocaleKey(localeKey.name)})
+	i18nodes, err := ExportI18N(ep, ExportI18NOptions{LocaleKey: LocaleKey(localeKey.Name)})
 	if err != nil {
 		return nil, err
 	}

@@ -21,6 +21,8 @@ type ExportI18NOptions struct {
 
 type LocaleKey string
 
+// TODO: move these enum-stuff into types-package
+
 const (
 	LocaleKeyIETF LocaleKey = "ietf"
 	LocaleKeyISO1 LocaleKey = "iso1"
@@ -29,11 +31,27 @@ const (
 )
 
 type LocaleKeyEnum struct {
-	name string
+	Name string
 }
 
-func (f LocaleKeyEnum) String() string                   { return f.name }
-func (f LocaleKeyEnum) Is(comparitor LocaleKeyEnum) bool { return f.name == comparitor.name }
+func (f LocaleKeyEnum) String() string                   { return f.Name }
+func (f LocaleKeyEnum) Is(comparitor LocaleKeyEnum) bool { return f.Name == comparitor.Name }
+func (f LocaleKeyEnum) Matches(s string) bool            { return f.Name == s }
+func (f LocaleKeyEnum) FromLocale(l types.Locale) string {
+	if f.Is(LocaleKeyEnumIETF) {
+		return l.IETF
+	}
+	if f.Is(LocaleKeyEnumISO3) {
+		return l.Iso639_3
+	}
+	if f.Is(LocaleKeyEnumISO2) {
+		return l.Iso639_2
+	}
+	if f.Is(LocaleKeyEnumISO1) {
+		return l.Iso639_1
+	}
+	return ""
+}
 
 // Deprecated, only used for earlier enums
 func (f LocaleKeyEnum) From(s string) LocaleKeyEnum { return LocaleKeyEnum{s} }
@@ -43,7 +61,46 @@ var (
 	LocaleKeyEnumISO1 = LocaleKeyEnum{string(LocaleKeyISO1)}
 	LocaleKeyEnumISO2 = LocaleKeyEnum{string(LocaleKeyISO2)}
 	LocaleKeyEnumISO3 = LocaleKeyEnum{string(LocaleKeyISO3)}
+	LocaleKeys        = []LocaleKeyEnum{
+		LocaleKeyEnumIETF,
+		LocaleKeyEnumISO1,
+		LocaleKeyEnumISO2,
+		LocaleKeyEnumISO3,
+	}
 )
+
+func InferLocales(localeLike string, locales map[string]types.Locale) []LocaleMatch {
+	var matches []LocaleMatch
+	if localeLike == "" {
+		return matches
+	}
+	for _, l := range locales {
+
+		var m LocaleMatch
+		if localeLike == l.IETF {
+			m.KeyType = LocaleKeyEnumIETF
+		} else if localeLike == l.Iso639_3 {
+			m.KeyType = LocaleKeyEnumISO3
+		} else if localeLike == l.Iso639_2 {
+			m.KeyType = LocaleKeyEnumISO2
+		} else if localeLike == l.Iso639_1 {
+			m.KeyType = LocaleKeyEnumISO1
+		}
+		if m.KeyType.Name == "" {
+			continue
+		}
+		m.Locale = l
+		fmt.Println("jooooo", m.KeyType)
+
+		matches = append(matches, m)
+	}
+	return matches
+}
+
+type LocaleMatch struct {
+	types.Locale
+	KeyType LocaleKeyEnum
+}
 
 func addi18nnode(c types.ExtendedCategory, localeID string) (I18N, error) {
 	node := I18N{
