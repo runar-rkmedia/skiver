@@ -15,6 +15,7 @@ import (
 	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/requestContext"
 	"github.com/runar-rkmedia/skiver/types"
+	"github.com/runar-rkmedia/skiver/utils"
 )
 
 var (
@@ -276,8 +277,7 @@ func EndpointsHandler(
 				kind := getStringSliceIndex(paths, 1)
 				projectLike := getStringSliceIndex(paths, 2)
 				localeLike := getStringSliceIndex(paths, 3)
-				q := r.URL.Query()
-				dry := q.Has("dry")
+				dry := utils.HasDryRun(r)
 				var input map[string]interface{}
 				switch kind {
 				case "":
