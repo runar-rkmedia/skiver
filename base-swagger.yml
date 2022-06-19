@@ -586,7 +586,10 @@ paths:
           type: string
           required: true
           description: >
-            The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+            To be visible anonomously, the organization-id should be provided. 
+
+            If you want to use the logged in users organization for this, specify `me` instead. This special key is set here to make it clear from the url 
+            thaat this requires login.
         - in: query
           name: format
           required: false

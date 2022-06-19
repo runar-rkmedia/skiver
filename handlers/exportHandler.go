@@ -176,8 +176,18 @@ func GetExport(
 		params := GetParams(r)
 		orgKey := params.ByName("org")
 		projectKey := params.ByName("project")
-		// This check will be removed lated on
-		if strings.Contains(orgKey, "p=") {
+		// If orgKey is exclicidly set, use the current user's organization.
+		// We could of course allow omiting the the org in this case, but this is a source for production-errors for clients
+		// if they use that route for customers, in the belief that that url would be viewable anonoumously.
+		if orgKey == "me" {
+			session, err := GetRequestSession(r)
+			if err != nil {
+				return nil, err
+			}
+			orgKey = session.Organization.ID
+
+			// This check will be removed lated on
+		} else if strings.Contains(orgKey, "p=") {
 			orgKey = ""
 		}
 
