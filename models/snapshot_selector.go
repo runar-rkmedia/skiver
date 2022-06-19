@@ -27,6 +27,8 @@ type SnapshotSelector struct {
 	// tag
 	// Max Length: 36
 	Tag string `json:"tag,omitempty"`
+	// If proviced, will use this value for diffing, instead of looking up the the project and project-tag
+	Raw interface{}
 }
 
 // Validate validates this snapshot selector

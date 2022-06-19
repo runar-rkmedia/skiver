@@ -21,21 +21,32 @@ func GetDiff(exportCache Cache) AppHandler {
 		if areEqaul(*input.A, *input.B) {
 			return nil, NewApiError("Cannot diff with equal objects", http.StatusBadRequest, string(requestContext.CodeErrInputValidation))
 		}
-		a, _, err := getExport(rc.L, exportCache, rc.Context.DB, importexport.ExportOptions{
-			Project: *input.A.ProjectID,
-			Tag:     input.A.Tag,
-			Format:  input.Format,
-		})
-		if err != nil {
-			return nil, err
+		var a interface{}
+		var b interface{}
+
+		if input.A.Raw == nil {
+			a, _, err = getExport(rc.L, exportCache, rc.Context.DB, importexport.ExportOptions{
+				Project: *input.A.ProjectID,
+				Tag:     input.A.Tag,
+				Format:  input.Format,
+			})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			a = input.A.Raw
 		}
-		b, _, err := getExport(rc.L, exportCache, rc.Context.DB, importexport.ExportOptions{
-			Project: *input.B.ProjectID,
-			Tag:     input.B.Tag,
-			Format:  input.Format,
-		})
-		if err != nil {
-			return nil, err
+		if input.B.Raw == nil {
+			b, _, err = getExport(rc.L, exportCache, rc.Context.DB, importexport.ExportOptions{
+				Project: *input.B.ProjectID,
+				Tag:     input.B.Tag,
+				Format:  input.Format,
+			})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			b = input.B.Raw
 		}
 
 		return utils.NewProjectDiff(a, b, input)
