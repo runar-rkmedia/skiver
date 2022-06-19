@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/r3labs/diff/v2"
 	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/skiver/importexport"
 	"github.com/runar-rkmedia/skiver/models"
@@ -71,6 +72,7 @@ type Updates struct {
 
 // TODO: Reevaluate this structure.
 type ImportResult struct {
+	Diff      diff.Changelog               `json:"diff,omitempty"`
 	Changes   Updates                      `json:"changes,omitempty"`
 	ChangeSet []importexport.ChangeRequest `json:"change_set,omitempty"`
 	Imp       importexport.Import          `json:"imp,omitempty"`
@@ -143,7 +145,16 @@ func ImportDescriptionsIntoProject(l logger.AppLogger, db types.Storage, created
 
 	return &imp, nil
 }
-func ImportIntoProject(l logger.AppLogger, db types.Storage, kind string, createdBy string, project types.Project, localeLike string, dry bool, input map[string]interface{}) (*ImportResult, *Error) {
+func ImportIntoProject(
+	l logger.AppLogger,
+	db types.Storage,
+	kind string,
+	createdBy string,
+	project types.Project,
+	localeLike string,
+	dry bool,
+	input map[string]interface{},
+) (*ImportResult, *Error) {
 	switch kind {
 	case "":
 		return nil, NewError("empty value for kind, allowed values: i18n, describe, auto", requestContext.CodeErrInputValidation)
@@ -158,51 +169,95 @@ func ImportIntoProject(l logger.AppLogger, db types.Storage, kind string, create
 	if err != nil {
 		return nil, NewError("failed to get locales", requestContext.CodeErrLocale).AddError(err)
 	}
+
+	var localeMatches []importexport.LocaleMatch
+	localeKey := importexport.LocaleKeyEnumIETF
 	var locale types.Locale
+
 	if localeLike != "" {
-		var matches []types.Locale
-		for _, l := range locales {
-			if localeLike == l.IETF ||
-				localeLike == l.Iso639_3 ||
-				localeLike == l.Iso639_2 ||
-				localeLike == l.Iso639_1 {
-				matches = append(matches, l)
-			}
-		}
-		if len(matches) > 1 {
-			ietfs := make([]string, len(matches))
-			for i, m := range matches {
+		localeMatches = importexport.InferLocales(localeLike, locales)
+		if len(localeMatches) > 1 {
+			ietfs := make([]string, len(localeMatches))
+			for i, m := range localeMatches {
 				ietfs[i] = m.IETF
 			}
-			return nil, NewError(fmt.Sprintf("The provided locale could not match uniquely against a locale. Try being a bit more specific, for instance %s", ietfs), "Locale:NonUniqueMatch", map[string]interface{}{"possibleMatches": matches, "mostSpecific": ietfs})
+			return nil, NewError(fmt.Sprintf("The provided locale could not match uniquely against a locale. Try being a bit more specific, for instance %s", ietfs),
+				"Locale:NonUniqueMatch", map[string]interface{}{"possibleMatches": localeMatches, "mostSpecific": ietfs})
 		}
-		if len(matches) == 0 {
+		if len(localeMatches) == 0 {
 			return nil, NewError("The provided locale did not match any of the known locales", "Locale:NonMatch")
 		}
-		locale = matches[0]
-
+		locale = localeMatches[0].Locale
+	} else {
+		// This will be a possible multi-locale-import
+		for loc := range input {
+			locMatch := importexport.InferLocales(loc, locales)
+			if len(locMatch) == 0 {
+				var suggestionOptions []string
+				for _, locale := range locales {
+					suggestionOptions = append(suggestionOptions, locale.IETF)
+					suggestionOptions = append(suggestionOptions, locale.Iso639_3)
+					suggestionOptions = append(suggestionOptions, locale.Iso639_2)
+					suggestionOptions = append(suggestionOptions, locale.Iso639_1)
+				}
+				suggestions := utils.SuggestionsFor(loc, suggestionOptions, 0, 0)
+				return nil, NewError(fmt.Sprintf("Failed to match the key %s to any locale. %s", loc, suggestions), "import:multi-locale-mismatch", suggestions)
+			}
+			localeMatches = append(localeMatches, locMatch...)
+		}
 	}
-	localesSlice := make([]types.Locale, len(locales))
+	if len(localeMatches) == 0 {
+		return nil, NewError("No loSp", "import:no-locales-matched")
+	}
+	localeKey = localeMatches[0].KeyType
+	localesSorted := make([]types.Locale, len(locales))
 	localeKeys := utils.SortedMapKeys(locales)
 	for i, k := range localeKeys {
-		localesSlice[i] = locales[k]
+		localesSorted[i] = locales[k]
 	}
 	base := types.Project{}
 	base.ID = project.ID
 	base.CreatedBy = createdBy
 	base.OrganizationID = project.OrganizationID
-	imp, warnings, err := importexport.ImportI18NTranslation(localesSlice, &locale, base, types.CreatorSourceImport, input)
+	imp, warnings, err := importexport.ImportI18NTranslation(localesSorted, &locale, base, types.CreatorSourceImport, input)
 	if err != nil {
 		return nil, NewError("failed to import", requestContext.CodeErrImport).AddError(err)
 	}
 	if imp == nil {
 		return nil, NewError("Import resulted in null", requestContext.CodeErrImport)
 	}
+	matchedLocales := make([]string, len(localeMatches))
+	for i, m := range localeMatches {
+		matchedLocales[i] = m.KeyType.FromLocale(m.Locale)
+	}
 
-	extendOptions := types.ExtendOptions{ByKeyLike: true}
+	extendOptions := types.ExtendOptions{
+		ByKeyLike: true,
+	}
+	if len(matchedLocales) > 0 {
+		extendOptions.LocaleFilterFunc = func(locale types.Locale) bool {
+			for _, m := range localeMatches {
+				if m.ID == locale.ID {
+					return true
+				}
+			}
+			return false
+		}
+	}
 	ex, err := project.Extend(db, extendOptions)
 	if err != nil {
 		return nil, NewError("failed during extending project", requestContext.CodeErrProject).AddError(err)
+	}
+
+	existingI18n, err := importexport.ExportExtendedProjectToI18Next(l, ex, localeKeys, localeKey)
+	if err != nil {
+		l.Error().Err(err).Msg("Failed to create export of extended project for comparioson")
+		return nil, NewError("Failed to create export of extended project for comparioson", "import:exportExtendedFoDiff").AddError(err)
+	}
+
+	diff, err := DiffOfObjects(existingI18n, input)
+	if err != nil {
+		return nil, NewError("Failed to create diff during import", "import:DiffOfObjects").AddError(err)
 	}
 
 	updates := Updates{
@@ -321,6 +376,7 @@ func ImportIntoProject(l logger.AppLogger, db types.Storage, kind string, create
 	}
 
 	out := ImportResult{
+		Diff:     diff,
 		Changes:  updates,
 		Imp:      *imp,
 		Ex:       ex,

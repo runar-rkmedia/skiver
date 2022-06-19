@@ -143,7 +143,8 @@ func getExport(l logger.AppLogger, exportCache Cache, db types.Storage, opt impo
 					}
 				}
 				return false
-			}})
+			},
+		})
 
 	}
 	if err != nil {
