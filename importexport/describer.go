@@ -102,7 +102,7 @@ func DescribeProjectContent(p types.ExtendedProject, src map[string]interface{})
 		}
 		sorted := utils.SortedMapKeys(translations)
 		suggestions := utils.SuggestionsFor(k, sorted, 0, 0)
-		return changeSet, fmt.Errorf("failed to locate a category or translation for key '%s' in project '%s' (%s). Did you perhaps mean one of these?: %v", k, p.Title, p.ID, suggestions.ToStringSlice())
+		return changeSet, fmt.Errorf("failed to locate a category or translation for key '%s' in project '%s' (%s). %s", k, p.Title, p.ID, suggestions)
 	}
 
 	return changeSet, nil

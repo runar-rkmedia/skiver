@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 )
@@ -35,13 +36,25 @@ func (s Suggestions) ToStringSlice() []string {
 	}
 	return slice
 }
+func (s Suggestions) String() string {
+	if s.Len() == 0 {
+		return ""
+	}
+	return fmt.Sprintf("Did you perhaps mean one of: '%s'", strings.Join(s.ToStringSlice(), "', '"))
+
+}
 
 func SuggestionsFor(typedName string, stringSlice []string, maxDistance int, maxItems int) Suggestions {
 	if maxDistance == 0 {
 		maxDistance = 3
 	}
 	suggestions := Suggestions{}
+	uniqueMap := map[string]struct{}{}
 	for i, s := range stringSlice {
+		if _, ok := uniqueMap[s]; ok {
+			continue
+		}
+		uniqueMap[s] = struct{}{}
 		levenshteinDistance := ld(typedName, s, true)
 		suggestByLevenshtein := levenshteinDistance <= maxDistance
 		if suggestByLevenshtein {
