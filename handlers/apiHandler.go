@@ -317,7 +317,7 @@ func EndpointsHandler(
 					return
 				}
 
-				out, Err := ImportIntoProject(ctx.L, ctx.DB, kind, session.User.ID, *project, localeLike, dry, input)
+				out, Err := ImportIntoProject(ctx.L, ctx.DB, kind, session.User.ID, *project, localeLike, input, ImportIntoProjectOptions{NoDryRun: !dry})
 				if Err != nil {
 					rc.WriteErr(Err, Err.GetCode())
 					return

@@ -80,7 +80,7 @@ nb:
 			var j map[string]interface{}
 			err = internal.YamlUnmarshalAllowTabs(tt.fields, &j)
 			testza.AssertNoError(t, err)
-			impo, err := ImportIntoProject(l, bb, "i18n", base.CreatedBy, project, "", false, j)
+			impo, err := ImportIntoProject(l, bb, "i18n", base.CreatedBy, project, "", j, ImportIntoProjectOptions{NoDryRun: true})
 			testza.AssertNil(t, err)
 			testza.AssertNotNil(t, impo)
 			internal.MatchSnapshot(t, "2-import.yaml", impo.Imp)

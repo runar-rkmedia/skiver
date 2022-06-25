@@ -145,6 +145,12 @@ func ImportDescriptionsIntoProject(l logger.AppLogger, db types.Storage, created
 
 	return &imp, nil
 }
+
+type ImportIntoProjectOptions struct {
+	NoDryRun    bool
+	ErrOnNoDiff bool
+}
+
 func ImportIntoProject(
 	l logger.AppLogger,
 	db types.Storage,
@@ -152,9 +158,11 @@ func ImportIntoProject(
 	createdBy string,
 	project types.Project,
 	localeLike string,
-	dry bool,
 	input map[string]interface{},
+	opts ...ImportIntoProjectOptions,
 ) (*ImportResult, *Error) {
+	options := utils.GetFirst(opts)
+	dry := !options.NoDryRun
 	switch kind {
 	case "":
 		return nil, NewError("empty value for kind, allowed values: i18n, describe, auto", requestContext.CodeErrInputValidation)
@@ -250,13 +258,13 @@ func ImportIntoProject(
 	}
 
 	existingI18n, err := importexport.ExportExtendedProjectToI18Next(l, ex, localeKeys, localeKey)
-	if err != nil {
+	if err != nil && options.ErrOnNoDiff {
 		l.Error().Err(err).Msg("Failed to create export of extended project for comparioson")
 		return nil, NewError("Failed to create export of extended project for comparioson", "import:exportExtendedFoDiff").AddError(err)
 	}
 
 	diff, err := DiffOfObjects(existingI18n, input)
-	if err != nil {
+	if err != nil && options.ErrOnNoDiff {
 		return nil, NewError("Failed to create diff during import", "import:DiffOfObjects").AddError(err)
 	}
 
