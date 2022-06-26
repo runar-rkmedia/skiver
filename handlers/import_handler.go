@@ -3,12 +3,14 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/r3labs/diff/v2"
 	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/skiver/importexport"
 	"github.com/runar-rkmedia/skiver/models"
 	"github.com/runar-rkmedia/skiver/requestContext"
+	"github.com/runar-rkmedia/skiver/sourcemap"
 	"github.com/runar-rkmedia/skiver/types"
 	"github.com/runar-rkmedia/skiver/utils"
 )
@@ -72,12 +74,17 @@ type Updates struct {
 
 // TODO: Reevaluate this structure.
 type ImportResult struct {
-	Diff      diff.Changelog               `json:"diff,omitempty"`
+	Diff      []DiffChangeWithOffset       `json:"diff,omitempty"`
 	Changes   Updates                      `json:"changes,omitempty"`
 	ChangeSet []importexport.ChangeRequest `json:"change_set,omitempty"`
 	Imp       importexport.Import          `json:"imp,omitempty"`
 	Ex        types.ExtendedProject        `json:"ex,omitempty"`
 	Warnings  []importexport.Warning       `json:"warnings,omitempty"`
+}
+
+type DiffChangeWithOffset struct {
+	diff.Change
+	Source *sourcemap.SpanToken `json:"source,omitempty"`
 }
 
 func ImportDescriptionsIntoProject(l logger.AppLogger, db types.Storage, createdBy string, project types.Project, dry bool, input map[string]interface{}) (*ImportResult, *Error) {
@@ -158,9 +165,16 @@ func ImportIntoProject(
 	createdBy string,
 	project types.Project,
 	localeLike string,
-	input map[string]interface{},
+	// input map[string]interface{},
+	body []byte,
+	r *http.Request,
 	opts ...ImportIntoProjectOptions,
 ) (*ImportResult, *Error) {
+	var input map[string]interface{}
+	err := requestContext.UnmarshalRequestBytes(r, body, &input)
+	if err != nil {
+		return nil, NewError("failed to unmarshal body", "unmarshal").AddError(err)
+	}
 	options := utils.GetFirst(opts)
 	dry := !options.NoDryRun
 	switch kind {
@@ -263,9 +277,62 @@ func ImportIntoProject(
 		return nil, NewError("Failed to create export of extended project for comparioson", "import:exportExtendedFoDiff").AddError(err)
 	}
 
+	var diffOffsets []DiffChangeWithOffset
 	diff, err := DiffOfObjects(existingI18n, input)
-	if err != nil && options.ErrOnNoDiff {
-		return nil, NewError("Failed to create diff during import", "import:DiffOfObjects").AddError(err)
+	if err != nil {
+
+		l.Warn().Err(err).Msg("Failed to create diff during import")
+		if options.ErrOnNoDiff {
+			return nil, NewError("Failed to create diff during import", "import:DiffOfObjects").AddError(err)
+		}
+	}
+	contentType := r.Header.Get("Content-Type")
+	lenDiff := len(diff)
+	if lenDiff > 0 {
+		diffOffsets = make([]DiffChangeWithOffset, lenDiff)
+		if !sourcemap.SourceMapperSupports(contentType) {
+			for i := 0; i < lenDiff; i++ {
+				diffOffsets[i] = DiffChangeWithOffset{
+					diff[i],
+					nil,
+				}
+
+			}
+		} else {
+
+			// Add a mapping for each diff to the source-input
+
+			smap, err := sourcemap.MapToSource(contentType, string(body))
+			if err != nil {
+				l.Warn().Err(err).Msg("NewTokenizer failed")
+				if options.ErrOnNoDiff {
+					return nil, NewError("Failed to create sourcemap for diff during import", "import:SourceMap").AddError(err)
+				}
+
+			} else {
+				// sorted := utils.SortedMapKeys(smap)
+				for i := 0; i < lenDiff; i++ {
+					path := strings.Join(diff[i].Path, ".")
+					spanToken, ok := smap[path]
+					if !ok {
+						warnings = append(warnings, importexport.Warning{
+							Message: "Failed to locate the linenumber for this path in the source",
+							Error:   nil,
+							Details: map[string]interface{}{
+								"path": path,
+							},
+							Level: importexport.WarningLevelMinor,
+							Kind:  "sourcemap",
+						})
+					}
+					diffOffsets[i] = DiffChangeWithOffset{
+						diff[i],
+						&spanToken,
+					}
+
+				}
+			}
+		}
 	}
 
 	updates := Updates{
@@ -384,7 +451,7 @@ func ImportIntoProject(
 	}
 
 	out := ImportResult{
-		Diff:     diff,
+		Diff:     diffOffsets,
 		Changes:  updates,
 		Imp:      *imp,
 		Ex:       ex,

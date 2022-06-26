@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/r3labs/diff/v2"
-	"github.com/runar-rkmedia/go-common/logger"
 	"github.com/runar-rkmedia/skiver/models"
 )
 
@@ -19,8 +18,6 @@ func NewProjectDiff(a, b any, input models.DiffSnapshotInput) (*ProjectDiffRespo
 	}
 	A := NewBinaryMetaFromBytes(aJson)
 	B := NewBinaryMetaFromBytes(bJson)
-
-	logger.Debug("sd", A)
 
 	pd := &ProjectDiffResponse{
 		A: ProjectStats{BinaryMeta: A},

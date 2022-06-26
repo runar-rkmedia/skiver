@@ -278,7 +278,6 @@ func EndpointsHandler(
 				projectLike := getStringSliceIndex(paths, 2)
 				localeLike := getStringSliceIndex(paths, 3)
 				dry := utils.HasDryRun(r)
-				var input map[string]interface{}
 				switch kind {
 				case "":
 					rc.WriteError("empty value for kind, allowed values: i18n, describe, auto", requestContext.CodeErrInputValidation)
@@ -297,11 +296,6 @@ func EndpointsHandler(
 					rc.WriteError("Expected body to be present", requestContext.CodeErrInputValidation)
 					return
 				}
-				err := rc.Unmarshal(body, &input)
-				if err != nil {
-					rc.WriteErr(err, requestContext.CodeErrUnmarshal)
-					return
-				}
 				project, err := ctx.DB.GetProjectByIDOrShortName(projectLike)
 				if err != nil {
 					rc.WriteErr(err, requestContext.CodeErrProject)
@@ -317,7 +311,7 @@ func EndpointsHandler(
 					return
 				}
 
-				out, Err := ImportIntoProject(ctx.L, ctx.DB, kind, session.User.ID, *project, localeLike, input, ImportIntoProjectOptions{NoDryRun: !dry})
+				out, Err := ImportIntoProject(ctx.L, ctx.DB, kind, session.User.ID, *project, localeLike, body, r, ImportIntoProjectOptions{NoDryRun: !dry})
 				if Err != nil {
 					rc.WriteErr(Err, Err.GetCode())
 					return

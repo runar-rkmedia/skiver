@@ -1,6 +1,7 @@
 package sourcemap
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/alecthomas/chroma"
@@ -20,6 +21,36 @@ func JsonKeys(tokens []Token) map[string]SpanToken {
 	jsonKeys(keyMap, tokens, []string{}, 0, -1)
 	return keyMap
 
+}
+
+func SourceMapperSupports(contentType string) bool {
+	switch contentType {
+	case "json", "application/json", "application/json; charset=utf-8":
+		return true
+	}
+	return false
+}
+func MapToSourceFromTokens(contentType string, tokens []Token) (map[string]SpanToken, error) {
+	if !SourceMapperSupports(contentType) {
+		return nil, fmt.Errorf("contentType not supported for SourceMapper: %s", contentType)
+	}
+	return JsonKeys(tokens), nil
+}
+func MapToSource(contentType string, content string) (map[string]SpanToken, error) {
+	if !SourceMapperSupports(contentType) {
+		return nil, fmt.Errorf("contentType not supported for SourceMapper: %s", contentType)
+	}
+	tokenizer, err := NewTokenizer("import.json", content)
+	if err != nil {
+		return nil, err
+	}
+	var tokens []Token
+	tokenizer.TokensWithOffsets(func(token Token) bool {
+		tokens = append(tokens, token)
+		return false
+	})
+
+	return MapToSourceFromTokens(contentType, tokens)
 }
 
 func jsonKeys(keyMap map[string]SpanToken, tokens []Token, prefix []string, index int, arrayIndex int) int {

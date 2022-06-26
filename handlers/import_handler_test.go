@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"fmt"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/MarvinJWendt/testza"
@@ -78,9 +81,13 @@ nb:
 
 			// 2. Import from input
 			var j map[string]interface{}
+			s := strings.ReplaceAll(tt.fields, "\t", "  ")
 			err = internal.YamlUnmarshalAllowTabs(tt.fields, &j)
 			testza.AssertNoError(t, err)
-			impo, err := ImportIntoProject(l, bb, "i18n", base.CreatedBy, project, "", j, ImportIntoProjectOptions{NoDryRun: true})
+			// err = yaml.Unmarshal([]byte(s), &j)
+			r, _ := http.NewRequest(http.MethodPost, "", strings.NewReader(s))
+			r.Header.Set("Content-Type", "text/vnd.yaml")
+			impo, err := ImportIntoProject(l, bb, "i18n", base.CreatedBy, project, "", []byte(s), r, ImportIntoProjectOptions{NoDryRun: true})
 			testza.AssertNil(t, err)
 			testza.AssertNotNil(t, impo)
 			internal.MatchSnapshot(t, "2-import.yaml", impo.Imp)
@@ -119,6 +126,7 @@ nb:
 			testza.AssertNoError(t, err)
 
 			toMap := export.ToMap()
+			fmt.Println(j)
 			if err := internal.Compare("Export of result of import should match import-input", toMap, j); err != nil {
 				t.Error(err)
 			}

@@ -90,7 +90,6 @@ func InferLocales(localeLike string, locales map[string]types.Locale) []LocaleMa
 			continue
 		}
 		m.Locale = l
-		fmt.Println("jooooo", m.KeyType)
 
 		matches = append(matches, m)
 	}
