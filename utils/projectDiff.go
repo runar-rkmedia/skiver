@@ -9,7 +9,6 @@ import (
 )
 
 func NewProjectDiff(a, b any, input models.DiffSnapshotInput) (*ProjectDiffResponse, error) {
-	var changelog diff.Changelog
 	aJson, err := json.Marshal(a)
 	if err != nil {
 		return nil, err
@@ -23,18 +22,16 @@ func NewProjectDiff(a, b any, input models.DiffSnapshotInput) (*ProjectDiffRespo
 
 	logger.Debug("sd", A)
 
+	pd := &ProjectDiffResponse{
+		A: ProjectStats{BinaryMeta: A},
+		B: ProjectStats{BinaryMeta: B},
+	}
 	if !A.Equal(B) {
 		c, err := diff.Diff(a, b, diff.DisableStructValues(), diff.AllowTypeMismatch(true))
 		if err != nil {
 			return nil, err
 		}
-		changelog = c
-	}
-	// return map[string]interface{}{"diff": changelog, "sizeA": sizeA, "sizeB": sizeB, "hashA": hashA, "hashB": hashB}, nil
-	pd := &ProjectDiffResponse{
-		Diff: changelog,
-		A:    ProjectStats{BinaryMeta: A},
-		B:    ProjectStats{BinaryMeta: B},
+		pd.Diff = c
 	}
 	if input.A != nil {
 		pd.A.Tag = input.A.Tag
