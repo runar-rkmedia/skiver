@@ -62,10 +62,10 @@ type Offset struct {
 }
 
 type SpanToken struct {
-	Path []string
+	Path *[]string `json:"path,omitempty"`
 	// not ready for use yet
-	End *Offset `json:"-"`
-	Token
+	End   *Offset `json:"-"`
+	Token `json:"token"`
 }
 
 func trimOne(s string, cut string) string {

@@ -75,10 +75,7 @@ type Updates struct {
 // TODO: Reevaluate this structure.
 type ImportResult struct {
 	Diff      []DiffChangeWithOffset       `json:"diff,omitempty"`
-	Changes   Updates                      `json:"changes,omitempty"`
 	ChangeSet []importexport.ChangeRequest `json:"change_set,omitempty"`
-	Imp       importexport.Import          `json:"imp,omitempty"`
-	Ex        types.ExtendedProject        `json:"ex,omitempty"`
 	Warnings  []importexport.Warning       `json:"warnings,omitempty"`
 }
 
@@ -278,22 +275,28 @@ func ImportIntoProject(
 	}
 
 	var diffOffsets []DiffChangeWithOffset
-	diff, err := DiffOfObjects(existingI18n, input)
+	changelog, err := DiffOfObjects(existingI18n, input)
 	if err != nil {
-
 		l.Warn().Err(err).Msg("Failed to create diff during import")
 		if options.ErrOnNoDiff {
 			return nil, NewError("Failed to create diff during import", "import:DiffOfObjects").AddError(err)
 		}
 	}
+	// When importing, it is not supported to delete items, so we remove all diff-lines that are deletes
+	for i := len(changelog) - 1; i >= 0; i-- {
+		if changelog[i].Type == diff.DELETE {
+			changelog = append(changelog[:i], changelog[i+1:]...)
+		}
+
+	}
 	contentType := r.Header.Get("Content-Type")
-	lenDiff := len(diff)
+	lenDiff := len(changelog)
 	if lenDiff > 0 {
 		diffOffsets = make([]DiffChangeWithOffset, lenDiff)
 		if !sourcemap.SourceMapperSupports(contentType) {
 			for i := 0; i < lenDiff; i++ {
 				diffOffsets[i] = DiffChangeWithOffset{
-					diff[i],
+					changelog[i],
 					nil,
 				}
 
@@ -312,7 +315,7 @@ func ImportIntoProject(
 			} else {
 				// sorted := utils.SortedMapKeys(smap)
 				for i := 0; i < lenDiff; i++ {
-					path := strings.Join(diff[i].Path, ".")
+					path := strings.Join(changelog[i].Path, ".")
 					spanToken, ok := smap[path]
 					if !ok {
 						warnings = append(warnings, importexport.Warning{
@@ -326,9 +329,11 @@ func ImportIntoProject(
 						})
 					}
 					diffOffsets[i] = DiffChangeWithOffset{
-						diff[i],
+						changelog[i],
 						&spanToken,
 					}
+					diffOffsets[i].Source.Path = nil
+					diffOffsets[i].Path = nil
 
 				}
 			}
@@ -452,9 +457,6 @@ func ImportIntoProject(
 
 	out := ImportResult{
 		Diff:     diffOffsets,
-		Changes:  updates,
-		Imp:      *imp,
-		Ex:       ex,
 		Warnings: warnings,
 	}
 	return &out, nil

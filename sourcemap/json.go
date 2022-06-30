@@ -71,7 +71,7 @@ func jsonKeys(keyMap map[string]SpanToken, tokens []Token, prefix []string, inde
 			key := currentPath.String()
 			keyMap[key] = SpanToken{
 				Token: tok,
-				Path:  currentPath.path,
+				Path:  &currentPath.path,
 			}
 		case arrayIndex >= 0 && (IsValueLike(tok.Token)):
 			currentPath.AddArrayElement()
@@ -79,7 +79,7 @@ func jsonKeys(keyMap map[string]SpanToken, tokens []Token, prefix []string, inde
 			arrayIndex++
 			keyMap[key] = SpanToken{
 				Token: tok,
-				Path:  currentPath.path,
+				Path:  &currentPath.path,
 			}
 		case tok.Type == chroma.Punctuation:
 			switch tok.Value {
@@ -90,7 +90,7 @@ func jsonKeys(keyMap map[string]SpanToken, tokens []Token, prefix []string, inde
 					arrayIndex++
 					keyMap[key] = SpanToken{
 						Token: tok,
-						Path:  currentPath.path,
+						Path:  &currentPath.path,
 					}
 				}
 				newPath := currentPath.path
@@ -109,7 +109,7 @@ func jsonKeys(keyMap map[string]SpanToken, tokens []Token, prefix []string, inde
 					arrayIndex++
 					keyMap[key] = SpanToken{
 						Token: tok,
-						Path:  currentPath.path,
+						Path:  &currentPath.path,
 					}
 				}
 				newPath := currentPath.path
