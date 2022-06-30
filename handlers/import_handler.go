@@ -74,9 +74,14 @@ type Updates struct {
 
 // TODO: Reevaluate this structure.
 type ImportResult struct {
-	Diff      []DiffChangeWithOffset       `json:"diff,omitempty"`
+	Diff      ImportDiff                   `json:"diff,omitempty"`
 	ChangeSet []importexport.ChangeRequest `json:"change_set,omitempty"`
 	Warnings  []importexport.Warning       `json:"warnings,omitempty"`
+}
+
+type ImportDiff struct {
+	Updates   map[string]DiffChangeWithOffset `json:"updates,omitempty"`
+	Creations map[string]DiffChangeWithOffset `json:"creations,omitempty"`
 }
 
 type DiffChangeWithOffset struct {
@@ -274,7 +279,10 @@ func ImportIntoProject(
 		return nil, NewError("Failed to create export of extended project for comparioson", "import:exportExtendedFoDiff").AddError(err)
 	}
 
-	var diffOffsets []DiffChangeWithOffset
+	diffOffsets := ImportDiff{
+		Updates:   make(map[string]DiffChangeWithOffset),
+		Creations: make(map[string]DiffChangeWithOffset),
+	}
 	changelog, err := DiffOfObjects(existingI18n, input)
 	if err != nil {
 		l.Warn().Err(err).Msg("Failed to create diff during import")
@@ -292,12 +300,21 @@ func ImportIntoProject(
 	contentType := r.Header.Get("Content-Type")
 	lenDiff := len(changelog)
 	if lenDiff > 0 {
-		diffOffsets = make([]DiffChangeWithOffset, lenDiff)
+		// diffOffsets = make([]DiffChangeWithOffset, lenDiff)
 		if !sourcemap.SourceMapperSupports(contentType) {
 			for i := 0; i < lenDiff; i++ {
-				diffOffsets[i] = DiffChangeWithOffset{
+				path := strings.Join(changelog[i].Path, ".")
+				d := DiffChangeWithOffset{
 					changelog[i],
 					nil,
+				}
+				switch changelog[i].Type {
+				case diff.UPDATE:
+					diffOffsets.Updates[path] = d
+				case diff.CREATE:
+					diffOffsets.Creations[path] = d
+				default:
+					panic(fmt.Errorf("Unhandled diff-type: %s", changelog[i].Type))
 				}
 
 			}
@@ -328,12 +345,20 @@ func ImportIntoProject(
 							Kind:  "sourcemap",
 						})
 					}
-					diffOffsets[i] = DiffChangeWithOffset{
+					d := DiffChangeWithOffset{
 						changelog[i],
 						&spanToken,
 					}
-					diffOffsets[i].Source.Path = nil
-					diffOffsets[i].Path = nil
+					d.Source.Path = nil
+					d.Path = nil
+					switch changelog[i].Type {
+					case diff.UPDATE:
+						diffOffsets.Updates[path] = d
+					case diff.CREATE:
+						diffOffsets.Creations[path] = d
+					default:
+						panic(fmt.Errorf("Unhandled diff-type: %s", changelog[i].Type))
+					}
 
 				}
 			}
