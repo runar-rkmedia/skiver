@@ -33,6 +33,7 @@ type SessionManager interface {
 	GetSession(token string) (s types.Session, err error)
 	SessionsForUser(userId string) (s []types.Session)
 	ClearAllSessionsForUser(userId string) error
+	ClearSessionById(token string) error
 	TTL() time.Duration
 }
 
@@ -95,12 +96,14 @@ func EndpointsHandler(
 				details := map[string]any{"authSource": authSource}
 				if authSource == "cookie" {
 					// Authentication failed, logout the user
-					err := logout(session, userSessions, rw)
-					if err != nil {
-						rc.WriteError(err.Error(), requestContext.CodeErrAuthoriziationFailed, details)
-						return
+					if session != nil {
+						if err := logout(session, userSessions, rw); err != nil {
+							rc.WriteError(err.Error(), requestContext.CodeErrAuthoriziationFailed, details)
+							return
+						}
+					} else {
+						writeLogoutCookie(rw)
 					}
-
 				}
 				rc.WriteError("The authorization provided was invalid", requestContext.CodeErrAuthoriziationFailed, details)
 				return

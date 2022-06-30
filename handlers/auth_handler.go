@@ -127,9 +127,9 @@ func logout(session *types.Session, userSessions SessionManager, rw http.Respons
 
 	writeLogoutCookie(rw)
 	if session == nil || session.User.ID == "" {
-		return NewApiError("Not logged in", http.StatusBadRequest, string(requestContext.CodeErrAuthenticationRequired))
+		return NewApiError("Not logged in (cannot logout)", http.StatusBadRequest, string(requestContext.CodeErrAuthenticationRequired))
 	}
-	err := userSessions.ClearAllSessionsForUser(session.User.ID)
+	err := userSessions.ClearSessionById(session.Token)
 	if err != nil {
 		return NewApiError("Logout failed", http.StatusBadGateway, string(CodeInternalServerError))
 	}

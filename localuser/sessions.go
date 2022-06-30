@@ -111,7 +111,7 @@ func (us UserSessionInMemory) newSession(token string, user types.User, organiza
 func (us UserSessionInMemory) TTL() time.Duration {
 	return us.UserSessionOptions.TTL
 }
-func (us UserSessionInMemory) ClearSession(token string) error {
+func (us UserSessionInMemory) ClearSessionById(token string) error {
 	_, err := us.GetSession(token)
 	us.c.Delete(token)
 	if err != nil && err == ErrNotFound {
