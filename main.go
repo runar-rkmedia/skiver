@@ -602,13 +602,13 @@ func main() {
 		sync.RWMutex
 	}{
 		types.ServerInfo{
-			ServerStartedAt: serverStartTime,
-			GitHash:         commit,
-			Version:         version,
-			BuildDate:       buildDate,
-			MinCliVersion:   "v0.6.0",
-			Instance:        getInstanceHash(),
-			HostHash:        gethostNameHash(),
+			ServerStartedAt:       serverStartTime,
+			GitHash:               commit,
+			Version:               version,
+			BuildDate:             buildDate,
+			CliVersionConstraints: ">=v0.6.0",
+			Instance:              getInstanceHash(),
+			HostHash:              gethostNameHash(),
 		},
 		sync.RWMutex{},
 	}
@@ -802,6 +802,13 @@ func main() {
 		return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			startTime := time.Now()
 			debug := l.HasDebug()
+			switch r.Method {
+
+			case http.MethodPost, http.MethodDelete, http.MethodPut, http.MethodPatch:
+				if err := handlers.ValidateClientVersion(rw, r); err != nil {
+					return
+				}
+			}
 			var err error
 			defer func() {
 				since := time.Since(startTime)
@@ -972,12 +979,13 @@ func main() {
 			return nil
 		}}))
 	router.GET("/api/translation/", pipeline("GetTranslation", handlers.GetTranslations()))
-	router.GET("/api/serverInfo/", pipeline("GetServerInfo", handlers.GetServerInfo(&db, func() *types.ServerInfo {
+	serverInfoRetriever := func() *types.ServerInfo {
 		info.RLock()
 		defer info.RUnlock()
 		return &info.ServerInfo
 
-	})))
+	}
+	router.GET("/api/serverInfo/", pipeline("GetServerInfo", handlers.GetServerInfo(&db, serverInfoRetriever)))
 	router.POST("/api/project/snapshot/", pipeline("PostSnapshot", handlers.PostSnapshot(uploaders), routeOptions{sessionRole: func(s types.Session, _ *http.Request) error {
 		if !s.User.CanUpdateProjects {
 			return fmt.Errorf("You are not authorized to create snapshots")

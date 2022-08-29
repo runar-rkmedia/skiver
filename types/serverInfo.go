@@ -30,7 +30,7 @@ type ServerInfo struct {
 	LatestReleaseCLI *ReleaseInfo `json:"latest_cli_release"`
 	// The minimum version of skiver-cli that can be used with this server.
 	// The is [semver](https://semver.org/)-compatible, but has a leading `v`, like `v1.2.3`
-	MinCliVersion string `json:"min_cli_version"`
+	CliVersionConstraints string `json:"cli_version_contraints,omitempty"`
 }
 
 // Server info

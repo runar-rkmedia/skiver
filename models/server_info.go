@@ -23,6 +23,10 @@ type ServerInfo struct {
 	// Format: date-time
 	BuildDate strfmt.DateTime `json:"build_date,omitempty"`
 
+	// The minimum version of skiver-cli that can be used with this server.
+	// The is [semver](https://semver.org/)-compatible, but has a leading `v`, like `v1.2.3`
+	CliVersionConstraints string `json:"cli_version_contraints,omitempty"`
+
 	// Size of database.
 	DatabaseSize int64 `json:"database_size,omitempty"`
 
@@ -37,10 +41,6 @@ type ServerInfo struct {
 
 	// Server-instance. This will change on every restart.
 	Instance string `json:"instance,omitempty"`
-
-	// The minimum version of skiver-cli that can be used with this server.
-	// The is [semver](https://semver.org/)-compatible, but has a leading `v`, like `v1.2.3`
-	MinCliVersion string `json:"min_cli_version,omitempty"`
 
 	// When the server was started
 	// Format: date-time

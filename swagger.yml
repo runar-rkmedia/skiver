@@ -1159,6 +1159,12 @@ definitions:
         format: date-time
         type: string
         x-go-name: BuildDate
+      cli_version_contraints:
+        description: |-
+          The minimum version of skiver-cli that can be used with this server.
+          The is [semver](https://semver.org/)-compatible, but has a leading `v`, like `v1.2.3`
+        type: string
+        x-go-name: CliVersionConstraints
       database_size:
         description: Size of database.
         format: int64
@@ -1183,12 +1189,6 @@ definitions:
         $ref: '#/definitions/ReleaseInfo'
       latest_release:
         $ref: '#/definitions/ReleaseInfo'
-      min_cli_version:
-        description: |-
-          The minimum version of skiver-cli that can be used with this server.
-          The is [semver](https://semver.org/)-compatible, but has a leading `v`, like `v1.2.3`
-        type: string
-        x-go-name: MinCliVersion
       server_started_at:
         description: When the server was started
         format: date-time

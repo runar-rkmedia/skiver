@@ -666,6 +666,11 @@ declare namespace ApiDef {
          */
         build_date?: string; // date-time
         /**
+         * The minimum version of skiver-cli that can be used with this server.
+         * The is [semver](https://semver.org/)-compatible, but has a leading `v`, like `v1.2.3`
+         */
+        cli_version_contraints?: string;
+        /**
          * Size of database.
          */
         database_size?: number; // int64
@@ -684,11 +689,6 @@ declare namespace ApiDef {
         instance?: string;
         latest_cli_release?: ReleaseInfo;
         latest_release?: ReleaseInfo;
-        /**
-         * The minimum version of skiver-cli that can be used with this server.
-         * The is [semver](https://semver.org/)-compatible, but has a leading `v`, like `v1.2.3`
-         */
-        min_cli_version?: string;
         /**
          * When the server was started
          */

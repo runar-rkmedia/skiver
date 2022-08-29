@@ -46,8 +46,11 @@ func EndpointsHandler(
 ) http.HandlerFunc {
 
 	return func(rw http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodDelete {
-			return
+		switch r.Method {
+		case http.MethodPost, http.MethodDelete, http.MethodPut, http.MethodPatch:
+			if err := ValidateClientVersion(rw, r); err != nil {
+				return
+			}
 		}
 		AddAccessControl(r, rw)
 
