@@ -606,6 +606,7 @@ func main() {
 			GitHash:         commit,
 			Version:         version,
 			BuildDate:       buildDate,
+			MinCliVersion:   "v0.6.0",
 			Instance:        getInstanceHash(),
 			HostHash:        gethostNameHash(),
 		},
@@ -622,32 +623,58 @@ func main() {
 
 					b, err := os.ReadFile(cacheFile)
 					if err == nil && b != nil {
-						err := json.Unmarshal(b, &info.LatestRelease)
+						var _info types.ServerInfo
+						err := json.Unmarshal(b, &_info)
+						if _info.LatestRelease == nil || _info.LatestReleaseCLI == nil {
+							os.Remove(cacheFile)
+							l.Fatal().Msg("Local cache-file did not include the inforamtion required, and it was deleted. This only occurs in local development. The local-cache-file was removed")
+						}
+						info.LatestRelease = _info.LatestRelease
+						info.LatestReleaseCLI = _info.LatestReleaseCLI
 						if err != nil {
-							l.Error().Err(err).Msg("Failed to unmarshal latest-release from cache")
+							os.Remove(cacheFile)
+							l.Fatal().Err(err).Msg("Failed to unmarshal latest-release from cache")
 						} else {
 							return
 
 						}
 					} else {
-						l.Error().Err(err).Msg("Failed to read latest-release from cache")
+						os.Remove(cacheFile)
+						l.Fatal().Err(err).Msg("Failed to read latest-release from cache")
 					}
 				}
 			}
 
 		}
+		var (
+			repoApi = "https://api.github.com/repos/runar-rkmedia/skiver"
+			repoCli = "https://api.github.com/repos/runar-rkmedia/skiver-cli"
+		)
 		ticker := time.NewTicker(time.Hour * 1)
 		for ; true; <-ticker.C {
-			r, err := types.GetLatestVersion(http.DefaultClient)
+			// Fetch the latest release of the api
+			releaseApi, err := types.GetLatestVersion(repoApi+"/releases/latest", http.DefaultClient)
 			if err != nil {
-				l.Error().Err(err).Msg("Failed to check latest release-version")
+				l.Error().Err(err).Msg("Failed to check latest release-version of api")
+				continue
+			}
+			// Fetch the latest release of the cli
+			releaseCli, err := types.GetLatestVersion(repoCli+"/releases/latest", http.DefaultClient)
+			if err != nil {
+				l.Error().Err(err).Msg("Failed to check latest release-version of cli")
 				continue
 			}
 			info.Lock()
-			info.LatestRelease = r
+			info.LatestRelease = releaseApi
+			info.LatestReleaseCLI = releaseCli
 			info.Unlock()
 			if isDev {
-				b, _ := json.Marshal(r)
+				_info := types.ServerInfo{
+					LatestRelease:    info.LatestRelease,
+					LatestReleaseCLI: info.LatestReleaseCLI,
+				}
+
+				b, _ := json.Marshal(_info)
 				if err := os.WriteFile(cacheFile, b, 0677); err != nil {
 					l.Error().Err(err).Msg("Failed to write release-cache")
 				}

@@ -130,11 +130,6 @@ declare namespace ApiDef {
          */
         undelete?: boolean;
     }
-    export interface DiffResponse {
-        a?: ItemStats;
-        b?: ItemStats;
-        diff?: /* Changelog stores a list of changed items */ Changelog;
-    }
     export interface DiffSnapshotInput {
         a: SnapshotSelector;
         b: SnapshotSelector;
@@ -305,13 +300,6 @@ declare namespace ApiDef {
     }
     export interface ImportInput {
         [name: string]: any;
-    }
-    export interface ItemStats {
-        hash?: string;
-        identi_hash?: number /* uint8 */[];
-        project_id?: string;
-        size?: number; // uint64
-        tag?: string;
     }
     export interface JoinInput {
         password: string;
@@ -597,6 +585,11 @@ declare namespace ApiDef {
          */
         updated_by?: string;
     }
+    export interface ProjectDiffResponse {
+        a?: ProjectStats;
+        b?: ProjectStats;
+        diff?: /* Changelog stores a list of changed items */ Changelog;
+    }
     export interface ProjectInput {
         description?: string;
         locales?: {
@@ -642,6 +635,14 @@ declare namespace ApiDef {
         id?: string;
         uploadMeta?: UploadMeta[];
     }
+    export interface ProjectStats {
+        hash?: string;
+        identi_hash?: number /* uint8 */[];
+        project_id?: string;
+        size?: number; // uint64
+        size_humanized?: string;
+        tag?: string;
+    }
     export interface ReleaseInfo {
         assets_url?: string;
         body?: string;
@@ -681,7 +682,13 @@ declare namespace ApiDef {
          * Server-instance. This will change on every restart.
          */
         instance?: string;
+        latest_cli_release?: ReleaseInfo;
         latest_release?: ReleaseInfo;
+        /**
+         * The minimum version of skiver-cli that can be used with this server.
+         * The is [semver](https://semver.org/)-compatible, but has a leading `v`, like `v1.2.3`
+         */
+        min_cli_version?: string;
         /**
          * When the server was started
          */
@@ -1013,7 +1020,8 @@ declare namespace ApiPaths {
              */
             export type NoFlatten = boolean;
             /**
-             * The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+             * To be visible anonomously, the organization-id should be provided.
+             * If you want to use the logged in users organization for this, specify `me` instead. This special key is set here to make it clear from the url  thaat this requires login.
              *
              */
             export type Organization = string;
@@ -1030,7 +1038,8 @@ declare namespace ApiPaths {
              */
             Parameters.Project;
             organization: /**
-             * The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+             * To be visible anonomously, the organization-id should be provided.
+             * If you want to use the logged in users organization for this, specify `me` instead. This special key is set here to make it clear from the url  thaat this requires login.
              *
              */
             Parameters.Organization;
@@ -1255,7 +1264,7 @@ declare namespace ApiResponses {
     export type ApiError = ApiDef.APIError;
     export type CategoriesResponse = ApiDef.Category[];
     export type CategoryResponse = ApiDef.Category;
-    export type DiffResponse = ApiDef.DiffResponse;
+    export type DiffResponse = ApiDef.ProjectDiffResponse;
     export type JoinResponse = ApiDef.LoginResponse;
     export type LocaleResponse = /**
      * # See https://en.wikipedia.org/wiki/Language_code for more information

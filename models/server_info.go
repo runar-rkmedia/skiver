@@ -38,12 +38,19 @@ type ServerInfo struct {
 	// Server-instance. This will change on every restart.
 	Instance string `json:"instance,omitempty"`
 
+	// The minimum version of skiver-cli that can be used with this server.
+	// The is [semver](https://semver.org/)-compatible, but has a leading `v`, like `v1.2.3`
+	MinCliVersion string `json:"min_cli_version,omitempty"`
+
 	// When the server was started
 	// Format: date-time
 	ServerStartedAt strfmt.DateTime `json:"server_started_at,omitempty"`
 
 	// Version-number for commit
 	Version string `json:"version,omitempty"`
+
+	// latest cli release
+	LatestCliRelease *ReleaseInfo `json:"latest_cli_release,omitempty"`
 
 	// latest release
 	LatestRelease *ReleaseInfo `json:"latest_release,omitempty"`
@@ -58,6 +65,10 @@ func (m *ServerInfo) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateServerStartedAt(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateLatestCliRelease(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -95,6 +106,25 @@ func (m *ServerInfo) validateServerStartedAt(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *ServerInfo) validateLatestCliRelease(formats strfmt.Registry) error {
+	if swag.IsZero(m.LatestCliRelease) { // not required
+		return nil
+	}
+
+	if m.LatestCliRelease != nil {
+		if err := m.LatestCliRelease.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("latest_cli_release")
+			} else if ce, ok := err.(*errors.CompositeError); ok {
+				return ce.ValidateName("latest_cli_release")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (m *ServerInfo) validateLatestRelease(formats strfmt.Registry) error {
 	if swag.IsZero(m.LatestRelease) { // not required
 		return nil
@@ -118,6 +148,10 @@ func (m *ServerInfo) validateLatestRelease(formats strfmt.Registry) error {
 func (m *ServerInfo) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.contextValidateLatestCliRelease(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.contextValidateLatestRelease(ctx, formats); err != nil {
 		res = append(res, err)
 	}
@@ -125,6 +159,22 @@ func (m *ServerInfo) ContextValidate(ctx context.Context, formats strfmt.Registr
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *ServerInfo) contextValidateLatestCliRelease(ctx context.Context, formats strfmt.Registry) error {
+
+	if m.LatestCliRelease != nil {
+		if err := m.LatestCliRelease.ContextValidate(ctx, formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("latest_cli_release")
+			} else if ce, ok := err.(*errors.CompositeError); ok {
+				return ce.ValidateName("latest_cli_release")
+			}
+			return err
+		}
+	}
+
 	return nil
 }
 

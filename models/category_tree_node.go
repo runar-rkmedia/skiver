@@ -114,6 +114,11 @@ func (m *CategoryTreeNode) validateCategories(formats strfmt.Registry) error {
 		}
 		if val, ok := m.Categories[k]; ok {
 			if err := val.Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("categories" + "." + k)
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("categories" + "." + k)
+				}
 				return err
 			}
 		}
@@ -169,6 +174,11 @@ func (m *CategoryTreeNode) validateTranslations(formats strfmt.Registry) error {
 		}
 		if val, ok := m.Translations[k]; ok {
 			if err := val.Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("translations" + "." + k)
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("translations" + "." + k)
+				}
 				return err
 			}
 		}

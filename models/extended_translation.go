@@ -168,6 +168,11 @@ func (m *ExtendedTranslation) validateValues(formats strfmt.Registry) error {
 		}
 		if val, ok := m.Values[k]; ok {
 			if err := val.Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("values" + "." + k)
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("values" + "." + k)
+				}
 				return err
 			}
 		}

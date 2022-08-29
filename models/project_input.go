@@ -95,6 +95,11 @@ func (m *ProjectInput) validateLocales(formats strfmt.Registry) error {
 		}
 		if val, ok := m.Locales[k]; ok {
 			if err := val.Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("locales" + "." + k)
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("locales" + "." + k)
+				}
 				return err
 			}
 		}

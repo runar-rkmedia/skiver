@@ -13,23 +13,23 @@ import (
 	"github.com/go-openapi/swag"
 )
 
-// DiffResponse diff response
+// ProjectDiffResponse project diff response
 //
-// swagger:model DiffResponse
-type DiffResponse struct {
+// swagger:model ProjectDiffResponse
+type ProjectDiffResponse struct {
 
 	// a
-	A *ItemStats `json:"a,omitempty"`
+	A *ProjectStats `json:"a,omitempty"`
 
 	// b
-	B *ItemStats `json:"b,omitempty"`
+	B *ProjectStats `json:"b,omitempty"`
 
 	// diff
 	Diff Changelog `json:"diff,omitempty"`
 }
 
-// Validate validates this diff response
-func (m *DiffResponse) Validate(formats strfmt.Registry) error {
+// Validate validates this project diff response
+func (m *ProjectDiffResponse) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateA(formats); err != nil {
@@ -50,7 +50,7 @@ func (m *DiffResponse) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *DiffResponse) validateA(formats strfmt.Registry) error {
+func (m *ProjectDiffResponse) validateA(formats strfmt.Registry) error {
 	if swag.IsZero(m.A) { // not required
 		return nil
 	}
@@ -69,7 +69,7 @@ func (m *DiffResponse) validateA(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *DiffResponse) validateB(formats strfmt.Registry) error {
+func (m *ProjectDiffResponse) validateB(formats strfmt.Registry) error {
 	if swag.IsZero(m.B) { // not required
 		return nil
 	}
@@ -88,7 +88,7 @@ func (m *DiffResponse) validateB(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *DiffResponse) validateDiff(formats strfmt.Registry) error {
+func (m *ProjectDiffResponse) validateDiff(formats strfmt.Registry) error {
 	if swag.IsZero(m.Diff) { // not required
 		return nil
 	}
@@ -105,8 +105,8 @@ func (m *DiffResponse) validateDiff(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validate this diff response based on the context it is used
-func (m *DiffResponse) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+// ContextValidate validate this project diff response based on the context it is used
+func (m *ProjectDiffResponse) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.contextValidateA(ctx, formats); err != nil {
@@ -127,7 +127,7 @@ func (m *DiffResponse) ContextValidate(ctx context.Context, formats strfmt.Regis
 	return nil
 }
 
-func (m *DiffResponse) contextValidateA(ctx context.Context, formats strfmt.Registry) error {
+func (m *ProjectDiffResponse) contextValidateA(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.A != nil {
 		if err := m.A.ContextValidate(ctx, formats); err != nil {
@@ -143,7 +143,7 @@ func (m *DiffResponse) contextValidateA(ctx context.Context, formats strfmt.Regi
 	return nil
 }
 
-func (m *DiffResponse) contextValidateB(ctx context.Context, formats strfmt.Registry) error {
+func (m *ProjectDiffResponse) contextValidateB(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.B != nil {
 		if err := m.B.ContextValidate(ctx, formats); err != nil {
@@ -159,7 +159,7 @@ func (m *DiffResponse) contextValidateB(ctx context.Context, formats strfmt.Regi
 	return nil
 }
 
-func (m *DiffResponse) contextValidateDiff(ctx context.Context, formats strfmt.Registry) error {
+func (m *ProjectDiffResponse) contextValidateDiff(ctx context.Context, formats strfmt.Registry) error {
 
 	if err := m.Diff.ContextValidate(ctx, formats); err != nil {
 		if ve, ok := err.(*errors.Validation); ok {
@@ -174,7 +174,7 @@ func (m *DiffResponse) contextValidateDiff(ctx context.Context, formats strfmt.R
 }
 
 // MarshalBinary interface implementation
-func (m *DiffResponse) MarshalBinary() ([]byte, error) {
+func (m *ProjectDiffResponse) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -182,8 +182,8 @@ func (m *DiffResponse) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *DiffResponse) UnmarshalBinary(b []byte) error {
-	var res DiffResponse
+func (m *ProjectDiffResponse) UnmarshalBinary(b []byte) error {
+	var res ProjectDiffResponse
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

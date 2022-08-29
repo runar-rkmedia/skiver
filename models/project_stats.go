@@ -12,10 +12,10 @@ import (
 	"github.com/go-openapi/swag"
 )
 
-// ItemStats item stats
+// ProjectStats project stats
 //
-// swagger:model itemStats
-type ItemStats struct {
+// swagger:model ProjectStats
+type ProjectStats struct {
 
 	// hash
 	Hash string `json:"hash,omitempty"`
@@ -29,22 +29,25 @@ type ItemStats struct {
 	// size
 	Size uint64 `json:"size,omitempty"`
 
+	// size humanized
+	SizeHumanized string `json:"size_humanized,omitempty"`
+
 	// tag
 	Tag string `json:"tag,omitempty"`
 }
 
-// Validate validates this item stats
-func (m *ItemStats) Validate(formats strfmt.Registry) error {
+// Validate validates this project stats
+func (m *ProjectStats) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this item stats based on context it is used
-func (m *ItemStats) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+// ContextValidate validates this project stats based on context it is used
+func (m *ProjectStats) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	return nil
 }
 
 // MarshalBinary interface implementation
-func (m *ItemStats) MarshalBinary() ([]byte, error) {
+func (m *ProjectStats) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -52,8 +55,8 @@ func (m *ItemStats) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *ItemStats) UnmarshalBinary(b []byte) error {
-	var res ItemStats
+func (m *ProjectStats) UnmarshalBinary(b []byte) error {
+	var res ProjectStats
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}
