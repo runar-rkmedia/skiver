@@ -242,16 +242,6 @@ definitions:
         description: If set, will bring the item back from the deletion-queue.
         type: boolean
     type: object
-  DiffResponse:
-    properties:
-      a:
-        $ref: '#/definitions/itemStats'
-      b:
-        $ref: '#/definitions/itemStats'
-      diff:
-        $ref: '#/definitions/Changelog'
-    type: object
-    x-go-package: github.com/runar-rkmedia/skiver/handlers
   DiffSnapshotInput:
     properties:
       a:
@@ -991,6 +981,16 @@ definitions:
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
+  ProjectDiffResponse:
+    properties:
+      a:
+        $ref: '#/definitions/ProjectStats'
+      b:
+        $ref: '#/definitions/ProjectStats'
+      diff:
+        $ref: '#/definitions/Changelog'
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/utils
   ProjectInput:
     properties:
       description:
@@ -1082,6 +1082,32 @@ definitions:
         x-go-name: UploadMeta
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
+  ProjectStats:
+    properties:
+      hash:
+        type: string
+        x-go-name: Hash
+      identi_hash:
+        items:
+          format: uint8
+          type: integer
+        type: array
+        x-go-name: IdentiHash
+      project_id:
+        type: string
+        x-go-name: ProjectID
+      size:
+        format: uint64
+        type: integer
+        x-go-name: Size
+      size_humanized:
+        type: string
+        x-go-name: SizeHumanized
+      tag:
+        type: string
+        x-go-name: Tag
+    type: object
+    x-go-package: github.com/runar-rkmedia/skiver/utils
   ReleaseInfo:
     properties:
       assets_url:
@@ -1597,34 +1623,13 @@ definitions:
     - id
     type: object
     x-go-package: github.com/runar-rkmedia/skiver/types
-  itemStats:
-    properties:
-      hash:
-        type: string
-        x-go-name: Hash
-      identi_hash:
-        items:
-          format: uint8
-          type: integer
-        type: array
-        x-go-name: IdentiHash
-      project_id:
-        type: string
-        x-go-name: ProjectID
-      size:
-        format: uint64
-        type: integer
-        x-go-name: Size
-      tag:
-        type: string
-        x-go-name: Tag
-    type: object
-    x-go-package: github.com/runar-rkmedia/skiver/handlers
   snapshotSelector:
     properties:
       project_id:
         maxLength: 36
         type: string
+      raw:
+        type: object
       tag:
         maxLength: 36
         type: string
@@ -1683,8 +1688,10 @@ paths:
         name: project
         required: true
         type: string
-      - description: |
-          The parameter can be any of the Locale's ID, iso639_1, iso639_2, iso639_3, or ietf_tag.
+      - description: "To be visible anonomously, the organization-id should be provided.
+          \nIf you want to use the logged in users organization for this, specify
+          `me` instead. This special key is set here to make it clear from the url
+          \ thaat this requires login.\n"
         in: path
         name: organization
         required: true
@@ -2234,7 +2241,7 @@ responses:
   DiffResponse:
     description: ""
     schema:
-      $ref: '#/definitions/DiffResponse'
+      $ref: '#/definitions/ProjectDiffResponse'
   JoinResponse:
     description: ""
     schema:

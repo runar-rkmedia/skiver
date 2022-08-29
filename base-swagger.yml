@@ -42,6 +42,8 @@ definitions:
       tag:
         type: string
         maxLength: 36
+      raw:
+        type: object
   TokenResponse:
     type: object
     properties:

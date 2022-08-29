@@ -145,6 +145,11 @@ func (m *Project) validateLocaleIDs(formats strfmt.Registry) error {
 		}
 		if val, ok := m.LocaleIDs[k]; ok {
 			if err := val.Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("locales" + "." + k)
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("locales" + "." + k)
+				}
 				return err
 			}
 		}
@@ -166,6 +171,11 @@ func (m *Project) validateSnapshots(formats strfmt.Registry) error {
 		}
 		if val, ok := m.Snapshots[k]; ok {
 			if err := val.Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("snapshots" + "." + k)
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("snapshots" + "." + k)
+				}
 				return err
 			}
 		}

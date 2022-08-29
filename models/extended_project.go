@@ -128,6 +128,11 @@ func (m *ExtendedProject) validateCategories(formats strfmt.Registry) error {
 		}
 		if val, ok := m.Categories[k]; ok {
 			if err := val.Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("categories" + "." + k)
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("categories" + "." + k)
+				}
 				return err
 			}
 		}
@@ -183,6 +188,11 @@ func (m *ExtendedProject) validateLocales(formats strfmt.Registry) error {
 		}
 		if val, ok := m.Locales[k]; ok {
 			if err := val.Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("locales" + "." + k)
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("locales" + "." + k)
+				}
 				return err
 			}
 		}
@@ -204,6 +214,11 @@ func (m *ExtendedProject) validateSnapshots(formats strfmt.Registry) error {
 		}
 		if val, ok := m.Snapshots[k]; ok {
 			if err := val.Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("snapshots" + "." + k)
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("snapshots" + "." + k)
+				}
 				return err
 			}
 		}

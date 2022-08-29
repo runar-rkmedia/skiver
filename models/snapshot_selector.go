@@ -24,11 +24,12 @@ type SnapshotSelector struct {
 	// Max Length: 36
 	ProjectID *string `json:"project_id"`
 
+	// raw
+	Raw interface{} `json:"raw,omitempty"`
+
 	// tag
 	// Max Length: 36
 	Tag string `json:"tag,omitempty"`
-	// If proviced, will use this value for diffing, instead of looking up the the project and project-tag
-	Raw interface{}
 }
 
 // Validate validates this snapshot selector
