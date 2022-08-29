@@ -90,7 +90,6 @@ nb:
 			impo, err := ImportIntoProject(l, bb, "i18n", base.CreatedBy, project, "", []byte(s), r, ImportIntoProjectOptions{NoDryRun: true})
 			testza.AssertNil(t, err)
 			testza.AssertNotNil(t, impo)
-			internal.MatchSnapshot(t, "2-import.yaml", impo.Imp)
 
 			// 3. Export the whole project.
 			if p, err := bb.GetProject(project.ID); err == nil {
@@ -102,25 +101,6 @@ nb:
 
 			testza.AssertNoError(t, err)
 
-			// Verify that subcategories are present in the project retrieved from the database
-			for _, ecat := range impo.Imp.Categories {
-				var pecat types.ExtendedCategory
-				for _, pc := range ep.Categories {
-					if pc.Key == ecat.Key {
-						pecat = pc
-						break
-					}
-
-				}
-				if pecat.ID == "" {
-					t.Error("Expected project to have category", ecat.Key)
-					return
-				}
-				if pecat.Category.ID == "" {
-					t.Error("Expected project-(extended)category to have Category.ID", ecat.Key)
-					return
-				}
-			}
 			testza.AssertNoError(t, err)
 			export, err := importexport.ExportI18N(ep, importexport.ExportI18NOptions{})
 			testza.AssertNoError(t, err)
