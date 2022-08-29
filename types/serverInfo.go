@@ -24,9 +24,13 @@ type ServerInfo struct {
 	HostHash string `json:"host_hash"`
 
 	// Size of database.
-	DatabaseSize    int64        `json:"database_size"`
-	DatabaseSizeStr string       `json:"database_size_str"`
-	LatestRelease   *ReleaseInfo `json:"latest_release"`
+	DatabaseSize     int64        `json:"database_size"`
+	DatabaseSizeStr  string       `json:"database_size_str"`
+	LatestRelease    *ReleaseInfo `json:"latest_release"`
+	LatestReleaseCLI *ReleaseInfo `json:"latest_cli_release"`
+	// The minimum version of skiver-cli that can be used with this server.
+	// The is [semver](https://semver.org/)-compatible, but has a leading `v`, like `v1.2.3`
+	MinCliVersion string `json:"min_cli_version"`
 }
 
 // Server info
@@ -36,9 +40,8 @@ type serverInfo struct {
 	Body []ServerInfo
 }
 
-func GetLatestVersion(c *http.Client) (*ReleaseInfo, error) {
+func GetLatestVersion(url string, c *http.Client) (*ReleaseInfo, error) {
 	// Rate-limited to 60 calls per hour without a token
-	url := "https://api.github.com/repos/runar-rkmedia/skiver/releases/latest"
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 	res, err := c.Do(req)
@@ -50,7 +53,7 @@ func GetLatestVersion(c *http.Client) (*ReleaseInfo, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to read body: %w", err)
 		}
-		return nil, fmt.Errorf("Failed to get ReleaseInfo: %d %s %#v", res.StatusCode, string(b), res.Header)
+		return nil, fmt.Errorf("Failed to get ReleaseInfo from url '%s' : %d %s %#v", url, res.StatusCode, string(b), res.Header)
 	}
 	var j ReleaseInfo
 	err = json.NewDecoder(res.Body).Decode(&j)
