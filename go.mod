@@ -5,6 +5,7 @@ go 1.18
 require (
 	bou.ke/monkey v1.0.2
 	github.com/MarvinJWendt/testza v0.4.1
+	github.com/alecthomas/chroma v0.10.0
 	github.com/aws/aws-sdk-go v1.44.17
 	github.com/go-openapi/errors v0.20.2
 	github.com/go-openapi/runtime v0.23.3
@@ -25,7 +26,6 @@ require (
 )
 
 require (
-	github.com/alecthomas/chroma v0.10.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/atomicgo/cursor v0.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
