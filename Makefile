@@ -46,6 +46,8 @@ container: build-web
     --label "org.opencontainers.image.version=$(version)" \
     --build-arg "ldflags=$(ldflags)"
 	docker build . \
+		-t registry.fly.io/skiver:latest \
+		-t registry.fly.io/skiver:$(version) \
 		-t runardocker/skiver-api:latest \
 		-t runardocker/skiver-api:$(version) \
 		--target scratch \
@@ -70,6 +72,8 @@ container-publish:
 	docker push runardocker/skiver-api:$(version) 
 	docker push runardocker/skiver-api:$(version)-alpine
 	docker push runardocker/skiver-api:$(version)-grafana
+	docker push registry.fly.io/skiver:$(version) 
+	docker push registry.fly.io/skiver:latest
 
 publish: check-git-clean gen test release container container-publish fly
 
@@ -113,11 +117,11 @@ list-pre:
 list-invalid: list-fmtP list-internal list-deprecated list-logger-debug list-pre
 fly:
 	./fly.sh .x/skiver-fly.toml
-	@echo "Will deploy image 'runardocker/skiver-api:$(version)' on fly"
-	fly deploy -i "runardocker/skiver-api:$(version)" --detach
+	@echo "Will deploy image 'registry.fly.io/skiver:$(version)' on fly"
+	fly deploy --local-only -i "registry.fly.io/skiver:$(version)" --detach
 	fly logs
 fly_latest: container
 	./fly.sh .x/skiver-fly.toml
-	@echo "Will deploy image 'runardocker/skiver-api:latest' on fly"
-	fly deploy -i "runardocker/skiver-api:latest" --detach
+	@echo "Will deploy image 'registry.fly.io/skiver:latest' on fly"
+	fly deploy -i "registry.fly.io/skiver:latest" --detach
 	fly logs
