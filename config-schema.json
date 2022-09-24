@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/runar-rkmedia/skiver/config/config",
+  "$ref": "#/$defs/Config",
+  "$defs": {
+    "ApiConfig": {
+      "properties": {
+        "Address": {
+          "type": "string",
+          "description": "Address (interface) to listen to",
+          "default": "0.0.0.0"
+        },
+        "RedirectPort": {
+          "type": "integer"
+        },
+        "Port": {
+          "type": "integer"
+        },
+        "CertFile": {
+          "type": "string"
+        },
+        "CertKey": {
+          "type": "string"
+        },
+        "DBLocation": {
+          "type": "string"
+        },
+        "ReadTimeout": {
+          "$ref": "#/$defs/Duration",
+          "description": "Timeout used for reads"
+        },
+        "WriteTimeout": {
+          "$ref": "#/$defs/Duration",
+          "description": "Timeout used for writes"
+        },
+        "IdleTimeout": {
+          "$ref": "#/$defs/Duration",
+          "description": "Timeout used for idles"
+        },
+        "ShutdownTimeout": {
+          "$ref": "#/$defs/Duration",
+          "description": "Timeout used for shutdown"
+        },
+        "Debug": {
+          "type": "boolean",
+          "description": "If set, will register debug-handlers at\n- /debug/vars\n- /debug/vars/\n- /debug/pprof/\n- /debug/pprof/cmdline\n- /debug/pprof/profile\n- /debug/pprof/symbol\n- /debug/pprof/trace"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "AuthConfig": {
+      "properties": {
+        "SessionLifeTime": {
+          "$ref": "#/$defs/Duration",
+          "description": "Defines how long a Session should be valid for."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "BackupConfig": {
+      "properties": {
+        "s3": {
+          "$ref": "#/$defs/S3BaseConfig"
+        },
+        "FetchOnStartup": {
+          "type": "boolean",
+          "description": "If no database is available at startup, this source can be used to fetch the database.\nSkiver will then use that as a database.\nThis can be useful in environments where there is no readily available persistant storage."
+        },
+        "maxInterval": {
+          "$ref": "#/$defs/Duration",
+          "description": "The database can be backed up as often as every write, but can be relaxed with this value.\nDefaults to 10 minutes"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Config": {
+      "properties": {
+        "LogLevel": {
+          "type": "string",
+          "enum": [
+            "trace",
+            "debug",
+            "info",
+            "warn",
+            "warning",
+            "error",
+            "fatal",
+            "panic"
+          ],
+          "description": "Level for logging\nEnum: [trace debug info warn warning error panic]"
+        },
+        "LogFormat": {
+          "type": "string",
+          "enum": [
+            "human",
+            "json"
+          ],
+          "description": "Enum: [human json]"
+        },
+        "Api": {
+          "$ref": "#/$defs/ApiConfig"
+        },
+        "SelfCheck": {
+          "type": "boolean",
+          "description": "If set, will enable a self-check that monitors the applications resource-usage. Used for debugging, and monitoring outside of any orcestrator like kubernetes"
+        },
+        "TranslatorServices": {
+          "items": {
+            "$ref": "#/$defs/TranslatorService"
+          },
+          "type": "array",
+          "description": "Global translator-services that should be available"
+        },
+        "Authentication": {
+          "$ref": "#/$defs/AuthConfig",
+          "description": "Options for Authentication"
+        },
+        "Gzip": {
+          "type": "boolean",
+          "description": "Set to enable gzip-module for all content served"
+        },
+        "Metrics": {
+          "$ref": "#/$defs/Metrics",
+          "description": "Enable Metrics (prometheus-compatible)"
+        },
+        "UploadSnapShots": {
+          "patternProperties": {
+            ".*": {
+              "$ref": "#/$defs/Uploader"
+            }
+          },
+          "type": "object",
+          "description": "Used to upload files to external targets when creating snapshots."
+        },
+        "databaseBackups": {
+          "patternProperties": {
+            ".*": {
+              "$ref": "#/$defs/BackupConfig"
+            }
+          },
+          "type": "object",
+          "description": "Used to upload backups of the database.\nCan optionally also be used as a source to retreve a backup from on startup, if there is no database."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Duration": {
+      "type": "string",
+      "title": "Duration-type",
+      "description": "Textual representation of a duration%!(EXTRA string=1m30s, string=10s, string=2h30m0s, string=150ms)",
+      "examples": [
+        "1m30s",
+        "10s",
+        "2h30m0s",
+        "150ms"
+      ]
+    },
+    "Metrics": {
+      "properties": {
+        "Enabled": {
+          "type": "boolean"
+        },
+        "Port": {
+          "type": "integer",
+          "description": "If set, will be exposed on a different port. if not set, it will be exposed on the same port.\nThis can be useful to not expose the metrics publicly."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "S3BaseConfig": {
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "description": "Endpoint for the s3-compatible service"
+        },
+        "region": {
+          "type": "string",
+          "description": "The region for the service."
+        },
+        "bucketID": {
+          "type": "string",
+          "description": "Bucket to upload into"
+        },
+        "accessKey": {
+          "type": "string",
+          "description": "AccessKeyID for the bucket / application"
+        },
+        "PrivateKey": {
+          "type": "string",
+          "description": "Private key or Secret access key for the bucket / application"
+        },
+        "providerName": {
+          "type": "string",
+          "description": "Name for provider, used for display-puroposes"
+        },
+        "forcePathStyle": {
+          "type": "boolean",
+          "description": "If set, will add headers for use with Browser-TTL, CDN-TTL and CloudFlare-TTL"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "S3UploaderConfig": {
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "description": "Endpoint for the s3-compatible service"
+        },
+        "region": {
+          "type": "string",
+          "description": "The region for the service."
+        },
+        "bucketID": {
+          "type": "string",
+          "description": "Bucket to upload into"
+        },
+        "accessKey": {
+          "type": "string",
+          "description": "AccessKeyID for the bucket / application"
+        },
+        "PrivateKey": {
+          "type": "string",
+          "description": "Private key or Secret access key for the bucket / application"
+        },
+        "providerName": {
+          "type": "string",
+          "description": "Name for provider, used for display-puroposes"
+        },
+        "forcePathStyle": {
+          "type": "boolean",
+          "description": "If set, will add headers for use with Browser-TTL, CDN-TTL and CloudFlare-TTL"
+        },
+        "urlFormat": {
+          "type": "string",
+          "description": "Can be used to override the url that is produced.\nGolang-templating is available\nVariables:\n`.Object`:        The current Object-id (fileName)\n`.Bucket`:        The current Object-id (fileName)\n`.EndpointURL`:   net.Url version of the Endpoint\n`.Endpoint`:      Endpoint as string\n`.Region`:        Region."
+        },
+        "CacheControl": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "TranslatorService": {
+      "properties": {
+        "Kind": {
+          "type": "string",
+          "description": "Enum: [bind libre]"
+        },
+        "ApiToken": {
+          "type": "string"
+        },
+        "Endpoint": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "description": "TDB"
+    },
+    "Uploader": {
+      "properties": {
+        "S3": {
+          "$ref": "#/$defs/S3UploaderConfig",
+          "description": "S3-compatible target"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    }
+  }
+}
