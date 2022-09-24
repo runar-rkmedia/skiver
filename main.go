@@ -41,6 +41,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/runar-rkmedia/go-common/logger"
+	"github.com/runar-rkmedia/skiver/backup"
 	"github.com/runar-rkmedia/skiver/bboltStorage"
 	cfg "github.com/runar-rkmedia/skiver/config"
 	"github.com/runar-rkmedia/skiver/frontend"
@@ -362,9 +363,9 @@ func main() {
 	l := logger.GetLogger("main")
 
 	if config.Authentication.SessionLifeTime == 0 {
-		config.Authentication.SessionLifeTime = time.Hour
+		config.Authentication.SessionLifeTime = cfg.Duration(time.Hour)
 	}
-	if config.Authentication.SessionLifeTime < time.Minute {
+	if config.Authentication.SessionLifeTime < cfg.Duration(time.Minute) {
 		l.Fatal().Str("Authentication.SessionLifeTime", config.Authentication.SessionLifeTime.String()).Msg("SessionLifeTime cannot be shorter than a minute. That would just be really annoying.")
 	}
 
@@ -429,6 +430,17 @@ func main() {
 	}
 	if l.HasDebug() {
 		events.AddSubscriber("log", &logPublisher{logger.GetLogger("events")})
+	}
+	if len(config.DatabaseBackups) > 0 {
+		l.Info().Msg("creating backuphandler")
+		bak := backup.NewBackHandler(logger.GetLogger("backup"), config.DatabaseBackups)
+		go bak.AutoCreateBackupAndSaveIfRequired(&db)
+		events.AddSubscriberFunc("backups", func(kind, variant string, contents interface{}) {
+			go bak.AutoCreateBackupAndSaveIfRequired(&db)
+		})
+
+	} else {
+		l.Warn().Msg("No backup endpoints has been set up")
 	}
 	if len(config.TranslatorServices) > 0 {
 		o := config.TranslatorServices[0]
@@ -685,7 +697,7 @@ func main() {
 	if !ok {
 		ctx.L.Fatal().Str("type", fmt.Sprintf("%T", ctx.DB)).Msg("DB does not implement the localUser.Persistor-interface")
 	}
-	userSessions, err := localuser.NewUserSessionInMemory(types.UserSessionOptions{TTL: config.Authentication.SessionLifeTime}, uuid.NewString, p)
+	userSessions, err := localuser.NewUserSessionInMemory(types.UserSessionOptions{TTL: config.Authentication.SessionLifeTime.Duration()}, uuid.NewString, p)
 	if err != nil {
 		ctx.L.Fatal().Err(err).Msg("Failed to set up userSessions")
 	}
@@ -696,6 +708,15 @@ func main() {
 		flag.StringVar(&password, "password", "", "Reset password to this value")
 		flag.StringVar(&username, "user", "", "Reset password to this user")
 		flag.Parse()
+		// Temporary implementation for getting a config-sample
+		if flag.Arg(0) == "config-sample" {
+			sample := cfg.CreateSampleComfig()
+			err := cfg.WriteToml(os.Stdout, sample)
+			if err != nil {
+				l.Fatal().Err(err).Msg("failed to output sample-config")
+			}
+			os.Exit(0)
+		}
 		if password != "" || username != "" {
 			if password == "" {
 				l.Fatal().Msg("Password must also be set")
@@ -1057,9 +1078,9 @@ func main() {
 	serverErrors := make(chan error, 1)
 	srv := http.Server{
 		Addr: address, Handler: handler,
-		ReadTimeout:  apiConfig.ReadTimeout,
-		WriteTimeout: apiConfig.WriteTimeout,
-		IdleTimeout:  apiConfig.IdleTimeout,
+		ReadTimeout:  apiConfig.ReadTimeout.Duration(),
+		WriteTimeout: apiConfig.WriteTimeout.Duration(),
+		IdleTimeout:  apiConfig.IdleTimeout.Duration(),
 		ErrorLog:     Logger(logger.GetLogger("http-server")),
 	}
 	if useCert {
@@ -1101,7 +1122,7 @@ func main() {
 
 		defer l.Info().Interface("signal", sig).Msg("Shutdown complete")
 
-		ctx, cancel := context.WithTimeout(context.Background(), apiConfig.ShutdownTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), apiConfig.ShutdownTimeout.Duration())
 		defer cancel()
 
 		if err := srv.Shutdown(ctx); err != nil {
