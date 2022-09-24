@@ -381,6 +381,18 @@ func main() {
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+	type BackupHandler interface {
+		AutoCreateBackupAndSaveIfRequired(source backup.BackerUpper) error
+		WriteNewestBackup(path string) error
+	}
+	var bak BackupHandler
+	if len(config.DatabaseBackups) > 0 {
+		bak = backup.NewBackHandler(logger.GetLogger("backup"), config.DatabaseBackups)
+		err := bak.WriteNewestBackup(apiConfig.DBLocation)
+		if err != nil {
+			l.Fatal().Err(err).Msg("Failed to get the newest backup from backupsource")
+		}
+	}
 	// IMPORTANT: database publishes changes, but for performance-reasons, it should not be used until the listener (ws) is started.
 	db, err := bboltStorage.NewBbolt(l, apiConfig.DBLocation, &events)
 	if err != nil {
@@ -431,10 +443,8 @@ func main() {
 	if l.HasDebug() {
 		events.AddSubscriber("log", &logPublisher{logger.GetLogger("events")})
 	}
-	if len(config.DatabaseBackups) > 0 {
+	if bak != nil {
 		l.Info().Msg("creating backuphandler")
-		bak := backup.NewBackHandler(logger.GetLogger("backup"), config.DatabaseBackups)
-		go bak.AutoCreateBackupAndSaveIfRequired(&db)
 		events.AddSubscriberFunc("backups", func(kind, variant string, contents interface{}) {
 			go bak.AutoCreateBackupAndSaveIfRequired(&db)
 		})

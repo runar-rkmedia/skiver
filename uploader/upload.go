@@ -94,10 +94,12 @@ func NewS3Uplaoder(
 }
 
 type FileUploader interface {
-	AddPublicFile(key string, r io.ReadSeeker, size int64, contentType string, contentDisposition string) (types.UploadMeta, error)
-	AddPublicFileWithAliases(keys []string, r io.ReadSeeker, size int64, contentType string, contentDisposition string) ([]types.UploadMeta, error)
+	AddPublicFile(key string, r io.ReadSeeker, size int64, contentType string, contentDisposition string, options ...AddFileOptions) (types.UploadMeta, error)
+	AddPublicFileWithAliases(keys []string, r io.ReadSeeker, size int64, contentType string, contentDisposition string, options ...AddFileOptions) ([]types.UploadMeta, error)
 	UrlForFile(objectID string) (string, error)
 	Identifier() string
+	HeadFile(key string) (*s3.HeadObjectOutput, error)
+	GetFile(key string) (*s3.GetObjectOutput, error)
 }
 
 func (su *s3Uploader) Identifier() string {
@@ -134,7 +136,7 @@ func (su *s3Uploader) newSession() (*session.Session, error) {
 	}
 
 	if su.L.HasDebug() {
-		su.L.Debug().Msg("Got a session, starting upload")
+		su.L.Debug().Msg("Got a session")
 	}
 
 	return s, err
@@ -249,13 +251,13 @@ func (su *s3Uploader) UrlForFile(objectID string) (string, error) {
 	return url, nil
 
 }
-func (su *s3Uploader) AddPublicFileWithAliases(keys []string, r io.ReadSeeker, size int64, contentType string, contentDisposition string) ([]types.UploadMeta, error) {
+func (su *s3Uploader) AddPublicFileWithAliases(keys []string, r io.ReadSeeker, size int64, contentType string, contentDisposition string, options ...AddFileOptions) ([]types.UploadMeta, error) {
 	length := len(keys)
 	if length == 0 {
 		return nil, fmt.Errorf("received zero keys")
 	}
 
-	first, err := su.AddPublicFile(keys[0], r, size, contentType, contentDisposition)
+	first, err := su.AddPublicFile(keys[0], r, size, contentType, contentDisposition, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -299,13 +301,58 @@ func (su *s3Uploader) AddPublicFileWithAliases(keys []string, r io.ReadSeeker, s
 	return m, err
 
 }
-func (su *s3Uploader) AddPublicFile(key string, r io.ReadSeeker, size int64, contentType string, contentDisposition string) (types.UploadMeta, error) {
+func (su *s3Uploader) HeadFile(key string) (*s3.HeadObjectOutput, error) {
+	input := s3.HeadObjectInput{
+		Bucket: &su.Bucket,
+		Key:    aws.String(key),
+	}
+	client, err := su.getClient()
+	if err != nil {
+		return nil, err
+	}
+
+	g, err := client.HeadObject(&input)
+	if err != nil {
+		return nil, err
+	}
+	if su.L.HasDebug() {
+		su.L.Debug().Interface("meta", g).Msg("Got head-response")
+	}
+	return g, nil
+}
+func (su *s3Uploader) GetFile(key string) (*s3.GetObjectOutput, error) {
+	input := s3.GetObjectInput{
+		Bucket: &su.Bucket,
+		Key:    aws.String(key),
+	}
+	client, err := su.getClient()
+	if err != nil {
+		return nil, err
+	}
+
+	g, err := client.GetObject(&input)
+	if err != nil {
+		return nil, err
+	}
+	return g, nil
+}
+
+type AddFileOptions struct {
+	Metadata map[string]*string
+}
+
+func (su *s3Uploader) AddPublicFile(key string, r io.ReadSeeker, size int64, contentType string, contentDisposition string, options ...AddFileOptions) (types.UploadMeta, error) {
+	var opts *AddFileOptions
+	if len(options) > 0 {
+		opts = &options[0]
+	}
+
 	if key == "" {
 		return types.UploadMeta{}, fmt.Errorf("key was empty")
 	}
 	// We do not want to upload snapshots that are empty, since that could overwrite existing content with empty content
 	// A file is considered empty if it holds not useful information, like an empty json-object like '{}' or '[]' etc
-	if size == 0 {
+	if size <= 0 {
 		return types.UploadMeta{}, fmt.Errorf("Empty file, refusing to upload")
 	}
 	if size <= 4 {
@@ -356,10 +403,18 @@ func (su *s3Uploader) AddPublicFile(key string, r io.ReadSeeker, size int64, con
 		// ACL:                  aws.String("private"),
 		Body:                 r,
 		ContentLength:        aws.Int64(size),
-		ContentType:          aws.String(contentType),
-		ContentDisposition:   aws.String(contentDisposition),
 		ServerSideEncryption: aws.String("AES256"),
 	}
+	if opts != nil {
+		putInput.Metadata = opts.Metadata
+	}
+	if contentType != "" {
+		putInput.ContentType = aws.String(contentType)
+	}
+	if contentDisposition != "" {
+		putInput.ContentDisposition = aws.String(contentDisposition)
+	}
+
 	if su.CacheControl != "" {
 		putInput.CacheControl = aws.String(su.CacheControl)
 	}
@@ -369,7 +424,10 @@ func (su *s3Uploader) AddPublicFile(key string, r io.ReadSeeker, size int64, con
 		l.Error().Err(err).Interface("input", putInput).Msg("Failed to upload to s3")
 		return um, err
 	}
-	l.Info().Interface("uploadMeta", um).Msg("File uploaded successfully to s3")
+	l.Info().
+		Interface("uploadMeta", um).
+		// Str("size", humanize.Bytes(uint64(size))).
+		Msg("File uploaded successfully to s3")
 	return um, nil
 
 }

@@ -56,6 +56,9 @@ type BackupConfig struct {
 	// The database can be backed up as often as every write, but can be relaxed with this value.
 	// Defaults to 10 minutes
 	MaxInterval Duration `json:"maxInterval" help:"The database can be backed up as often as every write, but can be relaxed with this value. Defaults to 10 minutes."`
+	// Can be used to set a custom objectkey.
+	// defaults to "skiver.bbolt"
+	FileName string
 }
 
 type Uploader struct {

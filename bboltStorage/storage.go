@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -74,7 +75,17 @@ func NewBbolt(l logger.AppLogger, path string, pubsub PubSubPublisher, options .
 	return
 }
 
+func (s *BBolter) WriteState() WriteStats {
+	s.writeStats.Lock()
+	defer s.writeStats.Unlock()
+	return s.writeStats.WriteStats
+}
 func (s *BBolter) PublishChange(kind PubType, variant PubVerb, contents interface{}) {
+	s.writeStats.Lock()
+	now := time.Now()
+	s.writeStats.LastWrite = &now
+	s.writeStats.Unlock()
+
 	if s.pubsub == nil {
 		return
 	}
@@ -219,12 +230,21 @@ func (bb *BBolter) Iterate(bucket []byte, f func(key, b []byte) bool) error {
 	return err
 }
 
+type writeStats struct {
+	WriteStats
+	sync.Mutex
+}
+type WriteStats struct {
+	LastWrite *time.Time
+}
+
 type BBolter struct {
 	*bolt.DB
 	pubsub PubSubPublisher
 	l      logger.AppLogger
 	Marshaller
 	idgenerator IDGenerator
+	writeStats  writeStats
 }
 
 type IDGenerator interface {
