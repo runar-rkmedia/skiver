@@ -1,10 +1,14 @@
 package types
 
 import (
+	"io"
 	"reflect"
 	"time"
 )
 
+type DatabaseBackup interface {
+	Backup(w io.Writer) (int64, error)
+}
 type UserStorage interface {
 	GetUser(userId string) (*User, error)
 	FindUsers(max int, filter ...User) (map[string]User, error)

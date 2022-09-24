@@ -14,24 +14,34 @@ import (
 // Note that performance does not suffer, this is only to reduce disk-pressure
 // If the database gets too big.
 
-func (s *BBolter) compactDatabase() error {
-	path := "_compact.bbolt"
-	originalPath := s.Path()
+func (s *BBolter) copyCompact(path string) (*bolt.DB, error) {
 	compactDb, err := bolt.Open(path, 0666, &bolt.Options{
 		Timeout: 1 * time.Second,
 	})
 	if err != nil {
 		s.l.Error().Err(err).Msg("Failed to create a new database before compacting this one")
-		return fmt.Errorf("Failed to create a new database before compacting this one")
+		return compactDb, fmt.Errorf("Failed to create a new database before compacting this one")
 	}
 	s.l.Warn().Msg("New database was opened")
 	err = bolt.Compact(compactDb, s.DB, 0)
 	if err != nil {
 		s.l.Error().Err(err).Msg("Failed to compact database")
-		return fmt.Errorf("Failed to compact database")
+		return compactDb, fmt.Errorf("Failed to compact database")
 	}
-	s.l.Warn().Msg("New database was compacted. Will now close existing database.")
+	return compactDb, nil
+}
+func (s *BBolter) compactDatabase() error {
+	path := "_compact.bbolt"
+	compactDb, err := s.copyCompact(path)
+	if compactDb != nil {
+		defer compactDb.Close()
+	}
+	if err != nil {
+		return err
+	}
+	originalPath := s.Path()
 	compactDb.Close()
+	s.l.Warn().Msg("New database was compacted. Will now close existing database.")
 	s.Close()
 	s.l.Warn().Msg("Closed databases. Will now rename databases on disk")
 	err = os.Rename(originalPath, originalPath+".bk")

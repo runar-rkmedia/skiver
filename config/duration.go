@@ -20,14 +20,7 @@ func (d Duration) Duration() time.Duration {
 	return time.Duration(d)
 }
 func (d *Duration) UnmarshalText(b []byte) error {
-	fmt.Println("fooish", string(b))
 	return d.UnmarshalJSON(b)
-	// x, err := time.ParseDuration(string(b))
-	// if err != nil {
-	// 	return err
-	// }
-	// *d = Duration(x)
-	// return nil
 }
 func (d Duration) MarshalText() (text []byte, err error) {
 	return []byte(time.Duration(d).String()), nil
@@ -98,7 +91,7 @@ func (Duration) JSONSchema() *jsonschema.Schema {
 	return &jsonschema.Schema{
 		Type:        "string",
 		Title:       "Duration-type",
-		Description: fmt.Sprintf("Textual representation of a duration", Examples...),
+		Description: fmt.Sprintf("Textual representation of a duration %s", Examples),
 		Examples:    Examples,
 	}
 }
