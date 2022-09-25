@@ -86,7 +86,7 @@ type S3BaseConfig struct {
 }
 type S3UploaderConfig struct {
 	// S3-compatible target
-	S3BaseConfig
+	S3BaseConfig `mapstructure:",squash"`
 	// Can be used to override the url that is produced.
 	// Golang-templating is available
 	// Variables:
