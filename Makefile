@@ -37,6 +37,8 @@ generate:
 	swagger validate swagger.yml
 container: build-web
 	docker build . \
+		-t registry.fly.io/skiver:alpine \
+		-t registry.fly.io/skiver:$(version)-alpine \
 		-t runardocker/skiver-api:alpine \
 		-t runardocker/skiver-api:$(version)-alpine \
 		--target alpine \
@@ -74,6 +76,8 @@ container-publish:
 	docker push runardocker/skiver-api:$(version)-grafana
 	docker push registry.fly.io/skiver:$(version) 
 	docker push registry.fly.io/skiver:latest
+	docker push registry.fly.io/skiver:$(version)-alpine
+	docker push registry.fly.io/skiver:alpine
 
 publish: check-git-clean gen test release container container-publish fly
 
@@ -117,8 +121,8 @@ list-pre:
 list-invalid: list-fmtP list-internal list-deprecated list-logger-debug list-pre
 fly:
 	./fly.sh .x/skiver-fly.toml
-	@echo "Will deploy image 'registry.fly.io/skiver:$(version)' on fly"
-	fly deploy --local-only -i "registry.fly.io/skiver:$(version)" --detach
+	@echo "Will deploy image 'registry.fly.io/skiver:$(version)-alpine' on fly"
+	fly deploy --local-only -i "registry.fly.io/skiver:$(version)-alpine" --detach
 	fly logs
 fly_latest: container
 	./fly.sh .x/skiver-fly.toml
