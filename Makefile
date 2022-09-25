@@ -59,7 +59,7 @@ container: build-web
     --label "org.opencontainers.image.title=skiver-api" \
     --build-arg "ldflags=$(ldflags)"
 container-publish: 
-	${MAKE} -J2 container-publish_fly container-publish_docker
+	${MAKE} -j2 container-publish_fly container-publish_docker
 container-publish_fly: 
 	docker push --format v2s2 registry.fly.io/skiver:$(version) 
 	docker push --format v2s2 registry.fly.io/skiver:latest
