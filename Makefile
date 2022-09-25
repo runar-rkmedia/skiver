@@ -61,10 +61,10 @@ container: build-web
 container-publish: 
 	${MAKE} -J2 container-publish_fly container-publish_docker
 container-publish_fly: 
-	docker push registry.fly.io/skiver:$(version) 
-	docker push registry.fly.io/skiver:latest
-	docker push registry.fly.io/skiver:$(version)-alpine
-	docker push registry.fly.io/skiver:alpine
+	docker push --format v2s2 registry.fly.io/skiver:$(version) 
+	docker push --format v2s2 registry.fly.io/skiver:latest
+	docker push --format v2s2 registry.fly.io/skiver:$(version)-alpine
+	docker push --format v2s2 registry.fly.io/skiver:alpine
 container-publish_docker: 
 	docker push runardocker/skiver-api:latest 
 	docker push runardocker/skiver-api:alpine
@@ -73,7 +73,7 @@ container-publish_docker:
 	docker push runardocker/skiver-api:$(version)-alpine
 	docker push runardocker/skiver-api:$(version)-grafana
 
-publish: check-git-clean gen test release container container-publish fly
+publish: check-git-clean gen test release container container-publish fly_current
 
 release: check-git-clean test
 	goreleaser release
@@ -118,8 +118,8 @@ fly:
 	@echo "Will deploy image 'registry.fly.io/skiver:$(version)-alpine' on fly"
 	fly deploy --local-only -i "registry.fly.io/skiver:$(version)-alpine" --detach
 	fly logs
-fly_latest: container
+fly_current: container container-publish_fly
 	./fly.sh .x/skiver-fly.toml
 	@echo "Will deploy image 'registry.fly.io/skiver:latest' on fly"
-	fly deploy -i "registry.fly.io/skiver:latest" --detach
+	fly deploy -i "registry.fly.io/skiver:$(version)-alpine" --detach
 	fly logs
