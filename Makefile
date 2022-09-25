@@ -43,9 +43,6 @@ container: build-web
 		-t runardocker/skiver-api:$(version)-alpine \
 		--target alpine \
     --label "org.opencontainers.image.title=skiver-api" \
-    --label "org.opencontainers.image.revision=$(gitHash)" \
-    --label "org.opencontainers.image.created=$(buildDate)" \
-    --label "org.opencontainers.image.version=$(version)" \
     --build-arg "ldflags=$(ldflags)"
 	docker build . \
 		-t registry.fly.io/skiver:latest \
@@ -54,30 +51,27 @@ container: build-web
 		-t runardocker/skiver-api:$(version) \
 		--target scratch \
     --label "org.opencontainers.image.title=skiver-api" \
-    --label "org.opencontainers.image.revision=$(gitHash)" \
-    --label "org.opencontainers.image.created=$(buildDate)" \
-    --label "org.opencontainers.image.version=$(version)" \
     --build-arg "ldflags=$(ldflags)"
 	docker build . \
 		-t runardocker/skiver-api:grafana \
 		-t runardocker/skiver-api:$(version)-grafana \
 		--target grafana \
     --label "org.opencontainers.image.title=skiver-api" \
-    --label "org.opencontainers.image.revision=$(gitHash)" \
-    --label "org.opencontainers.image.created=$(buildDate)" \
-    --label "org.opencontainers.image.version=$(version)" \
     --build-arg "ldflags=$(ldflags)"
 container-publish: 
+	${MAKE} -J2 container-publish_fly container-publish_docker
+container-publish_fly: 
+	docker push registry.fly.io/skiver:$(version) 
+	docker push registry.fly.io/skiver:latest
+	docker push registry.fly.io/skiver:$(version)-alpine
+	docker push registry.fly.io/skiver:alpine
+container-publish_docker: 
 	docker push runardocker/skiver-api:latest 
 	docker push runardocker/skiver-api:alpine
 	docker push runardocker/skiver-api:grafana
 	docker push runardocker/skiver-api:$(version) 
 	docker push runardocker/skiver-api:$(version)-alpine
 	docker push runardocker/skiver-api:$(version)-grafana
-	docker push registry.fly.io/skiver:$(version) 
-	docker push registry.fly.io/skiver:latest
-	docker push registry.fly.io/skiver:$(version)-alpine
-	docker push registry.fly.io/skiver:alpine
 
 publish: check-git-clean gen test release container container-publish fly
 
