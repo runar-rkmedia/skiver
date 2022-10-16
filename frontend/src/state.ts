@@ -3,7 +3,12 @@ import createStore from './store'
 
 export type DialogProps = {
   title?: string
-  kind: 'createTranslation' | 'createCategory' | 'editCategory' | 'translation'
+  kind:
+    | 'createTranslation'
+    | 'createCategory'
+    | 'editCategory'
+    | 'translation'
+    | 'editTranslation'
   parent?: string
   id?: string
 }
@@ -12,6 +17,11 @@ export const state = createStore({
     showDeleted: false,
     serverStats: false,
     sidebarVisible: false,
+    columns: {
+      title: true,
+      key: false,
+      valueForLocale: null,
+    },
     pageSize: 50,
     searchQuery: '',
     searchInTranslationValues: true,
@@ -36,13 +46,21 @@ export const state = createStore({
   },
   storage: {
     key: 'state',
-    ignoreKeys: ['createOrganization', 'createTranslation', 'createTranslationValue', 'createProject', 'openTranslationValueForm']
+    ignoreKeys: [
+      'createOrganization',
+      'createTranslation',
+      'createTranslationValue',
+      'createProject',
+      'openTranslationValueForm',
+    ],
   },
 })
 
 export function showDialog(d: DialogProps | null) {
-  if (!d) { state.update(s => ({ ...s, dialog: null })) }
-  state.update(s => {
+  if (!d) {
+    state.update((s) => ({ ...s, dialog: null }))
+  }
+  state.update((s) => {
     if (s.dialog) {
       return s
     }
@@ -50,7 +68,7 @@ export function showDialog(d: DialogProps | null) {
   })
 }
 export function closeDialog() {
-  state.update(s => ({ ...s, dialog: null }))
+  state.update((s) => ({ ...s, dialog: null }))
 }
 
 type Toast = {
@@ -63,7 +81,6 @@ type Toast = {
 function hashCode(str: string) {
   let hash = 0
   for (let i = 0; i < str.length; ++i) {
-
     hash = Math.imul(31, hash) + str.charCodeAt(i)
   }
 
@@ -120,7 +137,10 @@ function checkToasts() {
         if (!toast?.created) {
           return r
         }
-        const created = toast.created instanceof Date ? toast.created : new Date(toast.created)
+        const created =
+          toast.created instanceof Date
+            ? toast.created
+            : new Date(toast.created)
         if (!created || isNaN(created.getTime())) {
           return r
         }

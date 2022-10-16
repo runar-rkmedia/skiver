@@ -49,7 +49,7 @@
   }
   .simple-backdrop {
     width: 100vw;
-    height: 100vw;
+    height: 100vh;
     position: fixed;
     opacity: 0.5;
   }

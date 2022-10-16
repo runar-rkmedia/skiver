@@ -1,13 +1,11 @@
 <script lang="ts">
   import TranslationValueRow from './TranslationValueRow.svelte'
   import EntityDetails from './EntityDetails.svelte'
-  import Alert from './Alert.svelte'
   import { api, db } from 'api'
   import Button from './Button.svelte'
-  import ApiResponseError from './ApiResponseError.svelte'
   import ContextForm from './ContextForm.svelte'
-  import Dialog from './Dialog.svelte'
   import TranslationRef from './TranslationRef.svelte'
+  import { showDialog } from 'state'
   export let translation: ApiDef.Translation
   /** Map by locale-id */
   // export let translationValues: Record<string, ApiDef.TranslationValue>
@@ -35,144 +33,10 @@
       return r
     }, new Set<string>())
   )
-  let edit = false
-  let showDelete = false
-  let editTitle = ''
-  let editKey = ''
-  let editDescription = ''
-  let editVariables = ''
-  let editError = ''
   let addContext = false
-  function confirmDelete() {
-    showDelete = true
-    edit = false
-  }
-  function toggleEdit() {
-    edit = !edit
-    if (!editTitle) {
-      editTitle = translation.title || ''
-      editKey = translation.key || ''
-      editDescription = translation.description || ''
-      editVariables =
-        JSON.stringify(translation.variables, null, 2) || '{\n  \n}'
-    }
-  }
-
-  function submitEdit() {
-    let payload: ApiDef.UpdateTranslationInput = {
-      id: translation.id,
-      ...(!!editTitle &&
-        editTitle !== translation.title && { title: editTitle }),
-      ...(!!editKey && editKey !== translation.key && { key: editKey }),
-      ...(!!editDescription &&
-        editDescription !== translation.description && {
-          description: editDescription,
-        }),
-    }
-    if (editVariables && editVariables.replace(/\s/g, '') !== '{}')
-      try {
-        payload.variables = JSON.parse(editVariables)
-      } catch (err) {
-        editError = 'Invalid variables: ' + err.message
-        return
-      }
-    editError = ''
-
-    api.translation.update(translation.id, payload).then(([_, err]) => {
-      if (err) {
-        return
-      }
-      edit = false
-    })
-  }
 </script>
 
 {#if translation}
-  {#if showDelete}
-    <form>
-      <ApiResponseError key="translation" />
-      <Alert kind="warning">
-        <h3 slot="title">Are you sure you want to delete this translation?</h3>
-        <p>The translation can be restored at a later time</p>
-        <p>Deleted translations are not visible, and will not be exported</p>
-        <p>
-          Snapshots created before the deletion will still include the
-          translation. New snapshots will not include it
-        </p>
-        <Button
-          on:click={() =>
-            api.translation
-              .delete(translation.id, {
-                undelete: false,
-              })
-              .then(([_, err]) => {
-                if (!err) {
-                  showDelete = false
-                }
-              })}
-          color="danger">Yes, I am sure</Button>
-        <Button
-          color="secondary"
-          on:click={() => {
-            showDelete = false
-          }}>No, not at this time</Button>
-      </Alert>
-    </form>
-  {/if}
-  {#if edit}
-    <Dialog on:clickClose={toggleEdit}>
-      <span slot="title">Edit Category</span>
-      <paper>
-        <form>
-          <ApiResponseError key="translation" />
-          {#if editError}
-            <Alert kind="error">
-              {editError}
-            </Alert>
-          {/if}
-          <label
-            >Title<input
-              name="title"
-              bind:value={editTitle}
-              type="text" /></label>
-          <label
-            >Description<textarea
-              name="description"
-              rows={3}
-              bind:value={editDescription}
-              type="text" /></label>
-          <label
-            >Key<input name="key" bind:value={editKey} type="text" /></label>
-          <label>
-            Variables
-            <textarea
-              name="variables"
-              rows={8}
-              bind:value={editVariables}
-              type="text" /></label>
-          <div class="buttonRow">
-            <Button color="primary" icon="submit" on:click={submitEdit}
-              >Submit</Button>
-            <Button color="secondary" icon="cancel" on:click={toggleEdit}
-              >Cancel</Button>
-            <div class="deleteButton">
-              {#if translation.deleted}
-                <Button
-                  color="primary"
-                  icon="delete"
-                  on:click={() =>
-                    api.translation.delete(translation.id, { undelete: true })}
-                  >Undelete</Button>
-              {:else}
-                <Button color="danger" icon="delete" on:click={confirmDelete}
-                  >Delete</Button>
-              {/if}
-            </div>
-          </div>
-        </form>
-      </paper>
-    </Dialog>
-  {/if}
   <div class="desc">
     <h4>
       <slot name="categoryHeader" {categoryKey} {translation}>
@@ -181,7 +45,14 @@
         </code>
         {translation.title}
       </slot>
-      <Button icon="edit" on:click={toggleEdit}>Edit</Button>
+      <Button
+        icon="edit"
+        on:click={() =>
+          showDialog({
+            kind: 'editTranslation',
+            id: translation.id,
+            title: `Edit ${translation.title}`,
+          })}>Edit</Button>
     </h4>
     <div>
       <small />
@@ -291,17 +162,8 @@
     padding-inline: var(--size-4);
     padding-block: var(--size-2);
   }
-  textarea[name='variables'] {
-    font-family: var(--font-mono);
-  }
   code {
     white-space: pre;
     display: inline-block;
-  }
-  .buttonRow {
-    display: flex;
-  }
-  .deleteButton {
-    align-self: flex-end;
   }
 </style>
