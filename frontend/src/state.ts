@@ -17,6 +17,7 @@ export const state = createStore({
     showDeleted: false,
     serverStats: false,
     sidebarVisible: false,
+    translationType: 'compact' as 'compact' | 'legacy',
     columns: {
       title: true,
       key: false,

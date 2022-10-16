@@ -6,6 +6,7 @@
 
   export let icon: Icon
   export let kind = 'fas'
+  export let noMinWidth = false
   export let color: Colors = ''
   const colorMap = {
     error: 'color-error',
@@ -15,6 +16,7 @@
 </script>
 
 <i
+  class:minWidth={!noMinWidth}
   class={[
     color !== 'inherit' && (color ? `color-${color}` : colorMap[icon]),
     kind,
@@ -26,7 +28,9 @@
 
 <style>
   i {
-    min-width: 1.2em;
     display: inline-block;
+  }
+  i.minWidth {
+    min-width: 1.2em;
   }
 </style>

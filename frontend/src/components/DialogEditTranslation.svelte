@@ -7,6 +7,7 @@
   import Button from './Button.svelte'
   import { closeDialog } from 'state'
   import { onMount } from 'svelte'
+  import EntityDetails from './EntityDetails.svelte'
   export let translation: ApiDef.Translation
   let editError = ''
   let showDelete = false
@@ -61,6 +62,7 @@
   <Dialog on:clickClose={closeDialog}>
     <span slot="title">Edit translation </span>
     <paper>
+      <EntityDetails entity={translation} />
       <form>
         <ApiResponseError key="translation" />
         {#if editError}

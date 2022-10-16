@@ -1,12 +1,16 @@
 <script lang="ts">
+  import { db } from 'api'
+
   import CategoryForm from 'forms/CategoryForm.svelte'
 
   import TranslationForm from 'forms/TranslationForm.svelte'
   import Embed from 'pages/Embed.svelte'
 
   import { closeDialog, showDialog, state } from 'state'
+  import ApiResponseError from './ApiResponseError.svelte'
   import Button from './Button.svelte'
   import Dialog from './Dialog.svelte'
+  import DialogEditTranslation from './DialogEditTranslation.svelte'
   import JsonDetail from './JsonDetail.svelte'
   import ScrollAnchor from './ScrollAnchor.svelte'
 
@@ -91,6 +95,9 @@
           </Embed>
         </paper>
       </Dialog>
+    {:else if $state.dialog.kind === 'editTranslation'}
+      <DialogEditTranslation
+        translation={$db.translation[$state.dialog.id || '']} />
     {:else}
       <paper>
         <p>Unhandled dialog-option</p>

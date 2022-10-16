@@ -128,25 +128,39 @@
         </paper>
       {/if}
       <div>
-        <h2>Categories</h2>
-        <label>
-          Sort by: {$state.categorySortOn}
-          <select bind:value={$state.categorySortOn}>
-            {#each categorySortOptions as option}
-              <option value={option}>{option}</option>
-            {/each}
-          </select>
-        </label>
-        <label>
-          <input bind:checked={$state.categorySortAsc} type="checkbox" />
-          Ascending
-        </label>
-        <Button
-          color="secondary"
-          icon={'create'}
-          on:click={() => {
-            visibleForm = 'category'
-          }}>Create category</Button>
+        <h2>
+          Categories
+          <div>
+            <Button
+              color="secondary"
+              icon={'create'}
+              on:click={() => {
+                visibleForm = 'category'
+              }}>Create category</Button>
+          </div>
+        </h2>
+
+        <div class="view-settings">
+          <label>
+            Sort by: {$state.categorySortOn}
+            <select bind:value={$state.categorySortOn}>
+              {#each categorySortOptions as option}
+                <option value={option}>{option}</option>
+              {/each}
+            </select>
+          </label>
+          <label>
+            <input bind:checked={$state.categorySortAsc} type="checkbox" />
+            Ascending
+          </label>
+          <Button
+            icon="gStat"
+            color="secondary"
+            on:click={() =>
+              ($state.translationType =
+                $state.translationType === 'legacy' ? 'compact' : 'legacy')}
+            >View: {$state.translationType}</Button>
+        </div>
         {#if visibleForm === 'category'}
           <paper>
             <CategoryForm

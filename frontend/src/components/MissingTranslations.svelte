@@ -21,7 +21,7 @@ Still, we should present this information.
   import { state } from 'state'
   import CategoryForm from 'forms/CategoryForm.svelte'
   import TranslationForm from 'forms/TranslationForm.svelte'
-  import TranslationItem from './TranslationItem.svelte'
+  import TranslationItemLegacy from './TranslationItemLegacy.svelte'
   export let projectID = ''
   // import { t } from '../util/i18next'
   $: projectKeyMap = Object.values($db.missingTranslation).reduce((r, m) => {
@@ -173,7 +173,7 @@ Still, we should present this information.
       {/if}
       {#each missings as missing}
         {#if missing.translation_id && $db.translation[missing.translation_id]}
-          <TranslationItem
+          <TranslationItemLegacy
             projectKey={projectIsh}
             translation={$db.translation[missing.translation_id]}
             translationValues={{}}

@@ -40,10 +40,12 @@ function createStore<T extends {}, V = null, VK extends string = string>({
   initialValue,
   validator,
 }: {
-  storage?: AppStorage<T> | {
-    key: string,
-    ignoreKeys?: string[]
-  }
+  storage?:
+    | AppStorage<T>
+    | {
+        key: string
+        ignoreKeys?: string[]
+      }
   validator?: (
     t: Store<T, V>
   ) => [null, null] | [V, null] | [null, Partial<Record<VK, string>>]
@@ -55,11 +57,11 @@ function createStore<T extends {}, V = null, VK extends string = string>({
 
   const storage: AppStorage<T> | null = _storage?.key
     ? {
-      getItem: (key) => localStorage.getItem(key),
-      // TODO: throttle saving
-      setItem: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
-      ..._storage,
-    }
+        getItem: (key) => localStorage.getItem(key),
+        // TODO: throttle saving
+        setItem: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+        ..._storage,
+      }
     : null
 
   if (storage) {
@@ -95,16 +97,14 @@ function createStore<T extends {}, V = null, VK extends string = string>({
       return
     }
     if (storage.ignoreKeys?.length) {
-      const v: any = Object.keys(value).reduce(
-        (r, key) => {
-          if (storage.ignoreKeys?.includes(key)) {
-            return r
-          }
-          r[key] = value[key]
-
+      const v: any = Object.keys(value).reduce((r, key) => {
+        if (storage.ignoreKeys?.includes(key)) {
           return r
-        }, {}
-      )
+        }
+        r[key] = value[key]
+
+        return r
+      }, {})
       storage?.setItem(_storage.key, v)
       return
     }

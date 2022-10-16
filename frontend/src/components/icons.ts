@@ -30,7 +30,10 @@ export const iconMap = {
   loading: 'fad fa-spinner fa-spin',
   arrowDown: 'fas fa-arrow-down',
   openModal: 'fas fa-arrow-circle-up',
-  longArrowRight: 'fas fa-long-arrow-alt-right'
+  longArrowRight: 'fas fa-long-arrow-alt-right',
+  createContext: 'fas fa-level-down-alt',
+  context: 'fas fa-level-up-alt fa-rotate-90',
+  maximize: 'fas fa-window-maximize',
 } as const
 
 export type Icon = keyof typeof iconMap

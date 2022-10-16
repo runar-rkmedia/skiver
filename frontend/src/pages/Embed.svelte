@@ -4,7 +4,7 @@
   import Button from 'components/Button.svelte'
   import Spinner from 'components/Spinner.svelte'
 
-  import TranslationItem from 'components/TranslationItem.svelte'
+  import TranslationItemLegacy from 'components/TranslationItemLegacy.svelte'
   import UserButton from 'components/UserButton.svelte'
   import CategoryForm from 'forms/CategoryForm.svelte'
   import TranslationForm from 'forms/TranslationForm.svelte'
@@ -74,7 +74,7 @@
         <!-- Has translation -->
         <paper>
           {#if $$slots.categoryHeader}
-            <TranslationItem
+            <TranslationItemLegacy
               {locales}
               {translation}
               categoryKey={category.key || ''}
@@ -85,9 +85,9 @@
                 name="categoryHeader"
                 {category}
                 {translation} />
-            </TranslationItem>
+            </TranslationItemLegacy>
           {:else}
-            <TranslationItem
+            <TranslationItemLegacy
               {locales}
               {translation}
               categoryKey={category.key || ''}

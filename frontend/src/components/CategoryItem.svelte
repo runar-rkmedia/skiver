@@ -1,8 +1,8 @@
 <script lang="ts">
   import { db, api } from 'api'
   import { state, toast, showDialog } from 'state'
-  import { fly } from 'svelte/transition'
   import Button from 'components/Button.svelte'
+  import LocaleFlag from 'components/LocaleFlag.svelte'
   import Dialog from 'components/Dialog.svelte'
   import type { AnyFunc } from 'simplytyped'
   import Collapse from 'components/Collapse.svelte'
@@ -14,7 +14,6 @@
 
   import TranslationValueForm from 'forms/TranslationValueForm.svelte'
   import TranslationForm from 'forms/TranslationForm.svelte'
-  import TranslationItem from 'components/TranslationItem.svelte'
   import EntityDetails from 'components/EntityDetails.svelte'
   import {
     createCategoryAnchorProps,
@@ -22,6 +21,8 @@
   } from 'util/scrollToCategory'
   import { inview } from 'svelte-inview'
   import ScrollAnchor from './ScrollAnchor.svelte'
+  import TranslationItemCompactRow from './TranslationItemCompactRow.svelte'
+  import TranslationItemLegacy from './TranslationItemLegacy.svelte'
 
   let isInView = false
   const options = {
@@ -53,6 +54,11 @@
     e.stopPropocation()
     e.preventDefault()
   }
+  $: selectedLocale = $state?.columns?.valueForLocale?.[0] || locales[0]
+  $: sortedTranslations = sortOn(
+    translations,
+    ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn
+  )
 </script>
 
 <div
@@ -114,28 +120,105 @@
           }}>Create translation</Button>
       </div>
       <div class="translations" key="={category.id}">
-        {#each sortOn(translations, ($state.categorySortAsc ? '' : '-') + $state.sortCategoryOn) as translation}
-          <paper class="translation-item" class:deleted={!!translation.deleted}>
-            <TranslationItem
-              {translation}
-              {projectKey}
-              categoryKey={category.key}
-              {locales}
-              on:complete={() => {
-                visibleForm = null
-              }}
-              on:showForm={({ detail: { show } }) => {
-                if (show) {
-                  visibleForm = 'translationValue'
-                  selectedTranslation = translation.id
-                  return
-                }
-                visibleForm = null
-              }}
-              showForm={visibleForm === 'translationValue' &&
-                selectedTranslation === translation.id} />
+        {#if $state.translationType === 'legacy'}
+          {#each sortedTranslations as translation}
+            <paper
+              class="translation-item"
+              class:deleted={!!translation.deleted}>
+              <TranslationItemLegacy
+                {translation}
+                {projectKey}
+                categoryKey={category.key}
+                {locales}
+                on:complete={() => {
+                  visibleForm = null
+                }}
+                on:showForm={({ detail: { show } }) => {
+                  if (show) {
+                    visibleForm = 'translationValue'
+                    selectedTranslation = translation.id
+                    return
+                  }
+                  visibleForm = null
+                }}
+                showForm={visibleForm === 'translationValue' &&
+                  selectedTranslation === translation.id} />
+            </paper>
+          {/each}
+        {:else}
+          <paper>
+            <table>
+              <thead>
+                <th
+                  on:click={() => {
+                    state.update((s) => ({
+                      ...s,
+                      columns: {
+                        ...s.columns,
+                        ...(!!s.columns.title
+                          ? { title: false, key: true }
+                          : { title: true, key: false }),
+                      },
+                    }))
+                  }}>
+                  {#if $state.columns.title}
+                    Title
+                  {:else}
+                    Key
+                  {/if}
+                </th>
+                <th
+                  on:click={() => {
+                    state.update((s) => {
+                      let loc = selectedLocale
+
+                      if (!loc) {
+                        loc = locales[0]
+                      } else {
+                        const index = locales.findIndex((f) => f.id === loc.id)
+                        if (index < 0) {
+                          loc = locales[0]
+                        }
+                        loc = locales[(index + 1) % locales.length]
+                      }
+                      return {
+                        ...s,
+                        columns: {
+                          ...s.columns,
+                          valueForLocale: [loc],
+                        },
+                      }
+                    })
+                  }}
+                  >Value
+                  <LocaleFlag locale={selectedLocale} />
+                  {selectedLocale?.title}</th>
+              </thead>
+              <tbody>
+                {#each sortedTranslations as translation}
+                  <TranslationItemCompactRow
+                    {translation}
+                    columns={$state.columns}
+                    {projectKey}
+                    categoryKey={category.key}
+                    on:complete={() => {
+                      visibleForm = null
+                    }}
+                    on:showForm={({ detail: { show } }) => {
+                      if (show) {
+                        visibleForm = 'translationValue'
+                        selectedTranslation = translation.id
+                        return
+                      }
+                      visibleForm = null
+                    }}
+                    showForm={visibleForm === 'translationValue' &&
+                      selectedTranslation === translation.id} />
+                {/each}
+              </tbody>
+            </table>
           </paper>
-        {/each}
+        {/if}
       </div>
     </div>
   {:else}
