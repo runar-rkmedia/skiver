@@ -134,6 +134,7 @@
 {#if addContext}
   <tr>
     <td class="key">
+      <!-- svelte-ignore a11y-autofocus -->
       <input
         placeholder="Key for context"
         type="context"
@@ -227,7 +228,7 @@
     color: var(--color-grey-100);
     transition: transform 150ms var(--easing-standard);
   }
-  .withActions button:hover() {
+  .withActions button:hover {
     transform: scale(1.15);
   }
   .withActions button:nth-child(2) {

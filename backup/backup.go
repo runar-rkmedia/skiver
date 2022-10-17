@@ -104,10 +104,11 @@ func (bak *backuper) BackupIsOlder(lastmodified time.Time) []string {
 		if v == nil {
 			head, err := bak.uploaders[k].HeadFile(bak.config[k].FileName)
 			if err != nil {
+				// TODO: check if the error is of type that corresponds to s3-missing-file, and ignore this error-output.
 				bak.l.Error().
 					Err(err).
 					Str("key", k).
-					Msg("Failed to check metadata on external backup")
+					Msg("Failed to check metadata on external backup. Most likely the file does not exist. Is this perhaps the first backup? Continuing regardless.")
 				olderKeys = append(olderKeys, k)
 				continue
 			}
@@ -129,6 +130,11 @@ func (bak *backuper) BackupIsOlder(lastmodified time.Time) []string {
 		if lastmodified.After(notBefore) {
 			olderKeys = append(olderKeys, k)
 		}
+	}
+	if bak.l.HasDebug() {
+		bak.l.Debug().
+			Int("oldeKeysCount", len(olderKeys)).
+			Msg("BackupIsOlder returned")
 	}
 	return olderKeys
 }

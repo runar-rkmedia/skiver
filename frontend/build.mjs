@@ -178,7 +178,8 @@ async function run() {
               return r
             }, {})
             if (Object.keys(reduced).length) {
-              console.info('🎉 watch build succeeded with result:', reduced)
+              console.info('🎉 watch build succeeded with result:')
+              console.dir(reduced, { depth: null, color: true })
             } else {
               console.info('🎉 watch build succeeded')
             }
