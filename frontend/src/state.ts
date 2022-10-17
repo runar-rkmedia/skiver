@@ -21,7 +21,7 @@ export const state = createStore({
     columns: {
       title: true,
       key: false,
-      valueForLocale: null,
+      valueForLocale: null as null | ApiDef.Locale[],
     },
     pageSize: 50,
     searchQuery: '',

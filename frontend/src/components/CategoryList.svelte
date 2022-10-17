@@ -15,17 +15,26 @@
       Object.values($db.category).filter((c) => c.project_id === projectID),
       ($state.categorySortAsc ? '' : '-') + $state.categorySortOn
     )
+  $: {
+    if (locales?.length) {
+      if (!$state.columns.valueForLocale) {
+        $state.columns.valueForLocale = [locales[0]]
+      }
+    }
+  }
 </script>
 
 <Dialogs {projectID} />
-{#if categories && categories?.length}
-  {#each categories as category (category.id)}
-    <CategoryItem
-      bind:category
-      bind:locales
-      bind:projectKey={projectID}
-      bind:selectedTranslation
-      bind:expandedCategory
-      forceExpand={false} />
-  {/each}
+{#if locales?.length}
+  {#if categories && categories?.length}
+    {#each categories as category (category.id)}
+      <CategoryItem
+        bind:category
+        bind:locales
+        bind:projectKey={projectID}
+        bind:selectedTranslation
+        bind:expandedCategory
+        forceExpand={false} />
+    {/each}
+  {/if}
 {/if}

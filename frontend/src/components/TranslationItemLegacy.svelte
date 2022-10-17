@@ -158,10 +158,6 @@
   .desc > :last-child {
     text-align: right;
   }
-  th {
-    padding-inline: var(--size-4);
-    padding-block: var(--size-2);
-  }
   code {
     white-space: pre;
     display: inline-block;

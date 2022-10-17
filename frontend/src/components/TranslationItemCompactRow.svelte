@@ -3,7 +3,6 @@
   import { db } from 'api'
   import Icon from './Icon.svelte'
   import { showDialog } from 'state'
-  import { fade, fly, scale, slide } from 'svelte/transition'
   export let translation: ApiDef.Translation
   export let columns: {
     title: boolean

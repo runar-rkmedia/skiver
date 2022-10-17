@@ -320,6 +320,8 @@ table tr:nth-child(even) {
 table th {
   background-color: var(--color-grey-700);
   color: var(--color-grey-100);
+  padding-inline: var(--size-4);
+  padding-block: var(--size-2);
 }
 
 

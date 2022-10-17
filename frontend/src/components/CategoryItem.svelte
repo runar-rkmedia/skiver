@@ -147,9 +147,10 @@
           {/each}
         {:else}
           <paper>
-            <table>
+            <table class="compactHeader">
               <thead>
                 <th
+                  title="Toggle key/title"
                   on:click={() => {
                     state.update((s) => ({
                       ...s,
@@ -167,32 +168,34 @@
                     Key
                   {/if}
                 </th>
-                <th
-                  on:click={() => {
-                    state.update((s) => {
-                      let loc = selectedLocale
-
-                      if (!loc) {
-                        loc = locales[0]
-                      } else {
+                {#each $state.columns.valueForLocale as l, i}
+                  <th
+                    title="Toggle locale"
+                    on:click={() => {
+                      state.update((s) => {
+                        let loc = l
                         const index = locales.findIndex((f) => f.id === loc.id)
                         if (index < 0) {
                           loc = locales[0]
                         }
                         loc = locales[(index + 1) % locales.length]
-                      }
-                      return {
-                        ...s,
-                        columns: {
-                          ...s.columns,
-                          valueForLocale: [loc],
-                        },
-                      }
-                    })
-                  }}
-                  >Value
-                  <LocaleFlag locale={selectedLocale} />
-                  {selectedLocale?.title}</th>
+                        const v = s.columns.valueForLocale
+                        v[i] = loc
+                        return {
+                          ...s,
+                          columns: {
+                            ...s.columns,
+                            valueForLocale: v,
+                          },
+                        }
+                      })
+                    }}
+                    >Value
+                    <span class="flag">
+                      <LocaleFlag locale={l} />
+                    </span>
+                    {l.title}</th>
+                {/each}
               </thead>
               <tbody>
                 {#each sortedTranslations as translation}
@@ -231,6 +234,10 @@
 </div>
 
 <style>
+  .compactHeader th:hover {
+    cursor: pointer;
+    text-decoration: underline;
+  }
   .item {
     display: flex;
     flex-direction: column;
